@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#080f24] text-slate-100 min-h-screen overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 180, 216, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(91, 192, 190, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(28, 37, 65, 0.5) 0px, transparent 100%);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(10, 17, 40, 0.6);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1f3b73;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00b4d8;
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 180, 216, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(0, 180, 216, 0.5); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s infinite;
+}
+
+.siesal-glass {
+  background: rgba(15, 28, 63, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 180, 216, 0.25);
+}
+
+.siesal-card {
+  background: linear-gradient(135deg, rgba(17, 30, 68, 0.9) 0%, rgba(10, 18, 44, 0.98) 100%);
+  border: 1px solid rgba(43, 84, 153, 0.45);
+  box-shadow: 0 10px 35px 0 rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.siesal-card:hover {
+  border-color: rgba(0, 180, 216, 0.7);
+  box-shadow: 0 12px 40px 0 rgba(0, 180, 216, 0.2);
+  transform: translateY(-2px);
+}
+
+.siesal-button-primary {
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px 0 rgba(0, 180, 216, 0.4);
+}
+
+.siesal-button-primary:hover {
+  background: linear-gradient(135deg, #48cae4 0%, #0096c7 100%);
+  box-shadow: 0 6px 24px 0 rgba(0, 180, 216, 0.6);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.siesal-button-primary:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.glow-cyan {
+  text-shadow: 0 0 14px rgba(0, 180, 216, 0.7);
+}
+
+.glow-box-cyan {
+  box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
+}
