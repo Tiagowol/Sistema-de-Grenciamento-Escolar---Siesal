@@ -1,884 +1,96 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* =========================================================
-   SIESAL — DESIGN SYSTEM PREMIUM
-   Sistema de Gerenciamento Escolar
-   ========================================================= */
-
-:root {
-  --siesal-bg: #050914;
-  --siesal-bg-2: #081225;
-  --siesal-panel: rgba(11, 23, 48, 0.72);
-  --siesal-panel-solid: #0b1730;
-
-  --siesal-primary: #00d4ff;
-  --siesal-primary-2: #0077ff;
-  --siesal-secondary: #6366f1;
-  --siesal-success: #22c55e;
-  --siesal-warning: #f59e0b;
-  --siesal-danger: #ef4444;
-
-  --siesal-text: #f8fafc;
-  --siesal-text-soft: #cbd5e1;
-  --siesal-text-muted: #94a3b8;
-
-  --siesal-border: rgba(148, 163, 184, 0.12);
-  --siesal-border-light: rgba(0, 212, 255, 0.22);
-
-  --siesal-radius: 18px;
-  --siesal-radius-sm: 12px;
-
-  --siesal-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.35);
-
-  --siesal-glow:
-    0 0 40px rgba(0, 212, 255, 0.12);
-}
-
-
-/* =========================================================
-   BASE
-   ========================================================= */
-
 @layer base {
-
-  html {
-    scroll-behavior: smooth;
-    background: var(--siesal-bg);
-  }
-
   body {
-    @apply min-h-screen text-slate-100 overflow-x-hidden;
-
-    background:
-      radial-gradient(
-        circle at 10% 10%,
-        rgba(0, 212, 255, 0.13),
-        transparent 28%
-      ),
-      radial-gradient(
-        circle at 90% 15%,
-        rgba(99, 102, 241, 0.12),
-        transparent 30%
-      ),
-      radial-gradient(
-        circle at 50% 100%,
-        rgba(0, 119, 255, 0.10),
-        transparent 35%
-      ),
-      linear-gradient(
-        135deg,
-        #030712 0%,
-        #071225 45%,
-        #050914 100%
-      );
-
-    background-attachment: fixed;
-
-    font-family:
-      Inter,
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-
-    color: var(--siesal-text);
-
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-[#080f24] text-slate-100 min-h-screen overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(0, 180, 216, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(91, 192, 190, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(28, 37, 65, 0.5) 0px, transparent 100%);
   }
 
-  ::selection {
-    background: rgba(0, 212, 255, 0.3);
-    color: #ffffff;
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
-
-  * {
-    box-sizing: border-box;
+  ::-webkit-scrollbar-track {
+    background: rgba(10, 17, 40, 0.6);
   }
-
-  button,
-  input,
-  textarea,
-  select {
-    font: inherit;
+  ::-webkit-scrollbar-thumb {
+    background: #1f3b73;
+    border-radius: 4px;
   }
-
-  button {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  a {
-    transition:
-      color 0.2s ease,
-      opacity 0.2s ease;
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00b4d8;
   }
 }
 
-
-/* =========================================================
-   SCROLLBAR PREMIUM
-   ========================================================= */
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(3, 7, 18, 0.8);
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 180, 216, 0.2); }
+  50% { box-shadow: 0 0 25px rgba(0, 180, 216, 0.5); }
 }
 
-::-webkit-scrollbar-thumb {
-  background:
-    linear-gradient(
-      180deg,
-      #00d4ff,
-      #2563eb
-    );
-
-  border-radius: 999px;
-
-  border: 2px solid rgba(3, 7, 18, 0.8);
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background:
-    linear-gradient(
-      180deg,
-      #48e5ff,
-      #3b82f6
-    );
-}
-
-
-/* =========================================================
-   SELECTION / FOCUS
-   ========================================================= */
-
-:focus-visible {
-  outline: 2px solid var(--siesal-primary);
-  outline-offset: 3px;
-}
-
-
-/* =========================================================
-   ANIMAÇÕES
-   ========================================================= */
-
-@keyframes siesal-float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-7px);
-  }
-}
-
-
-@keyframes siesal-pulse {
-
-  0%,
-  100% {
-    opacity: 0.65;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.04);
-  }
-}
-
-
-@keyframes siesal-glow {
-
-  0%,
-  100% {
-    box-shadow:
-      0 0 15px rgba(0, 212, 255, 0.12);
-  }
-
-  50% {
-    box-shadow:
-      0 0 35px rgba(0, 212, 255, 0.3);
-  }
-}
-
-
-@keyframes siesal-shimmer {
-
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-
-@keyframes siesal-fade-up {
-
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
-@keyframes siesal-scale {
-
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 
 .animate-float {
-  animation:
-    siesal-float 4s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite;
 }
 
 .animate-pulse-glow {
-  animation:
-    siesal-glow 3s ease-in-out infinite;
+  animation: pulse-glow 3s infinite;
 }
-
-.animate-fade-up {
-  animation:
-    siesal-fade-up 0.45s ease-out both;
-}
-
-.animate-scale {
-  animation:
-    siesal-scale 0.35s ease-out both;
-}
-
-
-/* =========================================================
-   GLASS PREMIUM
-   ========================================================= */
 
 .siesal-glass {
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(16, 32, 65, 0.78),
-      rgba(6, 15, 34, 0.68)
-    );
-
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-
-  border: 1px solid var(--siesal-border);
-
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-
-  border-radius: var(--siesal-radius);
-
-  position: relative;
-  overflow: hidden;
+  background: rgba(15, 28, 63, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 180, 216, 0.25);
 }
-
-
-/* brilho superior do glass */
-
-.siesal-glass::before {
-
-  content: "";
-
-  position: absolute;
-
-  top: 0;
-  left: 8%;
-
-  width: 84%;
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(0, 212, 255, 0.55),
-      transparent
-    );
-
-  opacity: 0.7;
-}
-
-
-/* =========================================================
-   CARDS
-   ========================================================= */
 
 .siesal-card {
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(17, 35, 72, 0.92),
-      rgba(7, 16, 37, 0.96)
-    );
-
-  border: 1px solid rgba(79, 116, 180, 0.18);
-
-  border-radius: var(--siesal-radius);
-
-  box-shadow:
-    0 15px 45px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.025);
-
-  transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(135deg, rgba(17, 30, 68, 0.9) 0%, rgba(10, 18, 44, 0.98) 100%);
+  border: 1px solid rgba(43, 84, 153, 0.45);
+  box-shadow: 0 10px 35px 0 rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-
-/* brilho do card */
-
-.siesal-card::before {
-
-  content: "";
-
-  position: absolute;
-
-  inset: 0;
-
-  background:
-    radial-gradient(
-      circle at 0% 0%,
-      rgba(0, 212, 255, 0.08),
-      transparent 35%
-    );
-
-  pointer-events: none;
-}
-
 
 .siesal-card:hover {
-
-  transform: translateY(-4px);
-
-  border-color:
-    rgba(0, 212, 255, 0.32);
-
-  box-shadow:
-    0 22px 55px rgba(0, 0, 0, 0.38),
-    0 0 30px rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 180, 216, 0.7);
+  box-shadow: 0 12px 40px 0 rgba(0, 180, 216, 0.2);
+  transform: translateY(-2px);
 }
-
-
-/* =========================================================
-   BOTÃO PRINCIPAL
-   ========================================================= */
 
 .siesal-button-primary {
-
-  background:
-    linear-gradient(
-      135deg,
-      #00d4ff 0%,
-      #0077ff 55%,
-      #635bff 100%
-    );
-
-  color: #ffffff;
-
-  border: 1px solid rgba(255, 255, 255, 0.14);
-
-  border-radius: 12px;
-
-  box-shadow:
-    0 8px 25px rgba(0, 119, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
-
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px 0 rgba(0, 180, 216, 0.4);
 }
-
-
-.siesal-button-primary::before {
-
-  content: "";
-
-  position: absolute;
-
-  inset: 0;
-
-  background:
-    linear-gradient(
-      110deg,
-      transparent 20%,
-      rgba(255, 255, 255, 0.25) 45%,
-      transparent 70%
-    );
-
-  background-size: 200% 100%;
-
-  transform: translateX(-100%);
-
-  transition: transform 0.55s ease;
-}
-
 
 .siesal-button-primary:hover {
-
-  transform:
-    translateY(-2px);
-
-  filter:
-    brightness(1.08);
-
-  box-shadow:
-    0 12px 32px rgba(0, 119, 255, 0.38),
-    0 0 25px rgba(0, 212, 255, 0.15);
+  background: linear-gradient(135deg, #48cae4 0%, #0096c7 100%);
+  box-shadow: 0 6px 24px 0 rgba(0, 180, 216, 0.6);
+  transform: translateY(-2px) scale(1.01);
 }
-
-
-.siesal-button-primary:hover::before {
-
-  transform:
-    translateX(100%);
-}
-
 
 .siesal-button-primary:active {
-
-  transform:
-    translateY(0)
-    scale(0.98);
+  transform: translateY(0) scale(0.99);
 }
-
-
-/* =========================================================
-   BOTÃO SECUNDÁRIO
-   ========================================================= */
-
-.siesal-button-secondary {
-
-  background:
-    rgba(15, 31, 63, 0.75);
-
-  color:
-    var(--siesal-text-soft);
-
-  border:
-    1px solid rgba(148, 163, 184, 0.15);
-
-  border-radius:
-    12px;
-
-  transition:
-    all 0.2s ease;
-
-  backdrop-filter:
-    blur(12px);
-}
-
-
-.siesal-button-secondary:hover {
-
-  color: #ffffff;
-
-  border-color:
-    rgba(0, 212, 255, 0.35);
-
-  background:
-    rgba(0, 212, 255, 0.08);
-
-  transform:
-    translateY(-1px);
-
-  box-shadow:
-    0 8px 25px rgba(0, 0, 0, 0.2);
-}
-
-
-/* =========================================================
-   INPUTS
-   ========================================================= */
-
-.siesal-input {
-
-  width: 100%;
-
-  background:
-    rgba(5, 13, 30, 0.72);
-
-  color:
-    #f8fafc;
-
-  border:
-    1px solid rgba(148, 163, 184, 0.15);
-
-  border-radius:
-    12px;
-
-  padding:
-    0.75rem 1rem;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-}
-
-
-.siesal-input::placeholder {
-  color: #64748b;
-}
-
-
-.siesal-input:hover {
-
-  border-color:
-    rgba(148, 163, 184, 0.28);
-}
-
-
-.siesal-input:focus {
-
-  background:
-    rgba(8, 20, 43, 0.92);
-
-  border-color:
-    rgba(0, 212, 255, 0.65);
-
-  box-shadow:
-    0 0 0 3px rgba(0, 212, 255, 0.10),
-    0 0 25px rgba(0, 212, 255, 0.08);
-}
-
-
-/* =========================================================
-   BADGES
-   ========================================================= */
-
-.siesal-badge {
-
-  display: inline-flex;
-
-  align-items: center;
-
-  gap: 0.4rem;
-
-  padding:
-    0.35rem 0.7rem;
-
-  border-radius:
-    999px;
-
-  font-size:
-    0.75rem;
-
-  font-weight:
-    600;
-
-  background:
-    rgba(0, 212, 255, 0.08);
-
-  color:
-    #67e8f9;
-
-  border:
-    1px solid rgba(0, 212, 255, 0.18);
-}
-
-
-/* =========================================================
-   DIVISOR
-   ========================================================= */
-
-.siesal-divider {
-
-  height: 1px;
-
-  width: 100%;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(148, 163, 184, 0.16),
-      transparent
-    );
-}
-
-
-/* =========================================================
-   TEXTOS
-   ========================================================= */
 
 .glow-cyan {
-
-  color:
-    #67e8f9;
-
-  text-shadow:
-    0 0 12px rgba(0, 212, 255, 0.55);
+  text-shadow: 0 0 14px rgba(0, 180, 216, 0.7);
 }
-
 
 .glow-box-cyan {
-
-  box-shadow:
-    0 0 25px rgba(0, 212, 255, 0.18);
-}
-
-
-.siesal-gradient-text {
-
-  background:
-    linear-gradient(
-      90deg,
-      #67e8f9,
-      #60a5fa,
-      #818cf8
-    );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-
-  color: transparent;
-
-  background-size: 200% auto;
-
-  animation:
-    siesal-shimmer 5s linear infinite;
-}
-
-
-/* =========================================================
-   TABELAS
-   ========================================================= */
-
-.siesal-table {
-
-  width: 100%;
-
-  border-collapse: separate;
-
-  border-spacing: 0;
-
-  overflow: hidden;
-
-  border-radius: 14px;
-
-  border:
-    1px solid rgba(148, 163, 184, 0.10);
-}
-
-
-.siesal-table thead {
-
-  background:
-    rgba(0, 212, 255, 0.045);
-}
-
-
-.siesal-table th {
-
-  color:
-    #94a3b8;
-
-  font-size:
-    0.75rem;
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:
-    0.06em;
-
-  font-weight:
-    600;
-
-  padding:
-    0.9rem 1rem;
-
-  border-bottom:
-    1px solid rgba(148, 163, 184, 0.10);
-}
-
-
-.siesal-table td {
-
-  padding:
-    0.9rem 1rem;
-
-  border-bottom:
-    1px solid rgba(148, 163, 184, 0.07);
-
-  color:
-    #cbd5e1;
-}
-
-
-.siesal-table tbody tr {
-
-  transition:
-    background 0.2s ease;
-}
-
-
-.siesal-table tbody tr:hover {
-
-  background:
-    rgba(0, 212, 255, 0.045);
-}
-
-
-.siesal-table tbody tr:last-child td {
-
-  border-bottom:
-    none;
-}
-
-
-/* =========================================================
-   EFEITO SHIMMER
-   ========================================================= */
-
-.siesal-shimmer {
-
-  background:
-    linear-gradient(
-      110deg,
-      rgba(255, 255, 255, 0.03) 25%,
-      rgba(255, 255, 255, 0.09) 37%,
-      rgba(255, 255, 255, 0.03) 63%
-    );
-
-  background-size:
-    400% 100%;
-
-  animation:
-    siesal-shimmer 2.5s ease-in-out infinite;
-}
-
-
-/* =========================================================
-   DECORAÇÃO DE FUNDO
-   ========================================================= */
-
-.siesal-orb {
-
-  position:
-    absolute;
-
-  width:
-    300px;
-
-  height:
-    300px;
-
-  border-radius:
-    50%;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(0, 212, 255, 0.13),
-      transparent 70%
-    );
-
-  filter:
-    blur(20px);
-
-  pointer-events:
-    none;
-
-  animation:
-    siesal-pulse 6s ease-in-out infinite;
-}
-
-
-/* =========================================================
-   RESPONSIVIDADE
-   ========================================================= */
-
-@media (max-width: 768px) {
-
-  .siesal-card {
-
-    border-radius:
-      14px;
-  }
-
-  .siesal-glass {
-
-    border-radius:
-      14px;
-
-    backdrop-filter:
-      blur(16px);
-
-    -webkit-backdrop-filter:
-      blur(16px);
-  }
-
-  .siesal-button-primary:hover,
-  .siesal-card:hover {
-
-    transform:
-      none;
-  }
-}
-
-
-/* =========================================================
-   ACESSIBILIDADE
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-
-    animation-duration:
-      0.01ms !important;
-
-    animation-iteration-count:
-      1 !important;
-
-    scroll-behavior:
-      auto !important;
-
-    transition-duration:
-      0.01ms !important;
-  }
+  box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
 }
