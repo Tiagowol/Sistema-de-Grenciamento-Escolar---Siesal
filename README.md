@@ -5,13 +5,13 @@
 
 ---
 
-## 📖 Sobre o Projeto
+## Sobre o Projeto
 
 O **SIESAL** é uma solução completa para auxiliar estudantes no gerenciamento de suas atividades diárias, ajudando na organização de tarefas, matérias, eventos, lembretes e notificações de prazos importantes.
 
 ---
 
-## 🏛️ Arquitetura do Sistema
+## Arquitetura do Sistema
 
 O projeto é 100% desacoplado entre **Backend** e **Frontend**:
 
@@ -54,7 +54,7 @@ Sistema de Gerenciamento Escolar - Siesal/
 
 ---
 
-## 🗄️ Integração com MySQL Workbench & Banco de Dados
+## Integração com MySQL Workbench & Banco de Dados
 
 ### Opção 1: Executar diretamente no MySQL Workbench
 1. Abra o **MySQL Workbench**.
@@ -81,17 +81,17 @@ No diretório `backend/`:
 
 ---
 
-## 🚀 Como Executar o Sistema
+## Como Executar o Sistema
 
-### ⚡ Opção Rápida: Iniciar Backend e Frontend Juntos (Recomendado)
+### Opção Rápida: Iniciar Backend e Frontend Juntos (Recomendado)
 Na raiz do projeto:
 ```bash
 npm run dev
 ```
 > Ou dê um **duplo clique** no arquivo [`iniciar.bat`](file:///c:/Users/Tiago%20Wagner/Documents/Sistema%20de%20Grenciamento%20Escolar%20-%20Siesal/iniciar.bat).  
 > Ambos os serviços iniciarão simultaneamente no mesmo terminal:
-> - 📡 **Backend Express**: `http://localhost:3001`
-> - 💻 **Frontend Vite**: `http://localhost:5173`
+>  **Backend Express**: `http://localhost:3001`
+>  **Frontend Vite**: `http://localhost:5173`
 
 ---
 
@@ -117,7 +117,7 @@ npm run dev
 
 ---
 
-## 🔐 Requisitos Implementados
+## Requisitos Implementados
 
 - **F01 (Calendário Interativo)**: Calendário mensal navegável com visualização de dias e eventos.
 - **F02 (Sistema de Lembretes)**: Lembretes vinculados a tarefas e compromissos.
