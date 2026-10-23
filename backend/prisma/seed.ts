@@ -16,6 +16,8 @@ async function main() {
       nome: 'Jose de Arimatéia',
       email: 'jose.arimateia@escola.gov.br',
       senha: hashedPassword,
+      escola: 'Escola Estadual Protótipo SIESAL',
+      turma: '9º Ano B',
       status: true,
       tentativas_falhas: 0,
     },

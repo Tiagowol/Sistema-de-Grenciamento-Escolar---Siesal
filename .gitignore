@@ -1,0 +1,49 @@
+# ---------- Dependências ----------
+node_modules/
+.pnp
+.pnp.js
+
+# ---------- Variáveis de ambiente ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Build ----------
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ---------- Logs ----------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Cache ----------
+.vite/
+.cache/
+.eslintcache
+.turbo
+
+# ---------- Testes ----------
+coverage/
+.nyc_output/
+
+# ---------- Editores / IDE ----------
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ---------- Sistema operacional ----------
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~

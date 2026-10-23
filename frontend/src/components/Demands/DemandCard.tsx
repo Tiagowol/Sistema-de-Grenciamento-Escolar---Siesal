@@ -58,88 +58,98 @@ export const DemandCard: React.FC<DemandCardProps> = ({
           </div>
 
           {/* Cards da Matéria */}
-          <div className="space-y-2.5">
-            {subDemands.map((demand) => {
-              const isSelected = selectedDemandId === demand.id_tarefa;
-              const isDone = demand.status === 'Concluido';
+          <div className="space-y-2">
+              {subDemands.map((demand) => {
+                const isSelected = selectedDemandId === demand.id_tarefa;
+                const isDone = demand.status === 'Concluido';
 
-              return (
-                <div
-                  key={demand.id_tarefa}
-                  onClick={() => onSelectDemand(demand)}
-                  className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between group ${
-                    isSelected
-                      ? 'bg-[#152a5f] border-cyan-400 shadow-lg shadow-cyan-500/20'
-                      : 'bg-[#0f1d43]/80 border-[#1d3876] hover:bg-[#142654] hover:border-cyan-500/50'
-                  } ${isDone ? 'opacity-70' : 'opacity-100'}`}
-                >
-                  <div className="flex items-center gap-3.5">
-                    {/* Botão de Conclusão Rápida */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleStatus(demand.id_tarefa);
-                      }}
-                      className="text-slate-400 hover:text-cyan-400 transition-colors"
-                      title={isDone ? 'Marcar como pendente' : 'Marcar como concluído'}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-slate-500 group-hover:text-cyan-400" />
-                      )}
-                    </button>
+                return (
+                  <div
+                    key={demand.id_tarefa}
+                    onClick={() => onSelectDemand(demand)}
+                    className={`p-3.5 rounded-2xl border transition-all duration-250 cursor-pointer flex items-center justify-between group relative overflow-hidden ${
+                      isSelected
+                        ? 'bg-cyan-950/30 border-cyan-400/60 shadow-lg shadow-cyan-500/10'
+                        : 'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.05] hover:border-cyan-500/30'
+                    } ${isDone ? 'opacity-55' : 'opacity-100'}`}
+                  >
+                    {/* Barra lateral de seleção ativa */}
+                    {isSelected && (
+                      <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-cyan-400 shadow-[0_0_8px_#38bdf8]" />
+                    )}
 
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-cyan-400 font-semibold">
-                          {demand.tipo || 'Atividade'}:
-                        </span>
-                        <h4
-                          className={`text-sm font-bold text-white ${
-                            isDone ? 'line-through text-slate-400' : ''
-                          }`}
-                        >
-                          {demand.titulo}
-                        </h4>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                        <span>Prazo: {new Date(demand.data_entrega).toLocaleDateString('pt-BR')}</span>
-                        {demand.professor && (
-                          <>
-                            <span>•</span>
-                            <span>Prof. {demand.professor}</span>
-                          </>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Botão de Conclusão Rápida */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleStatus(demand.id_tarefa);
+                        }}
+                        className="text-slate-500 hover:text-cyan-400 transition-colors p-1 shrink-0"
+                        title={isDone ? 'Marcar como pendente' : 'Marcar como concluído'}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 transition-transform active:scale-90" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition-all active:scale-90" />
                         )}
-                      </p>
+                      </button>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-cyan-400/90 font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-cyan-500/10 shrink-0">
+                            {demand.tipo || 'Atividade'}
+                          </span>
+                          <h4
+                            className={`text-xs sm:text-sm font-semibold text-slate-100 group-hover:text-white truncate transition-colors ${
+                              isDone ? 'line-through text-slate-400' : ''
+                            }`}
+                          >
+                            {demand.titulo}
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 truncate">
+                          <span>Prazo: {new Date(demand.data_entrega).toLocaleDateString('pt-BR')}</span>
+                          {demand.professor && (
+                            <>
+                              <span className="text-slate-600">•</span>
+                              <span className="text-slate-300 truncate">Prof. {demand.professor}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Indicadores Visuais da Direita */}
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      {demand.status !== 'Concluido' && new Date(demand.data_entrega) < new Date() && (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase bg-rose-500/10 text-rose-300 border-rose-500/25 animate-pulse">
+                          Atrasada
+                        </span>
+                      )}
+                      <span
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${
+                          demand.prioridade === 'Urgente'
+                            ? 'bg-rose-500/10 text-rose-300 border-rose-500/25'
+                            : demand.prioridade === 'Proximo'
+                            ? 'bg-sky-500/10 text-sky-300 border-sky-500/25'
+                            : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
+                        }`}
+                      >
+                        {demand.prioridade}
+                      </span>
+
+                      <div className="w-6 h-6 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-slate-400 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-all">
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </div>
                     </div>
                   </div>
-
-                  {/* Indicadores Visuais da Direita */}
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
-                        demand.prioridade === 'Urgente'
-                          ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-                          : demand.prioridade === 'Proximo'
-                          ? 'bg-sky-500/20 text-sky-400 border-sky-500/30'
-                          : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      }`}
-                    >
-                      {demand.prioridade}
-                    </span>
-
-                    <div className="w-7 h-7 rounded-xl bg-[#0b1636] flex items-center justify-center text-slate-400 group-hover:text-white group-hover:bg-cyan-600 transition-all">
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
       {/* Demandas sem matéria */}
       {unassignedDemands.length > 0 && (

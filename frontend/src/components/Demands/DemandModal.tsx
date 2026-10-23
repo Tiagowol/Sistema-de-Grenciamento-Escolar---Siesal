@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, Tag, AlertTriangle, HelpCircle, FileText, Sparkles, Zap } from 'lucide-react';
-import { Marcador, PrioridadeType, DificuldadeType, TipoDemandaType } from '../../types';
+import { X, Calendar, User, Tag, HelpCircle, FileText, Sparkles, Zap, Pencil } from 'lucide-react';
+import { Marcador, PrioridadeType, DificuldadeType, TipoDemandaType, Tarefa } from '../../types';
 import { calculateDynamicPriority } from '../../utils/priorityCalculator';
+import { getPref } from '../../utils/appearance';
+import { toLocalDateTimeInput } from '../../utils/date';
 
 interface DemandModalProps {
   isOpen: boolean;
   onClose: () => void;
   subjects: Marcador[];
   onSubmit: (data: any) => Promise<void>;
+  /** Demanda em edição — quando definida, o modal abre no modo "Editar". */
+  editingDemand?: Tarefa | null;
+  onUpdate?: (id: number, data: any) => Promise<void>;
 }
 
 export const DemandModal: React.FC<DemandModalProps> = ({
@@ -15,7 +20,11 @@ export const DemandModal: React.FC<DemandModalProps> = ({
   onClose,
   subjects,
   onSubmit,
+  editingDemand,
+  onUpdate,
 }) => {
+  const isEditing = Boolean(editingDemand);
+
   const [titulo, setTitulo] = useState('');
   const [idMarcador, setIdMarcador] = useState<string>('');
   const [tipo, setTipo] = useState<TipoDemandaType>('Atividade');
@@ -24,7 +33,10 @@ export const DemandModal: React.FC<DemandModalProps> = ({
   const [prazo, setPrazo] = useState('');
   const [professor, setProfessor] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [criarLembrete, setCriarLembrete] = useState(true);
+  const [criarLembrete, setCriarLembrete] = useState<boolean>(() =>
+    // Respeita a preferência "Lembretes de Prazos" das Configurações
+    getPref('auto_lembrete', true)
+  );
   const [submitting, setSubmitting] = useState(false);
 
   // Recalcula dinamicamente a prioridade quando o prazo ou a dificuldade mudam
@@ -35,6 +47,32 @@ export const DemandModal: React.FC<DemandModalProps> = ({
     }
   }, [prazo, dificuldade]);
 
+  // Ao abrir: preenche os campos com a demanda em edição (ou limpa para criação)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (editingDemand) {
+      setTitulo(editingDemand.titulo);
+      setIdMarcador(editingDemand.id_marcador ? String(editingDemand.id_marcador) : '');
+      setTipo((editingDemand.tipo as TipoDemandaType) || 'Atividade');
+      setDificuldade((editingDemand.dificuldade as DificuldadeType) || 'Médio');
+      setPrazo(toLocalDateTimeInput(new Date(editingDemand.data_entrega)));
+      setProfessor(editingDemand.professor || '');
+      setDescricao(editingDemand.descricao || '');
+      setPrioridade(
+        calculateDynamicPriority(editingDemand.data_entrega, editingDemand.dificuldade || 'Médio')
+      );
+    } else {
+      setTitulo('');
+      setIdMarcador('');
+      setTipo('Atividade');
+      setDificuldade('Médio');
+      setPrazo('');
+      setProfessor('');
+      setDescricao('');
+    }
+  }, [isOpen, editingDemand]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,18 +81,31 @@ export const DemandModal: React.FC<DemandModalProps> = ({
 
     setSubmitting(true);
     try {
-      const calculated = calculateDynamicPriority(prazo, dificuldade);
-      await onSubmit({
-        titulo,
-        id_marcador: idMarcador ? Number(idMarcador) : null,
-        tipo,
-        prioridade: calculated,
-        dificuldade,
-        data_entrega: prazo,
-        professor,
-        descricao,
-        criar_lembrete: criarLembrete,
-      });
+      if (isEditing && editingDemand && onUpdate) {
+        // Modo EDIÇÃO: atualiza a demanda (prioridade recalculada pelo backend)
+        await onUpdate(editingDemand.id_tarefa, {
+          titulo,
+          id_marcador: idMarcador ? Number(idMarcador) : null,
+          tipo,
+          dificuldade,
+          data_entrega: prazo,
+          professor,
+          descricao,
+        });
+      } else {
+        const calculated = calculateDynamicPriority(prazo, dificuldade);
+        await onSubmit({
+          titulo,
+          id_marcador: idMarcador ? Number(idMarcador) : null,
+          tipo,
+          prioridade: calculated,
+          dificuldade,
+          data_entrega: prazo,
+          professor,
+          descricao,
+          criar_lembrete: criarLembrete,
+        });
+      }
       // Reset
       setTitulo('');
       setDescricao('');
@@ -75,11 +126,17 @@ export const DemandModal: React.FC<DemandModalProps> = ({
         <div className="flex items-center justify-between pb-4 border-b border-[#1b3472] mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-cyan-950 border border-cyan-500/50 text-cyan-400">
-              <Sparkles className="w-5 h-5" />
+              {isEditing ? <Pencil className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white tracking-wide">Adicionar Demanda</h2>
-              <p className="text-xs text-slate-400">Prioridade é calculada dinamicamente pelo prazo e dificuldade.</p>
+              <h2 className="text-xl font-bold text-white tracking-wide">
+                {isEditing ? 'Editar Demanda' : 'Adicionar Demanda'}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {isEditing
+                  ? 'Alterações na demanda — a prioridade é recalculada automaticamente.'
+                  : 'Prioridade é calculada dinamicamente pelo prazo e dificuldade.'}
+              </p>
             </div>
           </div>
           <button
@@ -238,19 +295,21 @@ export const DemandModal: React.FC<DemandModalProps> = ({
             />
           </div>
 
-          {/* Opção de Lembrete */}
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-[#0c183a] border border-[#1b3472]">
-            <input
-              type="checkbox"
-              id="lembrete-chk"
-              checked={criarLembrete}
-              onChange={(e) => setCriarLembrete(e.target.checked)}
-              className="w-4 h-4 rounded text-cyan-500 bg-[#080f24] border-slate-600 focus:ring-0 cursor-pointer"
-            />
-            <label htmlFor="lembrete-chk" className="text-xs text-slate-300 cursor-pointer">
-              Ativar lembrete automático 24h antes do prazo
-            </label>
-          </div>
+          {/* Opção de Lembrete (apenas na criação) */}
+          {!isEditing && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-[#0c183a] border border-[#1b3472]">
+              <input
+                type="checkbox"
+                id="lembrete-chk"
+                checked={criarLembrete}
+                onChange={(e) => setCriarLembrete(e.target.checked)}
+                className="w-4 h-4 rounded accent-cyan-500 bg-[#080f24] border-slate-600 focus:ring-0 cursor-pointer"
+              />
+              <label htmlFor="lembrete-chk" className="text-xs text-slate-300 cursor-pointer">
+                Ativar lembrete automático 24h antes do prazo
+              </label>
+            </div>
+          )}
 
           {/* Botão de Submissão */}
           <div className="pt-2">
@@ -259,7 +318,7 @@ export const DemandModal: React.FC<DemandModalProps> = ({
               disabled={submitting}
               className="w-full siesal-button-primary text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-50"
             >
-              {submitting ? 'Salvando...' : 'Adicionar Demanda'}
+              {submitting ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Adicionar Demanda'}
             </button>
           </div>
         </form>

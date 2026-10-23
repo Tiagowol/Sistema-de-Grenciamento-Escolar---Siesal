@@ -4,6 +4,7 @@ export interface Usuario {
   email: string;
   escola?: string | null;
   turma?: string | null;
+  is_admin?: boolean;
   data_cadastro?: string;
   status?: boolean;
 }

@@ -15,8 +15,11 @@ CREATE TABLE IF NOT EXISTS `usuario` (
   `nome` VARCHAR(100) NOT NULL,
   `email` VARCHAR(100) NOT NULL,
   `senha` VARCHAR(255) NOT NULL,
+  `escola` VARCHAR(100) NULL,
+  `turma` VARCHAR(50) NULL,
   `data_cadastro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `status` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_admin` TINYINT(1) NOT NULL DEFAULT 0,
   `tentativas_falhas` INT NOT NULL DEFAULT 0,
   `bloqueado_ate` DATETIME NULL,
   PRIMARY KEY (`id_usuario`),
@@ -146,8 +149,8 @@ CREATE TABLE IF NOT EXISTS `notificacao` (
 -- =========================================================
 -- DADOS INICIAIS DE TESTE (Conforme Protótipos)
 -- =========================================================
-INSERT INTO `usuario` (`id_usuario`, `nome`, `email`, `senha`, `data_cadastro`, `status`)
-VALUES (1, 'Jose de Arimateia', 'jose.arimateia@escola.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW(), 1)
+INSERT INTO `usuario` (`id_usuario`, `nome`, `email`, `senha`, `escola`, `turma`, `data_cadastro`, `status`)
+VALUES (1, 'Jose de Arimateia', 'jose.arimateia@escola.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Escola Estadual Protótipo SIESAL', '9º Ano B', NOW(), 1)
 ON DUPLICATE KEY UPDATE `nome`=VALUES(`nome`);
 
 INSERT INTO `marcador` (`id_marcador`, `nome`, `cor`, `id_usuario`) VALUES

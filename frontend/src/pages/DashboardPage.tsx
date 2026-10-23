@@ -15,7 +15,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ stats, onMarkAlert
       {/* Seção Superior do Início (Fiel ao Protótipo 5.1) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
         {/* Widget 1: Todos os Prazos */}
-        <div className="md:col-span-4">
+        <div className="md:col-span-4" data-tutorial="grafico-prazos">
           <PieProgressWidget
             title="todos os Prazos"
             stats={stats.todosOsPrazos}
@@ -31,7 +31,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ stats, onMarkAlert
         </div>
 
         {/* Widget 3: Avisos */}
-        <div className="md:col-span-4">
+        <div className="md:col-span-4" data-tutorial="avisos-sistema">
           <AlertsList
             alerts={stats.avisos}
             onMarkRead={onMarkAlertRead}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Calendar, MapPin, FileText, Sparkles } from 'lucide-react';
+import { toLocalDateString } from '../../utils/date';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -14,7 +15,8 @@ export const EventModal: React.FC<EventModalProps> = ({
   onSubmit,
   defaultDate = new Date(),
 }) => {
-  const formattedDefaultDate = defaultDate.toISOString().split('T')[0];
+  // Corrigido: formata a data padrão no fuso LOCAL (toISOString deslocava o dia)
+  const formattedDefaultDate = toLocalDateString(defaultDate);
 
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');

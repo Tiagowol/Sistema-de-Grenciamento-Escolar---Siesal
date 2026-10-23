@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Evento, Tarefa } from '../../types';
+import { isoToLocalDateString } from '../../utils/date';
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -39,13 +40,14 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   const hasItemOnDay = (day: number) => {
     const formattedDate = `${year}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const hasEvent = events.some((e) => e.data_inicio.startsWith(formattedDate));
-    const hasDemand = demands.some((d) => d.data_entrega.startsWith(formattedDate));
+    // Compara usando datas LOCAIS (evita deslocamento de fuso horário do toISOString)
+    const hasEvent = events.some((e) => isoToLocalDateString(e.data_inicio) === formattedDate);
+    const hasDemand = demands.some((d) => isoToLocalDateString(d.data_entrega) === formattedDate);
     return { hasEvent, hasDemand };
   };
 
   return (
-    <div className="siesal-card rounded-3xl p-6 flex flex-col justify-between h-full">
+    <div className="siesal-card rounded-3xl p-6 flex flex-col justify-between h-full" data-tutorial="calendario">
       <div>
         {/* Cabeçalho do Mês e Navegação (Fiel ao Protótipo 5.4) */}
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#1b3472]">

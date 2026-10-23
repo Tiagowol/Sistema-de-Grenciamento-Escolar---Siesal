@@ -2,6 +2,25 @@ import { Response } from 'express';
 import { prisma } from '../services/prisma';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
+/**
+ * Constrói limites de dia/mês usando o horário LOCAL do servidor (e não UTC),
+ * evitando que eventos do fim do dia sejam filtrados no dia errado por
+ * diferenças de fuso horário.
+ */
+function localDayRange(dateStr: string): { start: Date; end: Date } {
+  // Aceita "YYYY-MM-DD" (com ou sem hora)
+  const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+  const start = new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
+  const end = new Date(y, (m || 1) - 1, d || 1, 23, 59, 59, 999);
+  return { start, end };
+}
+
+function localMonthRange(year: number, month1to12: number): { start: Date; end: Date } {
+  const start = new Date(year, month1to12 - 1, 1, 0, 0, 0, 0);
+  const end = new Date(year, month1to12, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+
 export const eventController = {
   // Listar eventos (F07, Protótipo 5.4)
   async list(req: AuthRequest, res: Response) {
@@ -14,24 +33,11 @@ export const eventController = {
       };
 
       if (date) {
-        const startOfDay = new Date(String(date));
-        startOfDay.setHours(0, 0, 0, 0);
-
-        const endOfDay = new Date(String(date));
-        endOfDay.setHours(23, 59, 59, 999);
-
-        whereClause.data_inicio = {
-          gte: startOfDay,
-          lte: endOfDay,
-        };
+        const { start, end } = localDayRange(String(date));
+        whereClause.data_inicio = { gte: start, lte: end };
       } else if (month && year) {
-        const startOfMonth = new Date(Number(year), Number(month) - 1, 1);
-        const endOfMonth = new Date(Number(year), Number(month), 0, 23, 59, 59);
-
-        whereClause.data_inicio = {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        };
+        const { start, end } = localMonthRange(Number(year), Number(month));
+        whereClause.data_inicio = { gte: start, lte: end };
       }
 
       const events = await prisma.evento.findMany({

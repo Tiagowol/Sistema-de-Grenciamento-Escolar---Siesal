@@ -1,12 +1,13 @@
 {
   "name": "siesal-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Backend API para o Sistema de Gerenciamento Escolar do Aluno (SIESAL)",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "console": "tsx src/debug_console.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:db:push": "prisma db push",

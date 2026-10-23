@@ -16,8 +16,13 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({
   onOpenAddEvent,
   onOpenAddDemand,
 }) => {
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2026, 8, 1)); // Setembro 2026 como no protótipo
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 8, 19));
+  // Corrigido: a agenda agora abre no mês e no dia ATUAIS do usuário
+  // (antes era fixado em setembro/2026, o que escondia a data real)
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));

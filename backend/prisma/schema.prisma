@@ -16,6 +16,7 @@ model Usuario {
   turma              String?        @db.VarChar(50)
   data_cadastro      DateTime       @default(now())
   status             Boolean        @default(true)
+  is_admin           Boolean        @default(false)
   tentativas_falhas  Int            @default(0)
   bloqueado_ate      DateTime?
   

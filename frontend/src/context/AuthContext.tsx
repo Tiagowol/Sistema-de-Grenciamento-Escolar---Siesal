@@ -8,11 +8,21 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, senha: string) => Promise<{ success: boolean; error?: string; bloqueado?: boolean; field?: string }>;
   register: (nome: string, email: string, senha: string, escola?: string, turma?: string) => Promise<{ success: boolean; error?: string; field?: string }>;
+  /** Conclui o login com Google: troca o login_code de uso único pela sessão JWT. */
+  loginWithGoogleCode: (code: string) => Promise<{ success: boolean; error?: string }>;
+  /** Atualiza o perfil (nome, escola, turma) no backend e no estado local. */
+  updateProfile: (data: { nome?: string; escola?: string; turma?: string }) => Promise<{ success: boolean; error?: string; field?: string }>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
+const persistSession = (token: string, usuario: Usuario) => {
+  localStorage.setItem('@siesal:token', token);
+  localStorage.setItem('@siesal:user', JSON.stringify(usuario));
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<Usuario | null>(() => {
@@ -41,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('@siesal:user', JSON.stringify(profile));
           }
         } catch (e) {
-          console.warn('Sessão restaurada localmente');
+          console.warn('Sessão restaurada localmente (backend indisponível ou token expirado)');
         }
       }
     };
@@ -52,8 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await api.login({ email, senha });
       if (response.token && response.usuario) {
-        localStorage.setItem('@siesal:token', response.token);
-        localStorage.setItem('@siesal:user', JSON.stringify(response.usuario));
+        persistSession(response.token, response.usuario);
         setToken(response.token);
         setUser(response.usuario);
         return { success: true };
@@ -69,12 +78,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Login com Google (OAuth 2.0): troca o login_code de uso único pela sessão
+  const loginWithGoogleCode = async (code: string) => {
+    try {
+      const response = await api.exchangeGoogleLoginCode(code);
+      if (response.token && response.usuario) {
+        persistSession(response.token, response.usuario);
+        setToken(response.token);
+        setUser(response.usuario);
+        return { success: true };
+      }
+      return { success: false, error: 'Resposta inesperada do servidor.' };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Erro ao concluir o login com Google.',
+      };
+    }
+  };
+
   const register = async (nome: string, email: string, senha: string, escola?: string, turma?: string) => {
     try {
       const response = await api.register({ nome, email, senha, escola, turma });
       if (response.token && response.usuario) {
-        localStorage.setItem('@siesal:token', response.token);
-        localStorage.setItem('@siesal:user', JSON.stringify(response.usuario));
+        persistSession(response.token, response.usuario);
         setToken(response.token);
         setUser(response.usuario);
         return { success: true };
@@ -85,6 +112,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         success: false,
         error: err.message || 'Erro ao realizar cadastro',
         field: err.field,
+      };
+    }
+  };
+
+  const updateProfile = async (data: { nome?: string; escola?: string; turma?: string }) => {
+    try {
+      const response = await api.updateProfile(data);
+      if (response.usuario) {
+        setUser(response.usuario);
+        localStorage.setItem('@siesal:user', JSON.stringify(response.usuario));
+      }
+      return { success: true };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Erro ao atualizar perfil.',
+        field: err.field,
+      };
+    }
+  };
+
+  const deleteAccount = async () => {
+    try {
+      await api.deleteAccount();
+      logout();
+      return { success: true };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Erro ao deletar conta.',
       };
     }
   };
@@ -103,7 +160,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated: !!user,
         login,
+        loginWithGoogleCode,
         register,
+        updateProfile,
+        deleteAccount,
         logout,
         loading,
       }}

@@ -42,6 +42,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const routes_1 = __importDefault(require("./routes"));
 const errorHandler_1 = require("./middlewares/errorHandler");
 dotenv_1.default.config();
+global.serverStartTime = Date.now();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // Middlewares essenciais

@@ -7,146 +7,142 @@ interface PieProgressWidgetProps {
 }
 
 export const PieProgressWidget: React.FC<PieProgressWidgetProps> = ({ title, stats }) => {
-  const total = stats.total || 1;
-  const urgentePct = (stats.urgente / total) * 100;
-  const proximoPct = (stats.proximo / total) * 100;
-  const longePct = (stats.longe / total) * 100;
-  const concluidoPct = (stats.concluido / total) * 100;
+  // Corrigido: cada fatia agora ocupa exatamente a sua proporção da rosca,
+  // posicionada em sequência (antes os arcos se sobrepunham a partir do topo).
+  const total = stats.total || 0;
+  const urgentePct = total > 0 ? (stats.urgente / total) * 100 : 0;
+  const proximoPct = total > 0 ? (stats.proximo / total) * 100 : 0;
+  const longePct = total > 0 ? (stats.longe / total) * 100 : 0;
+  const concluidoPct = total > 0 ? (stats.concluido / total) * 100 : 0;
 
-  // Calculando fatias SVG estilo donut
+  // Cálculo das fatias SVG estilo donut (dasharray = [comprimento, resto])
   const radius = 58;
   const circumference = 2 * Math.PI * radius;
 
-  const strokeDashoffsetUrgente = 0;
-  const strokeDashoffsetProximo = circumference * (1 - urgentePct / 100);
-  const strokeDashoffsetLonge = circumference * (1 - (urgentePct + proximoPct) / 100);
-  const strokeDashoffsetConcluido = circumference * (1 - (urgentePct + proximoPct + longePct) / 100);
+  const makeSegments = () => {
+    const segments = [
+      { pct: urgentePct, offset: 0, gradient: 'urgenteGrad', key: 'urgente' },
+      { pct: proximoPct, offset: urgentePct, gradient: 'proximoGrad', key: 'proximo' },
+      { pct: longePct, offset: urgentePct + proximoPct, gradient: 'longeGrad', key: 'longe' },
+      { pct: concluidoPct, offset: urgentePct + proximoPct + longePct, gradient: 'concluidoGrad', key: 'concluido' },
+    ];
+    return segments.map((seg) => ({
+      ...seg,
+      dashLength: (seg.pct / 100) * circumference,
+      dashOffset: -(seg.offset / 100) * circumference,
+    }));
+  };
+
+  const segments = makeSegments();
 
   return (
-    <div className="siesal-card rounded-3xl p-6 flex flex-col items-center relative overflow-hidden">
-      <div className="w-full text-center mb-4">
-        <h2 className="text-base font-bold text-slate-100 tracking-wide">{title}</h2>
+    <div className="siesal-card rounded-2xl p-5 flex flex-col items-center relative overflow-hidden group">
+      <div className="w-full flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold tracking-wider text-slate-300 uppercase">{title}</h2>
+        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8] animate-pulse-glow"></span>
       </div>
 
-      {/* Gráfico Donut Central */}
-      <div className="relative w-40 h-40 flex items-center justify-center">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 140 140">
-          {/* Fundo do círculo */}
+      {/* Gráfico Donut Central com Gradientes Sutis */}
+      <div className="relative w-40 h-40 flex items-center justify-center my-0.5">
+        <svg className="w-full h-full transform -rotate-90 filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]" viewBox="0 0 140 140">
+          <defs>
+            <linearGradient id="concluidoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="100%" stopColor="#00b4d8" />
+            </linearGradient>
+            <linearGradient id="longeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+            <linearGradient id="proximoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#60a5fa" />
+              <stop offset="100%" stopColor="#2563eb" />
+            </linearGradient>
+            <linearGradient id="urgenteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fb923c" />
+              <stop offset="100%" stopColor="#ea580c" />
+            </linearGradient>
+          </defs>
+
+          {/* Fundo sutil do círculo */}
           <circle
             cx="70"
             cy="70"
             r={radius}
-            stroke="#13275c"
-            strokeWidth="14"
+            stroke="rgba(255, 255, 255, 0.05)"
+            strokeWidth="12"
             fill="transparent"
           />
 
-          {/* Concluído (Azul / Verde Escuro) */}
-          {stats.concluido > 0 && (
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              stroke="#00b4d8"
-              strokeWidth="14"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffsetConcluido}
-              className="transition-all duration-700 ease-out"
-            />
-          )}
-
-          {/* Longe (Verde) */}
-          {stats.longe > 0 && (
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              stroke="#10b981"
-              strokeWidth="14"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffsetLonge}
-              className="transition-all duration-700 ease-out"
-            />
-          )}
-
-          {/* Próximo (Ciano / Laranja Claro) */}
-          {stats.proximo > 0 && (
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              stroke="#38bdf8"
-              strokeWidth="14"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffsetProximo}
-              className="transition-all duration-700 ease-out"
-            />
-          )}
-
-          {/* Urgente (Laranja Avermelhado) */}
-          {stats.urgente > 0 && (
-            <circle
-              cx="70"
-              cy="70"
-              r={radius}
-              stroke="#f97316"
-              strokeWidth="14"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference - (circumference * urgentePct) / 100}
-              className="transition-all duration-700 ease-out"
-            />
+          {/* Fatias do donut calculadas individualmente (Urgente → Próximo → Longe → Concluído) */}
+          {segments.map((seg) =>
+            seg.pct > 0 ? (
+              <circle
+                key={seg.key}
+                cx="70"
+                cy="70"
+                r={radius}
+                stroke={`url(#${seg.gradient})`}
+                strokeWidth="12"
+                strokeLinecap="butt"
+                fill="transparent"
+                strokeDasharray={`${seg.dashLength} ${circumference - seg.dashLength}`}
+                strokeDashoffset={seg.dashOffset}
+                className="transition-all duration-1000 ease-out"
+              />
+            ) : null
           )}
         </svg>
 
         {/* Total no centro */}
-        <div className="absolute flex flex-col items-center justify-center text-center">
-          <span className="text-3xl font-black text-white glow-cyan">{stats.total}</span>
-          <span className="text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">Demandas</span>
+        <div className="absolute flex flex-col items-center justify-center text-center select-none pointer-events-none">
+          <span className="text-3xl font-extrabold text-white tracking-tight glow-cyan group-hover:scale-110 transition-transform duration-300">
+            {stats.total}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-0.5">
+            Demandas
+          </span>
         </div>
       </div>
 
-      {/* Legendas com Contadores Fiéis ao Protótipo */}
-      <div className="w-full grid grid-cols-2 gap-2 mt-5 text-xs font-medium">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#0e1c44]/80 border border-[#1b3472]">
+      {/* Legendas com Contadores Minimalistas */}
+      <div className="w-full grid grid-cols-2 gap-2.5 mt-5 text-xs font-medium">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/40 border border-white/5 hover:border-orange-500/30 transition-colors">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#f97316]"></span>
-            <span className="text-slate-300">Urgente</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 shadow-sm shadow-orange-500/50"></span>
+            <span className="text-slate-300 text-xs">Urgente</span>
           </div>
-          <span className="font-bold text-orange-400 bg-orange-950/60 px-2 py-0.5 rounded-lg">
+          <span className="font-bold text-orange-400 text-xs px-2 py-0.5 rounded-md bg-orange-500/10 border border-orange-500/20">
             {stats.urgente}
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#0e1c44]/80 border border-[#1b3472]">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/40 border border-white/5 hover:border-sky-500/30 transition-colors">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#38bdf8]"></span>
-            <span className="text-slate-300">Próximo</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-blue-500 to-sky-400 shadow-sm shadow-blue-500/50"></span>
+            <span className="text-slate-300 text-xs">Próximo</span>
           </div>
-          <span className="font-bold text-sky-400 bg-sky-950/60 px-2 py-0.5 rounded-lg">
+          <span className="font-bold text-sky-400 text-xs px-2 py-0.5 rounded-md bg-sky-500/10 border border-sky-500/20">
             {stats.proximo}
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#0e1c44]/80 border border-[#1b3472]">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/40 border border-white/5 hover:border-emerald-500/30 transition-colors">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#10b981]"></span>
-            <span className="text-slate-300">Longe</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 shadow-sm shadow-emerald-500/50"></span>
+            <span className="text-slate-300 text-xs">Longe</span>
           </div>
-          <span className="font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-lg">
+          <span className="font-bold text-emerald-400 text-xs px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
             {stats.longe}
           </span>
         </div>
 
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#0e1c44]/80 border border-[#1b3472]">
+        <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/40 border border-white/5 hover:border-cyan-500/30 transition-colors">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#00b4d8]"></span>
-            <span className="text-slate-300">Concluído</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 shadow-sm shadow-cyan-400/50"></span>
+            <span className="text-slate-300 text-xs">Concluído</span>
           </div>
-          <span className="font-bold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-lg">
+          <span className="font-bold text-cyan-300 text-xs px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20">
             {stats.concluido}
           </span>
         </div>

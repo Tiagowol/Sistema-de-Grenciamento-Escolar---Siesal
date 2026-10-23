@@ -8,6 +8,13 @@ export interface AuthRequest extends Request {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'siesal_secret_jwt_key_2026_super_secure';
 
+/**
+ * Middleware de autenticação JWT (F06).
+ *
+ * Exige obrigatoriamente um token `Bearer <jwt>` válido no header Authorization.
+ * O antigo atalho de demonstração via header `x-user-id` foi removido por ser
+ * uma falha de segurança (permitia se passar por qualquer usuário sem senha).
+ */
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
@@ -21,13 +28,6 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     } catch (err) {
       return res.status(401).json({ error: 'Token de autenticação inválido ou expirado. Faça login novamente.' });
     }
-  }
-
-  // Se for um teste com header x-user-id explícito
-  const demoUserId = req.headers['x-user-id'];
-  if (demoUserId) {
-    req.userId = Number(demoUserId);
-    return next();
   }
 
   // Requisito: Autenticação estritamente obrigatória

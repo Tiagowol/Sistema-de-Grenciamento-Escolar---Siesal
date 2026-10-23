@@ -1,7 +1,8 @@
 import { Usuario, Marcador, Tarefa, Evento, Notificacao, DashboardStats } from '../types';
 import { calculateDynamicPriority } from '../utils/priorityCalculator';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// URL base da API (pode ser sobrescrita via VITE_API_URL em produção)
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
 
 // Armazenamento em memória local limpo (sem dados falsos pré-fixados)
 let mockUser: Usuario | null = null;
@@ -90,13 +91,22 @@ async function customFetch<T>(endpoint: string, options: RequestInit = {}): Prom
       error.bloqueado = errorData.bloqueado || false;
       error.tentativas_restantes = errorData.tentativas_restantes;
       error.field = errorData.field;
+      error.isHttpError = true;
       throw error;
     }
 
     return await response.json();
   } catch (err: any) {
-    // Fallback limpo caso o servidor Express local ainda esteja iniciando
-    return handleMockFallback<T>(endpoint, options, err);
+    // Fallback mock SOMENTE quando o servidor está fora do ar (falha de rede).
+    // Erros HTTP reais (401, 403, 400, 409...) são sempre propagados ao chamador
+    // para que a interface exiba a mensagem correta do backend.
+    if (err && err.isHttpError) {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      return handleMockFallback<T>(endpoint, options, err);
+    }
+    throw err;
   }
 }
 
@@ -363,6 +373,111 @@ function handleMockFallback<T>(endpoint: string, options: RequestInit, originalE
     return mockNotifications as unknown as T;
   }
 
+  if (endpoint.startsWith('/auth/profile') && method === 'PUT') {
+    const body = JSON.parse(String(options.body));
+    if (mockUser) {
+      mockUser = {
+        ...mockUser,
+        ...(body.nome !== undefined ? { nome: body.nome } : {}),
+        ...(body.escola !== undefined ? { escola: body.escola } : {}),
+        ...(body.turma !== undefined ? { turma: body.turma } : {}),
+      };
+      saveLocalState();
+      return { message: 'Perfil atualizado com sucesso!', usuario: mockUser } as unknown as T;
+    }
+    throw originalError;
+  }
+
+  if (endpoint.startsWith('/auth/password') && method === 'PUT') {
+    return { message: 'Senha alterada com sucesso! (modo offline)' } as unknown as T;
+  }
+
+  if (endpoint.startsWith('/auth/google/status')) {
+    // Sem backend não há como consultar a configuração do Google
+    return { configured: false } as unknown as T;
+  }
+
+  if (endpoint.startsWith('/auth/google/exchange')) {
+    const err: any = new Error(
+      'Não foi possível conectar ao servidor para concluir o login com Google. Verifique se o backend está rodando.'
+    );
+    throw err;
+  }
+
+  if (endpoint.startsWith('/auth/account') && method === 'DELETE') {
+    mockUser = null;
+    mockDemands = [];
+    mockEvents = [];
+    mockNotifications = [];
+    localStorage.removeItem('@siesal:token');
+    localStorage.removeItem('@siesal:user');
+    saveLocalState();
+    return { message: 'Conta e dados excluídos com sucesso.' } as unknown as T;
+  }
+
+  if (endpoint.startsWith('/admin')) {
+    if (endpoint.includes('/stats')) {
+      return {
+        status: 'online',
+        uptimeSeconds: 3600,
+        uptimeFormatted: '1h 0m 0s',
+        database: {
+          connected: true,
+          latencyMs: 12,
+          engine: 'MySQL (Prisma ORM)',
+          totalUsers: 1,
+          totalDemands: mockDemands.length,
+          totalEvents: mockEvents.length,
+          totalNotifications: mockNotifications.length,
+        },
+        server: {
+          nodeVersion: 'v20.x',
+          platform: 'win32',
+          memoryRssMb: '65.20',
+          memoryHeapMb: '32.10',
+        },
+        timestamp: new Date().toISOString(),
+      } as unknown as T;
+    }
+    if (endpoint.includes('/users')) {
+      return [
+        {
+          id_usuario: mockUser?.id_usuario || 1,
+          nome: mockUser?.nome || 'Estudante',
+          email: mockUser?.email || 'aluno@escola.gov.br',
+          escola: mockUser?.escola || 'Escola Municipal',
+          turma: mockUser?.turma || '9º Ano',
+          is_admin: !!mockUser?.is_admin,
+          status: true,
+          data_cadastro: new Date().toISOString(),
+          _count: {
+            tarefas: mockDemands.length,
+            marcadores: mockSubjects.length,
+            eventos: mockEvents.length,
+          },
+        },
+      ] as unknown as T;
+    }
+    if (endpoint.includes('/broadcast')) {
+      const body = JSON.parse(String(options.body));
+      mockNotifications.unshift({
+        id_notificacao: Date.now(),
+        titulo: body.titulo || '⚠️ Aviso de Manutenção',
+        mensagem: body.mensagem || 'Aviso transmitido',
+        data_envio: new Date().toISOString(),
+        lida: false,
+        id_usuario: mockUser?.id_usuario || 1,
+      });
+      saveLocalState();
+      return { message: 'Aviso transmitido para todos os usuários com sucesso!', count: 1 } as unknown as T;
+    }
+    if (endpoint.includes('/purge-notifications')) {
+      mockNotifications = mockNotifications.filter((n) => !n.lida);
+      saveLocalState();
+      return { message: 'Notificações lidas foram removidas.', purged: 0 } as unknown as T;
+    }
+  }
+
   if (endpoint.startsWith('/auth/profile')) {
     return (mockUser || {
       id_usuario: 1,
@@ -375,10 +490,42 @@ function handleMockFallback<T>(endpoint: string, options: RequestInit, originalE
 }
 
 export const api = {
+  // Endpoints base
+  health: () => customFetch<any>('/health'),
+  /** Ping rápido (com timeout curto) para o monitor de conexão do OfflineGate. */
+  pingBackend: async (): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${API_BASE_URL}/health`, { signal: controller.signal });
+      clearTimeout(timer);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
   // Autenticação
   login: (data: any) => customFetch<any>('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   register: (data: any) => customFetch<any>('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   getProfile: () => customFetch<Usuario>('/auth/profile'),
+  updateProfile: (data: { nome?: string; escola?: string; turma?: string }) =>
+    customFetch<{ message: string; usuario: Usuario }>('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  changePassword: (data: { senhaAtual: string; novaSenha: string; confirmarNovaSenha: string }) =>
+    customFetch<{ message: string }>('/auth/password', { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAccount: () => customFetch<{ message: string }>('/auth/account', { method: 'DELETE' }),
+
+  // Login com Google — OAuth 2.0 real
+  /** Verifica se o backend já tem GOOGLE_CLIENT_ID/SECRET configurados. */
+  googleOAuthStatus: () =>
+    customFetch<{ configured: boolean; client_id?: string | null }>('/auth/google/status'),
+  /** URL que inicia o fluxo: redireciona o navegador ao consentimento do Google. */
+  buildGoogleLoginUrl(state: string): string {
+    return `${API_BASE_URL}/auth/google?state=${encodeURIComponent(state)}`;
+  },
+  /** Troca o login_code de uso único (recebido no callback) pela sessão JWT. */
+  exchangeGoogleLoginCode: (code: string) =>
+    customFetch<any>('/auth/google/exchange', { method: 'POST', body: JSON.stringify({ code }) }),
 
   // Demandas
   getDemands: (params?: Record<string, string>) => {
@@ -416,6 +563,23 @@ export const api = {
 
   // Notificações e Avisos
   getNotifications: () => customFetch<Notificacao[]>('/notifications'),
+  /**
+   * Busca SOMENTE as notificações — usado pelo polling em tempo real.
+   * Usa fetch puro: em falha de rede/HTTP devolve null (SEM cair no modo
+   * offline), evitando avisos e bipes falsos quando o backend está fora do ar.
+   */
+  pollNotifications: async (): Promise<Notificacao[] | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/notifications`, {
+        headers: { ...getAuthHeader() },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return Array.isArray(data) ? (data as Notificacao[]) : null;
+    } catch {
+      return null;
+    }
+  },
   markNotificationAsRead: (id: number) =>
     customFetch<Notificacao>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllNotificationsAsRead: () =>
@@ -423,6 +587,20 @@ export const api = {
 
   // Dashboard Stats
   getDashboardStats: () => customFetch<DashboardStats>('/stats/dashboard'),
+
+  // Área Administrativa Exclusiva
+  getAdminStats: () => customFetch<any>('/admin/stats'),
+  getAdminUsers: () => customFetch<any[]>('/admin/users'),
+  broadcastMaintenance: (data: { titulo: string; mensagem: string }) =>
+    customFetch<{ message: string; count: number }>('/admin/broadcast', { method: 'POST', body: JSON.stringify(data) }),
+  purgeAdminNotifications: () =>
+    customFetch<{ message: string; purged: number }>('/admin/purge-notifications', { method: 'POST' }),
+  adminSetUserStatus: (id: number, ativo: boolean) =>
+    customFetch<{ message: string }>(`/admin/users/${id}/status`, { method: 'PUT', body: JSON.stringify({ ativo }) }),
+  adminUnlockUser: (id: number) =>
+    customFetch<{ message: string }>(`/admin/users/${id}/unlock`, { method: 'POST' }),
+  adminDeleteUser: (id: number) =>
+    customFetch<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
 
   // Limpeza de dados
   clearAllData: () => {

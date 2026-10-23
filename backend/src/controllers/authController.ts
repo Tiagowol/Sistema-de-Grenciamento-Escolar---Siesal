@@ -32,6 +32,187 @@ function validateName(nome: string): string | null {
   return null;
 }
 
+/**
+ * Verifica as credenciais de um usuário aplicando as regras NF03 (bloqueio de
+ * conta após MAX_FAILED_ATTEMPTS tentativas incorretas).
+ *
+ * Retorno:
+ *  - { ok: true, user } quando as credenciais são válidas;
+ *  - { ok: false, status, payload } quando há erro de autenticação.
+ *
+ * É compartilhada entre o login direto (/auth/login) e o fluxo OAuth
+ * (/oauth/authorize), garantindo comportamento idêntico nos dois caminhos.
+ */
+export async function verifyCredentials(email: string, senha: string) {
+  const user = await prisma.usuario.findUnique({ where: { email: email.trim().toLowerCase() } });
+
+  // Conta inexistente — mensagem genérica por segurança
+  if (!user) {
+    return {
+      ok: false as const,
+      status: 401,
+      payload: { error: 'E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.' },
+    };
+  }
+
+  // Conta desativada
+  if (!user.status) {
+    return {
+      ok: false as const,
+      status: 403,
+      payload: { error: 'Esta conta foi desativada. Entre em contato com o suporte.' },
+    };
+  }
+
+  // Conta temporariamente bloqueada (NF03)
+  if (user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date()) {
+    const remainingMinutes = Math.ceil(
+      (new Date(user.bloqueado_ate).getTime() - new Date().getTime()) / 60000
+    );
+    return {
+      ok: false as const,
+      status: 403,
+      payload: {
+        error: `Conta bloqueada por segurança após ${MAX_FAILED_ATTEMPTS} tentativas incorretas. Tente novamente em ${remainingMinutes} minuto(s).`,
+        bloqueado: true,
+        desbloqueia_em: user.bloqueado_ate,
+      },
+    };
+  }
+
+  const isPasswordValid = await bcrypt.compare(senha, user.senha);
+
+  if (!isPasswordValid) {
+    // Se um bloqueio anterior já expirou, recomeça a contagem do zero
+    const lockExpired =
+      user.bloqueado_ate !== null && new Date(user.bloqueado_ate) <= new Date();
+    const previousAttempts = lockExpired ? 0 : user.tentativas_falhas;
+
+    const updatedAttempts = previousAttempts + 1;
+    let lockDate: Date | null = null;
+
+    if (updatedAttempts >= MAX_FAILED_ATTEMPTS) {
+      lockDate = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
+    }
+
+    await prisma.usuario.update({
+      where: { id_usuario: user.id_usuario },
+      data: {
+        tentativas_falhas: updatedAttempts,
+        bloqueado_ate: lockDate,
+      },
+    });
+
+    if (updatedAttempts >= MAX_FAILED_ATTEMPTS) {
+      return {
+        ok: false as const,
+        status: 403,
+        payload: {
+          error: `Acesso bloqueado: ${MAX_FAILED_ATTEMPTS} tentativas incorretas atingidas. Conta bloqueada por ${LOCK_TIME_MINUTES} minutos por segurança.`,
+          bloqueado: true,
+        },
+      };
+    }
+
+    const restantes = MAX_FAILED_ATTEMPTS - updatedAttempts;
+    return {
+      ok: false as const,
+      status: 401,
+      payload: {
+        error: `E-mail ou senha incorretos. Você tem mais ${restantes} tentativa(s) antes do bloqueio automático.`,
+        tentativas_restantes: restantes,
+      },
+    };
+  }
+
+  // Reseta tentativas após autenticação bem-sucedida
+  await prisma.usuario.update({
+    where: { id_usuario: user.id_usuario },
+    data: {
+      tentativas_falhas: 0,
+      bloqueado_ate: null,
+    },
+  });
+
+  return { ok: true as const, user };
+}
+
+/** Gera o token JWT de sessão (7 dias) usado por toda a API. */
+export function generateSessionToken(user: { id_usuario: number; email: string }) {
+  return jwt.sign(
+    { id_usuario: user.id_usuario, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+/** Formato padrão de usuário retornado nas respostas de autenticação. */
+export function publicUser(user: {
+  id_usuario: number;
+  nome: string;
+  email: string;
+  escola?: string | null;
+  turma?: string | null;
+  is_admin: boolean;
+  data_cadastro: Date;
+}) {
+  return {
+    id_usuario: user.id_usuario,
+    nome: user.nome,
+    email: user.email,
+    escola: user.escola,
+    turma: user.turma,
+    is_admin: user.is_admin,
+    data_cadastro: user.data_cadastro,
+  };
+}
+
+/**
+ * Cria os dados iniciais de um novo estudante:
+ * - 7 matérias (marcadores) padrão do protótipo;
+ * - Notificação de boas-vindas.
+ *
+ * Usado tanto no cadastro por e-mail (/auth/register) quanto no primeiro
+ * acesso via Google OAuth (/auth/google/callback).
+ */
+export async function createDefaultStudentData(user: {
+  id_usuario: number;
+  nome: string;
+  escola?: string | null;
+  turma?: string | null;
+}) {
+  const defaultSubjects = [
+    { nome: 'Português', cor: '#F97316' },
+    { nome: 'Matemática', cor: '#3B82F6' },
+    { nome: 'Ciências', cor: '#22C55E' },
+    { nome: 'História', cor: '#EAB308' },
+    { nome: 'Geografia', cor: '#06B6D4' },
+    { nome: 'Artes', cor: '#A855F7' },
+    { nome: 'Inglês', cor: '#EC4899' },
+  ];
+
+  for (const subj of defaultSubjects) {
+    await prisma.marcador.create({
+      data: {
+        ...subj,
+        id_usuario: user.id_usuario,
+      },
+    });
+  }
+
+  const detalheEscola = user.escola && user.turma
+    ? ` Você está cadastrado(a) na ${user.escola} - ${user.turma}.`
+    : '';
+
+  await prisma.notificacao.create({
+    data: {
+      titulo: 'Bem-vindo ao SIESAL! 🎓',
+      mensagem: `Olá, ${user.nome}! Sua conta foi criada com sucesso.${detalheEscola} Comece adicionando suas primeiras demandas!`,
+      id_usuario: user.id_usuario,
+    },
+  });
+}
+
 export const authController = {
   // F05: Cadastro de novos alunos com Escola e Turma salvos no banco
   async register(req: Request, res: Response) {
@@ -84,52 +265,15 @@ export const authController = {
         },
       });
 
-      // Cria marcadores padrão para o novo estudante
-      const defaultSubjects = [
-        { nome: 'Português', cor: '#F97316' },
-        { nome: 'Matemática', cor: '#3B82F6' },
-        { nome: 'Ciências', cor: '#22C55E' },
-        { nome: 'História', cor: '#EAB308' },
-        { nome: 'Geografia', cor: '#06B6D4' },
-        { nome: 'Artes', cor: '#A855F7' },
-        { nome: 'Inglês', cor: '#EC4899' },
-      ];
+      // Cria matérias padrão + notificação de boas-vindas (compartilhado com o login Google)
+      await createDefaultStudentData(user);
 
-      for (const subj of defaultSubjects) {
-        await prisma.marcador.create({
-          data: {
-            ...subj,
-            id_usuario: user.id_usuario,
-          },
-        });
-      }
-
-      // Cria notificação de boas-vindas
-      await prisma.notificacao.create({
-        data: {
-          titulo: 'Bem-vindo ao SIESAL! 🎓',
-          mensagem: `Olá, ${user.nome}! Sua conta foi criada com sucesso. Você está cadastrado(a) na ${user.escola} - ${user.turma}. Comece adicionando suas primeiras demandas!`,
-          id_usuario: user.id_usuario,
-        },
-      });
-
-      const token = jwt.sign(
-        { id_usuario: user.id_usuario, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
+      const token = generateSessionToken(user);
 
       return res.status(201).json({
         message: 'Conta criada com sucesso! Bem-vindo ao SIESAL.',
         token,
-        usuario: {
-          id_usuario: user.id_usuario,
-          nome: user.nome,
-          email: user.email,
-          escola: user.escola,
-          turma: user.turma,
-          data_cadastro: user.data_cadastro,
-        },
+        usuario: publicUser(user),
       });
     } catch (err: any) {
       console.error('Erro no registro:', err);
@@ -157,92 +301,18 @@ export const authController = {
         return res.status(400).json({ error: 'Senha é obrigatória.', field: 'senha' });
       }
 
-      const user = await prisma.usuario.findUnique({ where: { email: email.trim().toLowerCase() } });
+      const result = await verifyCredentials(email, senha);
 
-      // Conta inexistente — mensagem genérica por segurança
-      if (!user) {
-        return res.status(401).json({
-          error: 'E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.',
-        });
+      if (!result.ok) {
+        return res.status(result.status).json(result.payload);
       }
 
-      // Conta desativada
-      if (!user.status) {
-        return res.status(403).json({
-          error: 'Esta conta foi desativada. Entre em contato com o suporte.',
-        });
-      }
-
-      // Verifica se a conta está temporariamente bloqueada (NF03)
-      if (user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date()) {
-        const remainingMinutes = Math.ceil(
-          (new Date(user.bloqueado_ate).getTime() - new Date().getTime()) / 60000
-        );
-        return res.status(403).json({
-          error: `Conta bloqueada por segurança após ${MAX_FAILED_ATTEMPTS} tentativas incorretas. Tente novamente em ${remainingMinutes} minuto(s).`,
-          bloqueado: true,
-          desbloqueia_em: user.bloqueado_ate,
-        });
-      }
-
-      const isPasswordValid = await bcrypt.compare(senha, user.senha);
-
-      if (!isPasswordValid) {
-        const updatedAttempts = user.tentativas_falhas + 1;
-        let lockDate: Date | null = null;
-
-        if (updatedAttempts >= MAX_FAILED_ATTEMPTS) {
-          lockDate = new Date(Date.now() + LOCK_TIME_MINUTES * 60 * 1000);
-        }
-
-        await prisma.usuario.update({
-          where: { id_usuario: user.id_usuario },
-          data: {
-            tentativas_falhas: updatedAttempts,
-            bloqueado_ate: lockDate,
-          },
-        });
-
-        if (updatedAttempts >= MAX_FAILED_ATTEMPTS) {
-          return res.status(403).json({
-            error: `Acesso bloqueado: ${MAX_FAILED_ATTEMPTS} tentativas incorretas atingidas. Conta bloqueada por ${LOCK_TIME_MINUTES} minutos por segurança.`,
-            bloqueado: true,
-          });
-        }
-
-        const restantes = MAX_FAILED_ATTEMPTS - updatedAttempts;
-        return res.status(401).json({
-          error: `E-mail ou senha incorretos. Você tem mais ${restantes} tentativa(s) antes do bloqueio automático.`,
-          tentativas_restantes: restantes,
-        });
-      }
-
-      // Reseta tentativas após login bem-sucedido
-      await prisma.usuario.update({
-        where: { id_usuario: user.id_usuario },
-        data: {
-          tentativas_falhas: 0,
-          bloqueado_ate: null,
-        },
-      });
-
-      const token = jwt.sign(
-        { id_usuario: user.id_usuario, email: user.email },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
+      const user = result.user;
 
       return res.json({
         message: 'Login realizado com sucesso!',
-        token,
-        usuario: {
-          id_usuario: user.id_usuario,
-          nome: user.nome,
-          email: user.email,
-          escola: user.escola,
-          turma: user.turma,
-          data_cadastro: user.data_cadastro,
-        },
+        token: generateSessionToken(user),
+        usuario: publicUser(user),
       });
     } catch (err: any) {
       console.error('Erro no login:', err);
@@ -261,6 +331,7 @@ export const authController = {
           email: true,
           escola: true,
           turma: true,
+          is_admin: true,
           data_cadastro: true,
           status: true,
         },
@@ -273,6 +344,93 @@ export const authController = {
       return res.json(user);
     } catch (err) {
       return res.status(500).json({ error: 'Erro ao buscar perfil.' });
+    }
+  },
+
+  // Atualizar dados do perfil (nome, escola e turma) — usado pela tela de Configurações
+  async updateProfile(req: AuthRequest, res: Response) {
+    try {
+      const { nome, escola, turma } = req.body;
+
+      const data: { nome?: string; escola?: string | null; turma?: string | null } = {};
+
+      if (nome !== undefined) {
+        const nomeError = validateName(nome);
+        if (nomeError) return res.status(400).json({ error: nomeError, field: 'nome' });
+        data.nome = nome.trim();
+      }
+
+      if (escola !== undefined) {
+        if (escola === null || escola === '') {
+          data.escola = null;
+        } else {
+          if (escola.trim().length < 3) {
+            return res.status(400).json({
+              error: 'Nome da escola/instituição deve ter pelo menos 3 caracteres.',
+              field: 'escola',
+            });
+          }
+          data.escola = escola.trim();
+        }
+      }
+
+      if (turma !== undefined) {
+        if (turma === null || turma === '') {
+          data.turma = null;
+        } else {
+          if (turma.trim().length < 1) {
+            return res.status(400).json({ error: 'Turma/série é obrigatória.', field: 'turma' });
+          }
+          data.turma = turma.trim();
+        }
+      }
+
+      const updated = await prisma.usuario.update({
+        where: { id_usuario: req.userId },
+        data,
+        select: {
+          id_usuario: true,
+          nome: true,
+          email: true,
+          escola: true,
+          turma: true,
+          is_admin: true,
+          data_cadastro: true,
+          status: true,
+        },
+      });
+
+      return res.json({
+        message: 'Perfil atualizado com sucesso!',
+        usuario: updated,
+      });
+    } catch (err) {
+      console.error('Erro ao atualizar perfil:', err);
+      return res.status(500).json({ error: 'Erro ao atualizar perfil.' });
+    }
+  },
+
+  // Deletar a própria conta (Direito de Esquecimento / LGPD)
+  async deleteAccount(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        return res.status(401).json({ error: 'Acesso negado.' });
+      }
+
+      // Por conta das relações com onDelete: Cascade no schema, deletar o usuário remove tarefas, eventos, notificações e marcadores
+      await prisma.usuario.delete({
+        where: { id_usuario: userId },
+      });
+
+      console.log(`[USER DELETED] Usuário ID ${userId} deletou sua conta com sucesso.`);
+
+      return res.json({
+        message: 'Sua conta e todos os dados associados foram excluídos com sucesso.',
+      });
+    } catch (err: any) {
+      console.error('Erro ao deletar conta:', err);
+      return res.status(500).json({ error: 'Erro ao excluir conta. Tente novamente mais tarde.' });
     }
   },
 

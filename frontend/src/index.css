@@ -1,96 +1,183 @@
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+   Paleta padrão do tema "Ciano" (Tailwind cyan/sky em RGB).
+   O utils/appearance.ts sobrescreve --c* e --s* em tempo de execução
+   conforme o tema escolhido em Configurações → Aparência.
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* cyan 50 → 950 */
+  --c50: 236 254 255;
+  --c100: 207 250 254;
+  --c200: 165 243 252;
+  --c300: 103 232 249;
+  --c400: 34 211 238;
+  --c500: 6 182 212;
+  --c600: 8 145 178;
+  --c700: 14 116 144;
+  --c800: 21 94 117;
+  --c900: 22 78 99;
+  --c950: 8 51 68;
+  /* sky 50 → 950 */
+  --s50: 240 249 255;
+  --s100: 224 242 254;
+  --s200: 186 230 253;
+  --s300: 125 211 252;
+  --s400: 56 189 248;
+  --s500: 14 165 233;
+  --s600: 2 132 199;
+  --s700: 3 105 161;
+  --s800: 7 89 133;
+  --s900: 12 74 110;
+  --s950: 8 47 73;
+}
+
 @layer base {
   body {
-    @apply bg-[#080f24] text-slate-100 min-h-screen overflow-x-hidden;
+    @apply bg-[#040816] text-slate-100 min-h-screen overflow-x-hidden antialiased;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(0, 180, 216, 0.12) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(91, 192, 190, 0.08) 0px, transparent 50%),
-      radial-gradient(at 50% 50%, rgba(28, 37, 65, 0.5) 0px, transparent 100%);
+      radial-gradient(circle at 50% 0%, rgb(var(--c500) / 0.12), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgb(var(--s400) / 0.07), transparent 35%),
+      radial-gradient(circle at 15% 85%, rgba(99, 102, 241, 0.05), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgb(var(--s500) / 0.06), transparent 50%);
+    background-attachment: fixed;
   }
 
-  /* Custom Scrollbar */
+  /* Custom Minimalist Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: rgba(10, 17, 40, 0.6);
+    background: rgba(4, 8, 22, 0.5);
   }
   ::-webkit-scrollbar-thumb {
-    background: #1f3b73;
-    border-radius: 4px;
+    background: rgb(var(--s400) / 0.2);
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #00b4d8;
+    background: rgb(var(--c500) / 0.5);
   }
 }
 
-/* Animations */
-@keyframes float {
+/* Animações & Keyframes */
+@keyframes floatSlow {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-3px); }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 15px rgba(0, 180, 216, 0.2); }
-  50% { box-shadow: 0 0 25px rgba(0, 180, 216, 0.5); }
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes fadeInScale {
+  0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+@keyframes shimmerSoft {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
 }
 
 .animate-pulse-glow {
-  animation: pulse-glow 3s infinite;
+  animation: pulseGlow 3s ease-in-out infinite;
 }
 
+.animate-fade-in {
+  animation: fadeInScale 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Personalização: "Reduzir Animações"
+   Ativada pelo usuário em Configurações → Aparência (e respeita a
+   preferência do sistema operacional por padrão).
+   ───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+html.siesal-reduced-motion *,
+html.siesal-reduced-motion *::before,
+html.siesal-reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Design System Moderno, Minimalista & Fluid Glass */
 .siesal-glass {
-  background: rgba(15, 28, 63, 0.75);
+  background: rgba(11, 20, 44, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 180, 216, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .siesal-card {
-  background: linear-gradient(135deg, rgba(17, 30, 68, 0.9) 0%, rgba(10, 18, 44, 0.98) 100%);
-  border: 1px solid rgba(43, 84, 153, 0.45);
-  box-shadow: 0 10px 35px 0 rgba(0, 0, 0, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(160deg, rgba(14, 24, 52, 0.72) 0%, rgba(9, 15, 36, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .siesal-card:hover {
-  border-color: rgba(0, 180, 216, 0.7);
-  box-shadow: 0 12px 40px 0 rgba(0, 180, 216, 0.2);
+  border-color: rgb(var(--s400) / 0.28);
+  box-shadow: 0 18px 36px -12px rgb(var(--c500) / 0.16), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
 }
 
+.siesal-card-interactive {
+  background: rgba(12, 21, 46, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.siesal-card-interactive:hover {
+  background: rgba(18, 32, 68, 0.65);
+  border-color: rgb(var(--s400) / 0.3);
+  transform: translateY(-1.5px);
+  box-shadow: 0 10px 24px -8px rgb(var(--c500) / 0.14);
+}
+
 .siesal-button-primary {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px 0 rgba(0, 180, 216, 0.4);
+  background: linear-gradient(135deg, rgb(var(--c500)) 0%, rgb(var(--s600)) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px 0 rgb(var(--c500) / 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .siesal-button-primary:hover {
-  background: linear-gradient(135deg, #48cae4 0%, #0096c7 100%);
-  box-shadow: 0 6px 24px 0 rgba(0, 180, 216, 0.6);
-  transform: translateY(-2px) scale(1.01);
+  background: linear-gradient(135deg, rgb(var(--s400)) 0%, rgb(var(--s700)) 100%);
+  box-shadow: 0 6px 20px 0 rgb(var(--c500) / 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 .siesal-button-primary:active {
-  transform: translateY(0) scale(0.99);
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px 0 rgb(var(--c500) / 0.25);
 }
 
 .glow-cyan {
-  text-shadow: 0 0 14px rgba(0, 180, 216, 0.7);
+  text-shadow: 0 0 14px rgb(var(--s400) / 0.45);
 }
 
 .glow-box-cyan {
-  box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
+  box-shadow: 0 0 20px -4px rgb(var(--c500) / 0.22);
 }

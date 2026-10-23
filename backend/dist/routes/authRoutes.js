@@ -6,5 +6,7 @@ const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = (0, express_1.Router)();
 router.post('/register', authController_1.authController.register);
 router.post('/login', authController_1.authController.login);
+router.post('/google', authController_1.authController.googleLogin);
 router.get('/profile', authMiddleware_1.authMiddleware, authController_1.authController.getProfile);
+router.delete('/account', authMiddleware_1.authMiddleware, authController_1.authController.deleteAccount);
 exports.default = router;
