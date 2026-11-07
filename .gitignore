@@ -1,0 +1,32 @@
+# Segredos e ambiente: nunca no git (somente .env.example é versionado)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Dependências e artefatos de build
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Dados e backups: nunca no git (dump, volume, uploads)
+backups/
+*.dump
+*.tar.gz
+pgdata/
+uploads/
+
+# Logs e arquivos do sistema
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
