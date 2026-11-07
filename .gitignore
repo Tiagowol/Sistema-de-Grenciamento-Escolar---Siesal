@@ -30,3 +30,7 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Resíduos do pnpm (F-008)
+.pnpm-store/
+_tmp_*

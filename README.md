@@ -2,7 +2,7 @@
 
 Sistema Inteligente de Estudos, Agenda e Aprendizagem: sistema escolar inclusivo e multi-instituição, feito como TCC (IFRN Canguaretama) e simulado como SaaS.
 
-**Estado: Planejado.** Ainda não há código nem sistema rodando. Este repositório está sendo preparado no Lote 1.
+Estado: Lote 1 concluído em 07/11/2026 (base do repositório e esqueleto Docker com /saude, verificado no PC do autor). Ainda não há funcionalidades.
 
 ## O que este projeto não é
 - Não é ferramenta clínica: sem diagnóstico, sem ranking e sem comparação entre alunos.
