@@ -6,6 +6,7 @@ export type Preferencias = {
   legivel: boolean;
   simples: boolean;
   fonte: number; // 90 a 150 (%)
+  tempoVisual: boolean; // true = tempo com palavra, data e forma (padrão: ligado)
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -15,6 +16,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   legivel: false,
   simples: false,
   fonte: 100,
+  tempoVisual: true,
 };
 
 const CHAVE = 'siesal-preferencias-v1';
@@ -26,6 +28,7 @@ export function carregarPreferencias(
     const bruto = JSON.parse(armazem.getItem(CHAVE) ?? 'null') as Partial<Preferencias> | null;
     const fonte = Number(bruto?.fonte);
     return {
+      tempoVisual: bruto?.tempoVisual !== false,
       escuro: bruto?.escuro === true,
       contraste: bruto?.contraste === true,
       movimento: bruto?.movimento === true,

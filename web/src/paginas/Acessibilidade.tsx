@@ -2,7 +2,7 @@ import type { Preferencias } from '../preferencias';
 
 type Props = { valor: Preferencias; aoMudar: (p: Preferencias) => void };
 
-type Chave = 'escuro' | 'contraste' | 'movimento' | 'legivel' | 'simples';
+type Chave = 'escuro' | 'contraste' | 'movimento' | 'legivel' | 'simples' | 'tempoVisual';
 const AJUSTES: { chave: Chave; titulo: string; texto: string }[] = [
   { chave: 'escuro', titulo: 'Tema escuro', texto: 'Fundo escuro, bom para pouca luz.' },
   {
@@ -16,6 +16,11 @@ const AJUSTES: { chave: Chave; titulo: string; texto: string }[] = [
     chave: 'simples',
     titulo: 'Modo simples',
     texto: 'Esconde detalhes extras. Mostra só o essencial.',
+  },
+  {
+    chave: 'tempoVisual',
+    titulo: 'Mostrar tempo de forma visual',
+    texto: 'Palavras, datas e formas no lugar de só números. No modo foco, o número fica oculto.',
   },
 ];
 

@@ -39,3 +39,15 @@ export function relogio(segundos: number): string {
   const s = Math.max(0, Math.floor(segundos));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
+// Dias inteiros entre hoje e o prazo (negativo se já passou)
+export function diasAte(prazo: string, hoje: string): number {
+  return Math.round((paraData(prazo).getTime() - paraData(hoje).getTime()) / 86_400_000);
+}
+export type ParteDoDia = 'manha' | 'tarde' | 'noite';
+// Manhã até 11:59, tarde até 17:59, noite depois. Sem hora, não há parte do dia.
+export function parteDoDia(hora: string | null): ParteDoDia | null {
+  if (!hora) return null;
+  const h = Number(hora.slice(0, 2));
+  if (!Number.isFinite(h)) return null;
+  return h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite';
+}

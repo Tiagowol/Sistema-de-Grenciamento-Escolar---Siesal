@@ -1,12 +1,23 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, ErroApi, type Evento } from '../api';
+import { blocoDe } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Kpi, Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { tempoVisualLigado } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
-import { dataLonga, formatar, paraData, paraTexto, semanaDe, somarDias } from '../datas';
-import { Icone } from '../icones';
+import {
+  dataLonga,
+  formatar,
+  type ParteDoDia,
+  paraData,
+  paraTexto,
+  parteDoDia,
+  semanaDe,
+  somarDias,
+} from '../datas';
+import { Icone, type NomeIcone } from '../icones';
 
 const NOMES: Record<Evento['tipo'], string> = {
   aula: 'Aula',
@@ -15,7 +26,28 @@ const NOMES: Record<Evento['tipo'], string> = {
   prova: 'Prova',
 };
 
+// Parte do dia com nome e ícone; a hora exata é só um detalhe
+const PARTES: Record<ParteDoDia, { nome: string; icone: NomeIcone }> = {
+  manha: { nome: 'Manhã', icone: 'sun' },
+  tarde: { nome: 'Tarde', icone: 'sunset' },
+  noite: { nome: 'Noite', icone: 'moon' },
+};
+
+function EventoHora({ hora, visual }: { hora: string | null; visual: boolean }) {
+  const parte = visual ? parteDoDia(hora) : null;
+  if (!parte) return <div className="event-time">{hora ?? '—'}</div>;
+  const p = PARTES[parte];
+  return (
+    <div className="event-time parte">
+      <Icone nome={p.icone} />
+      <span>{p.nome}</span>
+      <small>{hora}</small>
+    </div>
+  );
+}
+
 export function Agenda() {
+  const [visual] = useState(tempoVisualLigado);
   const hoje = paraTexto(new Date());
   const [base, setBase] = useState(hoje);
   const [selecionado, setSelecionado] = useState(hoje);
@@ -162,13 +194,15 @@ export function Agenda() {
                   key={e.id}
                   className={`event${e.tipo === 'estudo' ? ' event-study' : ''}${e.tipo === 'pessoal' ? ' event-personal' : ''}`}
                 >
-                  <div className="event-time">{e.hora_inicio ?? '—'}</div>
+                  <EventoHora hora={e.hora_inicio} visual={visual} />
                   <div className="event-marker" />
                   <div className="event-body">
                     <div className="event-title">{e.titulo}</div>
                     <div className="event-sub">
                       {NOMES[e.tipo]}
-                      {e.minutos ? ` · ${e.minutos} min` : ''}
+                      {e.minutos
+                        ? ` · Bloco ${blocoDe(e.minutos).nome.toLowerCase()} (${e.minutos} min)`
+                        : ''}
                       {e.origem === 'plano' ? ' · do seu plano' : ''}
                     </div>
                   </div>

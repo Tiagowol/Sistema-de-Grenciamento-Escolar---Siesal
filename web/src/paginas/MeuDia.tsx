@@ -2,8 +2,9 @@ import { api, type ResumoTarefa } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Kpi, Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import type { Pagina } from '../componentes/Shell';
+import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
-import { dataLonga, formatar, relativo } from '../datas';
+import { dataLonga, formatar } from '../datas';
 import { Icone } from '../icones';
 
 function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pagina) => void }) {
@@ -26,12 +27,8 @@ function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pag
           )}
         </div>
         <div className="task-meta">
-          {[
-            t.disciplina,
-            t.prazo ? `${formatar(t.prazo)} · ${relativo(t.prazo, hoje)}` : 'sem prazo',
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          {t.disciplina ? `${t.disciplina} · ` : ''}
+          <TempoVisual prazo={t.prazo} hoje={hoje} />
         </div>
         <Progresso percentual={pct} rotulo={`Progresso de ${t.titulo}`} />
       </div>
@@ -103,12 +100,12 @@ export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void
             <h2>{proxima ? proxima.titulo : 'Nada pendente por agora'}</h2>
             <p>
               {proxima
-                ? 'Começar por 10 minutos já conta. Você pode continuar depois.'
+                ? 'Começar por um bloco curto já conta. Você pode continuar depois.'
                 : 'Cadastre uma atividade ou escolha algo leve para revisar.'}
             </p>
             <div className="btns">
               <button type="button" className="btn btn-light" onClick={() => aoIr('foco')}>
-                <Icone nome="play" /> Começar por 10 min
+                <Icone nome="play" /> Começar um bloco curto
               </button>
               <button type="button" className="btn btn-outline" onClick={() => aoIr('atividades')}>
                 <Icone nome="calendar" /> Montar meu plano

@@ -11,6 +11,10 @@ const TRACADOS = {
   chart: '<path d="M4 20V5M4 20h17M8 17v-5M13 17V8M18 17V4"/>',
   shield: '<path d="m12 2 9 4v6c0 5-3 8-9 10-6-2-9-5-9-10V6z"/><path d="m9 12 2 2 4-4"/>',
   access: '<circle cx="12" cy="4" r="2"/><path d="M4 9h16M12 9v5M12 14l-4 8M12 14l4 8"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  sunset:
+    '<path d="M17 18a5 5 0 0 0-10 0M12 9v3M4.2 10.2l1.4 1.4M19.8 10.2l-1.4 1.4M2 18h20M8 6l4 4 4-4"/>',
+  moon: '<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   spark: '<path d="m12 2 2 7 7 3-7 2-2 8-2-8-7-2 7-3z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',

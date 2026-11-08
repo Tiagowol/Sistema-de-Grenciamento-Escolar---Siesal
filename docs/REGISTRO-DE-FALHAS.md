@@ -56,3 +56,21 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: o código novo (`EditarPrazo`) foi escrito sem passar o formatador antes do teste.
 - Correção: `biome format --write` no arquivo; `biome check`, typecheck e testes do `web` passaram depois (16 de 16).
 - Como voltar atrás: `git checkout -- web/src/paginas/Atividades.tsx` desfaz o arquivo inteiro do Lote 12.
+
+## F-026 — 08/11/2026 — Lote 13: lint recusou código novo
+- O que falhou: `biome check` apontou 11 erros nos arquivos do Lote 13 (formatação, ordem dos imports e chave de lista com índice em `TempoVisual`). Sem erro de lógica.
+- Causa: o código foi escrito sem passar o formatador antes do primeiro teste.
+- Correção: `biome check --write` só nos arquivos do lote; a faixa de 7 dias passou a usar uma lista fixa `[1..7]` como chave. Lint, typecheck e testes do `web` passaram depois.
+- Como voltar atrás: `git checkout -- web/src` e apagar `blocos.ts`, `componentes/TempoVisual.tsx` e `tempo.test.tsx` desfaz o lote.
+
+## F-027 — 08/11/2026 — Lote 13: edição automática com ordem errada e comando de shell inválido
+- O que falhou: (1) uma troca de texto em `MeuDia.tsx` atingiu a frase errada porque a busca curta vinha antes da longa; o script parou por asserção e nada foi gravado naquele arquivo. (2) um comando com aspas mal fechadas não rodou e nenhuma edição foi aplicada.
+- Causa: erro do Claude ao montar os scripts de edição.
+- Correção: ordem das trocas invertida (longa primeiro); o script passou a ser gravado em arquivo antes de rodar. Conferido que nenhum arquivo ficou pela metade.
+- Como voltar atrás: não se aplica; nada foi gravado errado.
+
+## F-028 — 08/11/2026 — Lote 13: 3 testes novos falharam por seletor ambíguo
+- O que falhou: `findByText` achou 2 elementos (título do compromisso e o texto escondido do botão "Remover"; o texto da atividade aparece no cartão principal e na lista).
+- Causa: seletores dos testes novos amplos demais. A tela estava certa.
+- Correção: `selector: '.event-title'` e `findAllByText` nos testes. 32 de 32 passam.
+- Como voltar atrás: editar só `web/src/tempo.test.tsx`.

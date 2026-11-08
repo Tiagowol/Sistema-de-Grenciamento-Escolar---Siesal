@@ -22,3 +22,100 @@
 .setting label {
   cursor: pointer;
 }
+
+/* Tempo concreto (Lote 13): palavra, data e forma */
+.tempo-visual {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.tempo-visual strong {
+  color: var(--text);
+}
+.tempo-blocos {
+  display: inline-flex;
+  gap: 3px;
+}
+.tempo-blocos span {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1.5px solid #238a9a;
+  background: transparent;
+}
+.tempo-blocos span.cheio {
+  background: #238a9a;
+}
+.tempo-visual.passou .tempo-blocos span {
+  border-color: #b3261e;
+  border-style: dashed;
+}
+/* Escolha de bloco: alvo de toque de 44 px, minutos pequenos ao lado */
+.blocos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.blocos.centro {
+  justify-content: center;
+}
+.btn-bloco {
+  min-height: 44px;
+  min-width: 44px;
+}
+.btn-bloco small {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  margin-left: 6px;
+}
+/* Forma que diminui no modo foco: o disco encolhe conforme o bloco passa */
+.focusbubble {
+  position: relative;
+}
+.focusdisc {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  background: #238a9a;
+  opacity: 0.35;
+  transition: transform 1s linear;
+}
+.focusbubble > :not(.focusdisc) {
+  position: relative;
+}
+/* Parte do dia na agenda: ícone, nome e hora só como detalhe */
+.event-time.parte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.15;
+}
+.event-time.parte small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.blocos.cheio {
+  grid-column: 1 / -1;
+}
+.blocos legend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.event-time.parte {
+  width: 68px;
+}
+.focusclock.focusword {
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  padding: 0 12px;
+}

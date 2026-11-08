@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react';
 import { api, ErroApi, type SessaoFoco } from '../api';
+import { BLOCOS, type Bloco } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { tempoVisualLigado } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { relogio } from '../datas';
 import { Icone } from '../icones';
 
-const DURACOES = [5, 10, 15, 25];
-
 // Modo foco: um bloco por vez. O tempo vem do servidor, então continua certo se a página recarregar.
-// Sem som e sem pontuação. O aluno pode ocultar os números e ver só a barra.
+// Sem som e sem pontuação. Com o tempo visual ligado (padrão), uma forma diminui e os números ficam ocultos.
 export function Foco() {
   const tarefas = useCarregar(api.tarefas);
   const atual = useCarregar(api.sessaoAtual);
-  const [minutos, setMinutos] = useState(10);
+  const [bloco, setBloco] = useState<Bloco>(BLOCOS[0] as Bloco);
+  const minutos = bloco.minutos;
+  const [visual] = useState(tempoVisualLigado);
   const [tarefaId, setTarefaId] = useState('');
-  const [oculto, setOculto] = useState(() => localStorage.getItem('siesal-foco-oculto') === '1');
+  // Números: ocultos por padrão com o tempo visual ligado; o aluno liga e desliga
+  const [numeros, setNumeros] = useState(() => {
+    const guardado = localStorage.getItem('siesal-foco-numeros');
+    return guardado === null ? !visual : guardado === '1';
+  });
   const [erro, setErro] = useState('');
   const [passou, setPassou] = useState(0);
   const sessao: SessaoFoco | null = atual.dados?.sessao ?? null;
@@ -34,6 +40,17 @@ export function Foco() {
   const restante = Math.max(0, total - decorrido);
   const acabou = Boolean(sessao) && restante === 0;
   const pct = sessao ? Math.min(100, Math.round((decorrido / total) * 100)) : 0;
+  // Parte que ainda falta (de 1 a 0): é o tamanho da forma
+  const fracao = sessao ? restante / total : 1;
+  const frase = !sessao
+    ? `Bloco ${bloco.nome.toLowerCase()}`
+    : acabou
+      ? 'O bloco terminou'
+      : fracao > 0.5
+        ? 'Falta mais da metade'
+        : fracao > 0.15
+          ? 'Falta menos da metade'
+          : 'Falta pouco';
   const abertas = (tarefas.dados?.tarefas ?? []).filter((t) => t.situacao !== 'concluida');
   const escolhida = abertas.find((t) => t.id === (sessao?.tarefa_id ?? tarefaId));
   const proximaEtapa = escolhida?.microetapas.find((m) => !m.feita)?.texto;
@@ -61,13 +78,18 @@ export function Foco() {
           <div className="eyebrow">UM BLOCO DE CADA VEZ</div>
           <div className="focusbubble">
             <small>Seu tempo de foco</small>
+            {visual ? (
+              <span className="focusdisc" style={{ transform: `scale(${fracao})` }} />
+            ) : null}
             <div
-              className="focusclock"
+              className={`focusclock${numeros || !visual ? '' : ' focusword'}`}
               role="timer"
               aria-live="off"
-              aria-label={oculto ? 'Relógio oculto' : `Restam ${relogio(restante)}`}
+              aria-label={
+                numeros ? `Restam ${relogio(restante)}` : visual ? frase : 'Relógio oculto'
+              }
             >
-              {oculto ? '••:••' : relogio(sessao ? restante : minutos * 60)}
+              {numeros ? relogio(sessao ? restante : minutos * 60) : visual ? frase : '••:••'}
             </div>
             <small aria-live="polite">
               {acabou
@@ -77,32 +99,32 @@ export function Foco() {
                   : 'Você pode começar quando quiser'}
             </small>
           </div>
-          <div
-            className="progress"
-            role="progressbar"
-            aria-label="Progresso do bloco"
-            aria-valuenow={pct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            style={{ margin: '14px auto', maxWidth: 360 }}
-          >
-            <span style={{ width: `${pct}%` }} />
-          </div>
-          {!sessao ? (
-            <fieldset
-              className="chip-row"
-              style={{ justifyContent: 'center', border: 0, padding: 0 }}
+          {visual ? null : (
+            <div
+              className="progress"
+              role="progressbar"
+              aria-label="Progresso do bloco"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              style={{ margin: '14px auto', maxWidth: 360 }}
             >
-              <legend className="sr-only">Duração do bloco</legend>
-              {DURACOES.map((n) => (
+              <span style={{ width: `${pct}%` }} />
+            </div>
+          )}
+          {!sessao ? (
+            <fieldset className="blocos centro">
+              <legend className="sr-only">Tamanho do bloco</legend>
+              {BLOCOS.map((b) => (
                 <button
-                  key={n}
+                  key={b.id}
                   type="button"
-                  aria-pressed={minutos === n}
-                  className={`btn btn-sm ${minutos === n ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setMinutos(n)}
+                  aria-pressed={bloco.id === b.id}
+                  className={`btn btn-sm btn-bloco ${bloco.id === b.id ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setBloco(b)}
                 >
-                  {n} min
+                  {b.nome}
+                  <small>{b.minutos} min</small>
                 </button>
               ))}
             </fieldset>
@@ -141,13 +163,13 @@ export function Foco() {
             <button
               type="button"
               className="btn btn-soft"
-              aria-pressed={oculto}
+              aria-pressed={numeros}
               onClick={() => {
-                localStorage.setItem('siesal-foco-oculto', oculto ? '0' : '1');
-                setOculto(!oculto);
+                localStorage.setItem('siesal-foco-numeros', numeros ? '0' : '1');
+                setNumeros(!numeros);
               }}
             >
-              {oculto ? 'Mostrar o relógio' : 'Ocultar o relógio'}
+              {numeros ? 'Ocultar os números' : 'Mostrar os números'}
             </button>
           </div>
           <p className="small muted mt">
@@ -200,7 +222,8 @@ export function Foco() {
           </div>
           <div className="notice">
             <b>Precisa de menos tempo?</b>
-            Escolha 5 minutos. Começar de forma possível é melhor que esperar o momento perfeito.
+            Escolha o bloco curto. Começar de forma possível é melhor que esperar o momento
+            perfeito.
           </div>
         </div>
       </div>

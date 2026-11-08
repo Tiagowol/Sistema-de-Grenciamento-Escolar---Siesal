@@ -1,11 +1,13 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, ErroApi, type Tarefa } from '../api';
+import { BLOCOS } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
-import { formatar, paraTexto, relativo } from '../datas';
+import { formatar, paraTexto } from '../datas';
 import { Icone } from '../icones';
 
 type Filtro = 'todas' | 'atrasadas' | 'andamento' | 'comecar' | 'concluidas';
@@ -168,8 +170,9 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
 }
 
 function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => void }) {
-  const [total, setTotal] = useState(120);
-  const [sessao, setSessao] = useState(25);
+  const [quantos, setQuantos] = useState(4);
+  const [bloco, setBloco] = useState<(typeof BLOCOS)[number]['id']>('medio');
+  const minutos = BLOCOS.find((b) => b.id === bloco)?.minutos ?? 25;
   const [msg, setMsg] = useState('');
   const [erro, setErro] = useState('');
   async function gerar(e: FormEvent) {
@@ -177,7 +180,10 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
     setErro('');
     setMsg('');
     try {
-      const r = await api.planejar(tarefa.id, { minutos_total: total, minutos_por_sessao: sessao });
+      const r = await api.planejar(tarefa.id, {
+        minutos_total: quantos * minutos,
+        minutos_por_sessao: minutos,
+      });
       setMsg(
         `Plano criado: ${r.blocos.length} ${r.blocos.length === 1 ? 'bloco' : 'blocos'} de estudo, do dia ${formatar(r.blocos[0]?.dia ?? '')} ao dia ${formatar(r.blocos.at(-1)?.dia ?? '')}. Veja na agenda.`,
       );
@@ -195,28 +201,30 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       {msg ? <Aviso>{msg}</Aviso> : null}
       <div className="form-grid">
-        <Campo rotulo="Tempo total de estudo (minutos)">
+        <fieldset className="blocos cheio">
+          <legend>Tamanho de cada bloco de estudo</legend>
+          {BLOCOS.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              aria-pressed={bloco === b.id}
+              className={`btn btn-sm btn-bloco ${bloco === b.id ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setBloco(b.id)}
+            >
+              {b.nome}
+              <small>{b.minutos} min</small>
+            </button>
+          ))}
+        </fieldset>
+        <Campo rotulo="Quantos blocos de estudo">
           {({ id }) => (
-            <input
-              id={id}
-              type="number"
-              min={5}
-              max={6000}
-              value={total}
-              onChange={(e) => setTotal(Number(e.target.value))}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Tempo de cada bloco (minutos)">
-          {({ id }) => (
-            <input
-              id={id}
-              type="number"
-              min={5}
-              max={180}
-              value={sessao}
-              onChange={(e) => setSessao(Number(e.target.value))}
-            />
+            <select id={id} value={quantos} onChange={(e) => setQuantos(Number(e.target.value))}>
+              {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
+                <option key={n} value={n}>
+                  {n} {n === 1 ? 'bloco' : 'blocos'}
+                </option>
+              ))}
+            </select>
           )}
         </Campo>
       </div>
@@ -466,12 +474,8 @@ export function Atividades() {
                     <Pill tom={s.tom}>{s.texto}</Pill>
                   </div>
                   <div className="task-meta">
-                    {[
-                      t.disciplina,
-                      t.prazo ? `${formatar(t.prazo)} · ${relativo(t.prazo, hoje)}` : 'sem prazo',
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {t.disciplina ? `${t.disciplina} · ` : ''}
+                    <TempoVisual prazo={t.prazo} hoje={hoje} />
                   </div>
                   <Progresso percentual={percentual(t)} rotulo={`Progresso de ${t.titulo}`} />
                 </div>
