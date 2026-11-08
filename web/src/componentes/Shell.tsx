@@ -6,6 +6,7 @@ import { Icone, type NomeIcone } from '../icones';
 export type Pagina =
   | 'inicio'
   | 'usuarios'
+  | 'turmas'
   | 'acessibilidade'
   | 'meudia'
   | 'atividades'
@@ -38,6 +39,7 @@ const ITENS: Item[] = [
     so: ['admin', 'professor', 'pedagogico', 'responsavel'],
   },
   { id: 'usuarios', rotulo: 'Usuários', icone: 'users', so: ['admin'] },
+  { id: 'turmas', rotulo: 'Turmas e vínculos', icone: 'school', so: ['admin'] },
   { id: 'acessibilidade', rotulo: 'Acessibilidade', icone: 'access' },
 ];
 

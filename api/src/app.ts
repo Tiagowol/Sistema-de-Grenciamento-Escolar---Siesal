@@ -19,6 +19,7 @@ import {
 } from './auth/sessao.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
 import { registrarNucleo } from './nucleo/rotas.js';
+import { registrarTurmas } from './turmas/rotas.js';
 
 export type OpcoesApp = {
   banco?: PrismaClient;
@@ -144,6 +145,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   });
 
   registrarNucleo(app, { banco: opcoes.banco, exigirSessao, agora: opcoes.agora });
+  registrarTurmas(app, { banco: opcoes.banco, exigirSessao });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
     const sessao = await exigirSessao(requisicao, resposta);

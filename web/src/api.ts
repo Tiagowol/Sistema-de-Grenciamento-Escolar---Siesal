@@ -11,6 +11,34 @@ export type UsuarioLista = {
   senhaProvisoria: boolean;
 };
 
+export type Turno = 'manha' | 'tarde' | 'noite';
+export type TurmaLista = {
+  id: string;
+  nome: string;
+  ano_letivo: number;
+  turno: Turno;
+  criado_em: string;
+  ativa: boolean;
+  alunos: number;
+  professores: number;
+};
+export type DisciplinaLista = { id: string; nome: string; criado_em: string; ativa: boolean };
+export type TipoVinculo = 'professor_turma' | 'aluno_turma' | 'responsavel_aluno';
+export type VinculoLista = {
+  id: string;
+  tipo: TipoVinculo;
+  criado_em: string;
+  usuario_id: string;
+  usuario_nome: string;
+  turma_nome: string | null;
+  disciplina_nome: string | null;
+  aluno_nome: string | null;
+};
+export type NovoVinculo =
+  | { tipo: 'professor_turma'; usuario_id: string; turma_id: string; disciplina_id: string }
+  | { tipo: 'aluno_turma'; usuario_id: string; turma_id: string }
+  | { tipo: 'responsavel_aluno'; usuario_id: string; aluno_id: string };
+
 export type Microetapa = { id: string; texto: string; feita: boolean; ordem: number };
 export type Tarefa = {
   id: string;
@@ -126,6 +154,18 @@ export const api = {
     chamar<{ usuario: UsuarioLista; senha_provisoria: string }>('POST', '/usuarios', d),
   senhaProvisoria: (id: string) =>
     chamar<{ senha_provisoria: string }>('POST', `/usuarios/${id}/senha-provisoria`),
+  turmas: () => chamar<{ turmas: TurmaLista[] }>('GET', '/turmas'),
+  criarTurma: (d: { nome: string; ano_letivo: number; turno: Turno }) =>
+    chamar<{ id: string }>('POST', '/turmas', d),
+  inativarTurma: (id: string) => chamar<void>('POST', `/turmas/${id}/inativar`),
+  reativarTurma: (id: string) => chamar<void>('POST', `/turmas/${id}/reativar`),
+  disciplinas: () => chamar<{ disciplinas: DisciplinaLista[] }>('GET', '/disciplinas'),
+  criarDisciplina: (d: { nome: string }) => chamar<{ id: string }>('POST', '/disciplinas', d),
+  inativarDisciplina: (id: string) => chamar<void>('POST', `/disciplinas/${id}/inativar`),
+  reativarDisciplina: (id: string) => chamar<void>('POST', `/disciplinas/${id}/reativar`),
+  vinculos: () => chamar<{ vinculos: VinculoLista[] }>('GET', '/vinculos'),
+  criarVinculo: (d: NovoVinculo) => chamar<{ id: string }>('POST', '/vinculos', d),
+  inativarVinculo: (id: string) => chamar<void>('POST', `/vinculos/${id}/inativar`),
   meuDia: () => chamar<MeuDia>('GET', '/meu-dia'),
   tarefas: () => chamar<{ tarefas: Tarefa[] }>('GET', '/tarefas'),
   criarTarefa: (d: {

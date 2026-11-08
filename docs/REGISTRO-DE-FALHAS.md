@@ -74,3 +74,21 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: seletores dos testes novos amplos demais. A tela estava certa.
 - Correção: `selector: '.event-title'` e `findAllByText` nos testes. 32 de 32 passam.
 - Como voltar atrás: editar só `web/src/tempo.test.tsx`.
+
+## F-029 — 08/11/2026 — Lote 14: comando de shell com aspas mal fechadas
+- O que falhou: um comando com vários arquivos de uma vez não rodou (erro de sintaxe do shell). Nada foi gravado.
+- Causa: erro do Claude ao montar o comando longo.
+- Correção: os arquivos passaram a ser gravados um a um pela ferramenta de escrita. Conferido com `git status` que nada ficou pela metade.
+- Como voltar atrás: não se aplica.
+
+## F-030 — 08/11/2026 — Lote 14: arquivos novos fora do padrão do formatador
+- O que falhou: o lint (`biome check`) acusou 10 erros de formatação em arquivos novos do lote (linhas longas e fim de linha CRLF vindo do Windows).
+- Causa: código escrito sem passar o formatador antes do primeiro `pnpm verificar`.
+- Correção: `biome check --write` num contêiner Node (cópia do repositório) e arquivos devolvidos à pasta; depois `sed` para tirar CRLF do teste web. Lint, tipos e 411 testes passaram.
+- Como voltar atrás: apagar os arquivos novos do lote (`api/src/turmas/`, `web/src/paginas/Turmas.tsx`, `web/src/turmas.test.tsx`).
+
+## F-031 — 08/11/2026 — Lote 14: 2 testes novos da tela falharam por seletor
+- O que falhou: `findByText` achou 2 elementos (o texto do vínculo e o texto escondido do botão "Inativar"); o nome acessível do botão de turma não casou com a busca por papel.
+- Causa: seletores dos testes novos amplos demais. A tela estava certa.
+- Correção: texto ancorado (`^...$`) e busca do botão por `getAllByText('Inativar', { selector: 'button' })`.
+- Como voltar atrás: editar só `web/src/turmas.test.tsx`.

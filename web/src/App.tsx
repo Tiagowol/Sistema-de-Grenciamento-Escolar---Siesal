@@ -12,6 +12,7 @@ import { Login } from './paginas/Login';
 import { MeuDia } from './paginas/MeuDia';
 import { Notas } from './paginas/Notas';
 import { TrocarSenha } from './paginas/TrocarSenha';
+import { Turmas } from './paginas/Turmas';
 import { Usuarios } from './paginas/Usuarios';
 import {
   aplicarPreferencias,
@@ -111,6 +112,8 @@ export function App() {
           <Avisos aoMudar={() => void contarAvisos()} />
         ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (
           <Usuarios />
+        ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (
+          <Turmas />
         ) : ehAluno ? (
           <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
         ) : (

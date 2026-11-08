@@ -18,3 +18,9 @@ export function podeAdministrarUsuarios(perfil: string): boolean {
 export function podeUsarNucleo(perfil: string): boolean {
   return perfil === 'aluno';
 }
+
+// Quem administra turmas, disciplinas e vínculos da própria instituição.
+// Espelha a matriz v3 (recursos turmas, disciplinas e vinculos, ação "administrar").
+export function podeAdministrarTurmas(perfil: string): boolean {
+  return perfil === 'admin';
+}

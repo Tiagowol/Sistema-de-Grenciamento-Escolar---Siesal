@@ -47,7 +47,8 @@ describe.each(combinacoes)('$perfil em $recurso.$acao', ({ perfil, escopo }) => 
 // Regras fixas de MATRIZ-DE-PERMISSOES.md
 const RECURSOS_ESCOLARES = [
   'usuarios',
-  'turmas_disciplinas',
+  'turmas',
+  'disciplinas',
   'vinculos',
   'notas',
   'tarefas',
@@ -92,13 +93,22 @@ describe('regras fixas da matriz', () => {
   });
 
   it('só o admin administra usuários, turmas e vínculos', () => {
-    for (const recurso of ['usuarios', 'turmas_disciplinas', 'vinculos']) {
+    for (const recurso of ['usuarios', 'turmas', 'disciplinas', 'vinculos']) {
       for (const perfil of PERFIS) {
         expect(permitido(perfil, recurso, 'administrar')).toBe(
           perfil === 'admin' ? 'instituicao' : null,
         );
       }
     }
+  });
+
+  it('versão 3: turmas, disciplinas e vínculos só o admin administra; responsável e aluno leem só o próprio vínculo', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(3);
+    expect(MATRIZ.recursos.turmas_disciplinas).toBeUndefined();
+    expect(permitido('responsavel', 'vinculos', 'ler')).toBe('proprio');
+    expect(permitido('aluno', 'vinculos', 'ler')).toBe('proprio');
+    expect(permitido('responsavel', 'turmas', 'ler')).toBeNull();
+    expect(permitido('professor', 'turmas', 'administrar')).toBeNull();
   });
 
   it('as preferências de acessibilidade são só do próprio aluno', () => {
