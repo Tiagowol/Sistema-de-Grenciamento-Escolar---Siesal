@@ -62,20 +62,26 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
         </div>
         <div className="stack">
           {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
-          {instituicaoPadrao ? null : (
-            <Campo rotulo="Código da instituição" dica="Quem cadastrou você informa este código.">
-              {({ id, descricao }) => (
-                <input
-                  id={id}
-                  aria-describedby={descricao}
-                  value={instituicao}
-                  required
-                  autoComplete="off"
-                  onChange={(e) => setInstituicao(e.target.value)}
-                />
-              )}
-            </Campo>
-          )}
+          {/* L15, item extra: o campo aparece sempre; com instituição padrão ele já vem preenchido */}
+          <Campo
+            rotulo="Código da instituição"
+            dica={
+              instituicaoPadrao
+                ? 'Já preenchido com a instituição padrão. Troque se você é de outra escola.'
+                : 'Quem cadastrou você informa este código.'
+            }
+          >
+            {({ id, descricao }) => (
+              <input
+                id={id}
+                aria-describedby={descricao}
+                value={instituicao}
+                required
+                autoComplete="off"
+                onChange={(e) => setInstituicao(e.target.value)}
+              />
+            )}
+          </Campo>
           <Campo rotulo="E-mail">
             {({ id }) => (
               <input

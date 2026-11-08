@@ -39,9 +39,30 @@ describe('telas', () => {
     expect(await violacoes(container)).toEqual([]);
   });
 
-  it('login esconde o código da instituição quando há padrão', () => {
+  it('login mostra o código da instituição também quando há padrão, já preenchido (L15, item extra)', async () => {
+    const { container } = render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
+    const campo = screen.getByLabelText('Código da instituição') as HTMLInputElement;
+    expect(campo.value).toBe('abc');
+    expect(await violacoes(container)).toEqual([]);
+  });
+
+  it('login envia o código da instituição que a pessoa escolheu, não o padrão', async () => {
+    const corpos: unknown[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        corpos.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({ erro: 'Dados incorretos.' }), { status: 401 });
+      }),
+    );
     render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
-    expect(screen.queryByLabelText('Código da instituição')).toBeNull();
+    await userEvent.clear(screen.getByLabelText('Código da instituição'));
+    await userEvent.type(screen.getByLabelText('Código da instituição'), 'escola-b');
+    await userEvent.type(screen.getByLabelText('E-mail'), 'a@x.exemplo');
+    await userEvent.type(screen.getByLabelText('Senha'), 'senha-fict');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    await screen.findByText('Dados incorretos.');
+    expect(corpos[0]).toMatchObject({ instituicao_id: 'escola-b', email: 'a@x.exemplo' });
   });
 
   it('acessibilidade: chaves ligam e desligam e não têm violações', async () => {
