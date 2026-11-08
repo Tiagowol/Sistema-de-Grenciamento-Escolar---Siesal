@@ -1,0 +1,103 @@
+// Esquema do Prisma (Lote 3). As tabelas, a RLS e os papéis são criados pelas migrações SQL em ../migracoes.
+// Este arquivo só descreve as tabelas para gerar o cliente; o Prisma Migrate não é usado.
+generator client {
+  provider = "prisma-client"
+  output   = "../src/gerado/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Instituicao {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome          String
+  situacao      String    @default("ativa")
+  criado_em     DateTime  @default(now()) @db.Timestamptz(6)
+  desativado_em DateTime? @db.Timestamptz(6)
+  usuarios      Usuario[]
+  auditoria     AuditoriaEvento[]
+
+  @@map("instituicao")
+}
+
+model Usuario {
+  id             String      @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instituicao_id String      @db.Uuid
+  perfil         String
+  nome           String
+  email          String
+  situacao       String      @default("ativo")
+  criado_em      DateTime    @default(now()) @db.Timestamptz(6)
+  desativado_em  DateTime?   @db.Timestamptz(6)
+  instituicao    Instituicao @relation(fields: [instituicao_id], references: [id])
+  credencial     Credencial?
+  sessoes        Sessao[]
+  codigos        CodigoRecuperacao[]
+
+  @@id([instituicao_id, id])
+  @@unique([instituicao_id, email])
+  @@map("usuario")
+}
+
+// Hash, hash_anterior, seq e criado_em são definidos pelo gatilho do banco; o valor enviado é ignorado.
+model AuditoriaEvento {
+  id             BigInt       @id @default(autoincrement())
+  seq            BigInt       @default(0)
+  instituicao_id String?      @db.Uuid
+  ator           String
+  acao           String
+  alvo           String       @default("")
+  antes          Json?
+  depois         Json?
+  criado_em      DateTime     @default(now()) @db.Timestamptz(6)
+  hash_anterior  String       @default("")
+  hash           String       @default("")
+  instituicao    Instituicao? @relation(fields: [instituicao_id], references: [id])
+
+  @@map("auditoria_evento")
+}
+
+model Credencial {
+  instituicao_id       String    @db.Uuid
+  usuario_id           String    @db.Uuid
+  senha_hash           String
+  totp_segredo_cifrado String?
+  totp_ativo           Boolean   @default(false)
+  totp_ultimo_passo    BigInt?
+  falhas_seguidas      Int       @default(0)
+  bloqueado_ate        DateTime? @db.Timestamptz(6)
+  atualizado_em        DateTime  @default(now()) @db.Timestamptz(6)
+  usuario              Usuario   @relation(fields: [instituicao_id, usuario_id], references: [instituicao_id, id])
+
+  @@id([instituicao_id, usuario_id])
+  @@map("credencial")
+}
+
+model Sessao {
+  id             String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instituicao_id String    @db.Uuid
+  usuario_id     String    @db.Uuid
+  token_hash     String    @unique
+  nivel          String
+  criada_em      DateTime  @default(now()) @db.Timestamptz(6)
+  expira_em      DateTime  @db.Timestamptz(6)
+  revogada_em    DateTime? @db.Timestamptz(6)
+  usuario        Usuario   @relation(fields: [instituicao_id, usuario_id], references: [instituicao_id, id])
+
+  @@id([instituicao_id, id])
+  @@index([instituicao_id, usuario_id])
+  @@map("sessao")
+}
+
+model CodigoRecuperacao {
+  instituicao_id String    @db.Uuid
+  usuario_id     String    @db.Uuid
+  codigo_hash    String
+  criado_em      DateTime  @default(now()) @db.Timestamptz(6)
+  usado_em       DateTime? @db.Timestamptz(6)
+  usuario        Usuario   @relation(fields: [instituicao_id, usuario_id], references: [instituicao_id, id])
+
+  @@id([instituicao_id, usuario_id, codigo_hash])
+  @@map("codigo_recuperacao")
+}

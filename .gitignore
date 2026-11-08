@@ -34,3 +34,6 @@ Thumbs.db
 # Resíduos do pnpm (F-008)
 .pnpm-store/
 _tmp_*
+
+# Cliente do Prisma gerado no build
+api/src/gerado/

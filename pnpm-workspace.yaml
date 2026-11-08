@@ -1,0 +1,9 @@
+# Pacotes do monorepo. A api mantém o próprio pnpm-lock.yaml porque o Docker a constrói sozinha (api/Dockerfile).
+packages:
+  - api
+  - web
+  - shared
+allowBuilds:
+  '@prisma/engines': false
+  prisma: false
+sharedWorkspaceLockfile: false

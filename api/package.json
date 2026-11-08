@@ -5,15 +5,25 @@
   "type": "module",
   "packageManager": "pnpm@12.18.0",
   "scripts": {
-    "build": "tsc -p .",
-    "typecheck": "tsc -p . --noEmit",
-    "start": "node dist/servidor.js"
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "typecheck": "prisma generate && tsc -p . --noEmit",
+    "start": "node dist/servidor.js",
+    "migrar": "node dist/migrar/executar.js",
+    "teste:integracao": "vitest run --config vitest.integracao.config.ts",
+    "bootstrap": "node dist/migrar/executar-bootstrap.js"
   },
   "dependencies": {
-    "fastify": "5.12.8"
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "fastify": "5.12.8",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
-    "typescript": "7.0.2"
+    "@types/pg": "8.23.1",
+    "prisma": "7.10.1",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
   }
 }

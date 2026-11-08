@@ -1,0 +1,12 @@
+{
+  "name": "@siesal/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p . --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

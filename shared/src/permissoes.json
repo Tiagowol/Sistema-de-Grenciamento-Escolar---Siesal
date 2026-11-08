@@ -1,0 +1,91 @@
+{
+  "versao": 1,
+  "descricao": "Matriz de permissões da Parte 1 (rascunho v1 de MATRIZ-DE-PERMISSOES.md). Negar por padrão: o que não está aqui é negado. Escopos: proprio, vinculo, instituicao, plataforma.",
+  "recursos": {
+    "instituicoes": {
+      "criar_suspender": { "master": "plataforma" }
+    },
+    "metricas_plataforma": {
+      "ler": { "master": "plataforma" }
+    },
+    "usuarios": {
+      "administrar": { "admin": "instituicao" },
+      "ler": { "admin": "instituicao", "pedagogico": "vinculo" }
+    },
+    "turmas_disciplinas": {
+      "administrar": { "admin": "instituicao" },
+      "ler": {
+        "admin": "instituicao",
+        "professor": "vinculo",
+        "aluno": "vinculo",
+        "pedagogico": "instituicao"
+      }
+    },
+    "vinculos": {
+      "administrar": { "admin": "instituicao" }
+    },
+    "notas": {
+      "lancar": { "professor": "vinculo" },
+      "ler": {
+        "admin": "instituicao",
+        "professor": "vinculo",
+        "aluno": "proprio",
+        "pedagogico": "vinculo",
+        "responsavel": "vinculo"
+      }
+    },
+    "tarefas": {
+      "administrar": { "aluno": "proprio" },
+      "ler": {
+        "admin": "instituicao",
+        "professor": "vinculo",
+        "pedagogico": "vinculo",
+        "responsavel": "vinculo"
+      }
+    },
+    "plano_regressivo": {
+      "administrar": { "aluno": "proprio" },
+      "ler": { "professor": "vinculo", "pedagogico": "vinculo", "responsavel": "vinculo" }
+    },
+    "comentarios_aluno": {
+      "escrever": { "professor": "vinculo", "pedagogico": "vinculo" },
+      "ler": { "professor": "vinculo", "pedagogico": "vinculo", "responsavel": "vinculo" }
+    },
+    "avisos": {
+      "enviar": {
+        "admin": "instituicao",
+        "professor": "vinculo",
+        "aluno": "vinculo",
+        "pedagogico": "vinculo",
+        "responsavel": "vinculo"
+      },
+      "receber": {
+        "admin": "proprio",
+        "professor": "proprio",
+        "aluno": "proprio",
+        "pedagogico": "proprio",
+        "responsavel": "proprio"
+      }
+    },
+    "pedidos_informacao": {
+      "pedir": {
+        "professor": "vinculo",
+        "aluno": "vinculo",
+        "pedagogico": "vinculo",
+        "responsavel": "vinculo"
+      }
+    },
+    "preferencias_acessibilidade": {
+      "administrar": { "aluno": "proprio" }
+    },
+    "auditoria": {
+      "ler": { "master": "plataforma", "admin": "instituicao" }
+    },
+    "login_google_demo": {
+      "administrar": { "master": "plataforma" }
+    },
+    "acesso_excepcional": {
+      "usar": { "master": "plataforma" }
+    }
+  }
+}
