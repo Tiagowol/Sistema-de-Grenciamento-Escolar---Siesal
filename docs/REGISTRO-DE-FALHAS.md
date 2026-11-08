@@ -44,3 +44,15 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: os 3 commits novos (`9323b93`, `b5691a2`, `6b7d22c`) foram criados pelo Claude com o e-mail pessoal do proprietário como autor. O GitHub bloqueia e-mail privado. Erro do Claude: o autor deve vir da configuração do git do proprietário.
 - Correção: regravar o autor dos 3 commits locais (ainda não enviados) com a configuração do proprietário e enviar de novo. Nenhum dado foi publicado.
 - Como voltar atrás: `git reflog` guarda os commits antigos; `git reset --hard <hash antigo>` restaura. Antes de regravar, o Claude não cria mais commits com autor próprio.
+
+## F-024 — 08/11/2026 — Porta 8080 recusada pelo Docker no Windows
+- O que falhou: `docker compose up -d web` terminou com "ports are not available: exposing port TCP 127.0.0.1:8080 ... status: 500". O contêiner `web` ficou em "Created". A verificação de ambiente mostrou a porta 8080 livre dentro do WSL2.
+- Causa provável: no Docker Desktop, a porta é aberta no Windows. Um programa do Windows ou uma faixa reservada pelo Windows ocupa a 8080, e o WSL2 não enxerga isso.
+- Correção: trocar `WEB_PORTA` no `.env` para outra porta (18080) e subir de novo. Nenhum dado foi afetado.
+- Como voltar atrás: colocar `WEB_PORTA=8080` de volta no `.env` e rodar `docker compose up -d web`.
+
+## F-025 — 08/11/2026 — Lote 12: formatação recusada pelo biome
+- O que falhou: `biome check` apontou uma assinatura de função longa demais em `Atividades.tsx` (formatação, sem erro de lógica).
+- Causa: o código novo (`EditarPrazo`) foi escrito sem passar o formatador antes do teste.
+- Correção: `biome format --write` no arquivo; `biome check`, typecheck e testes do `web` passaram depois (16 de 16).
+- Como voltar atrás: `git checkout -- web/src/paginas/Atividades.tsx` desfaz o arquivo inteiro do Lote 12.

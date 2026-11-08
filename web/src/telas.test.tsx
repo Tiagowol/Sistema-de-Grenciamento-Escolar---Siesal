@@ -52,6 +52,18 @@ describe('telas', () => {
     expect(await violacoes(container)).toEqual([]);
   });
 
+  it('acessibilidade: clicar no texto do rótulo liga a chave (Lote 12, defeito 5)', async () => {
+    const aoMudar = vi.fn();
+    render(<Acessibilidade valor={PREFERENCIAS_PADRAO} aoMudar={aoMudar} />);
+    await userEvent.click(screen.getByText('Alto contraste'));
+    expect(aoMudar).toHaveBeenCalledWith({ ...PREFERENCIAS_PADRAO, contraste: true });
+  });
+
+  it('login: a marca usa a classe de página clara (Lote 12, defeito 1)', () => {
+    const { container } = render(<Login instituicaoPadrao={null} aoEntrar={() => undefined} />);
+    expect(container.querySelector('.brand.brand-login')).not.toBeNull();
+  });
+
   it('sem sessão mostra o login; com sessão mostra o menu e o nome', async () => {
     responder({
       '/config': { corpo: { instituicao_padrao: null, modo_local: true } },

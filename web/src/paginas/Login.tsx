@@ -45,7 +45,7 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
       style={{ maxWidth: 480, margin: '0 auto', paddingTop: 48 }}
       id="conteudo"
     >
-      <div className="brand" style={{ marginBottom: 24 }}>
+      <div className="brand brand-login" style={{ marginBottom: 24 }}>
         <div className="brandmark" aria-hidden="true">
           S
         </div>

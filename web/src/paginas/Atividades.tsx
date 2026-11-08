@@ -17,6 +17,9 @@ const FILTROS: [Filtro, string][] = [
   ['concluidas', 'Concluídas'],
 ];
 
+// Dica do campo de data: o navegador pede dia, mês e ano nesta ordem
+const DICA_DATA = 'Digite dia, mês e ano, nesta ordem. Exemplo: 20/11/2026.';
+
 const percentual = (t: Tarefa) => {
   if (t.situacao === 'concluida') return 100;
   return t.microetapas.length
@@ -103,9 +106,15 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
             />
           )}
         </Campo>
-        <Campo rotulo="Prazo (opcional)">
-          {({ id }) => (
-            <input id={id} type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+        <Campo rotulo="Prazo (opcional)" dica={DICA_DATA}>
+          {({ id, descricao }) => (
+            <input
+              id={id}
+              aria-describedby={descricao}
+              type="date"
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value)}
+            />
           )}
         </Campo>
         <Campo rotulo="Tipo">
@@ -170,7 +179,7 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
     try {
       const r = await api.planejar(tarefa.id, { minutos_total: total, minutos_por_sessao: sessao });
       setMsg(
-        `Plano criado: ${r.blocos.length} blocos de estudo, do dia ${formatar(r.blocos[0]?.dia ?? '')} ao dia ${formatar(r.blocos.at(-1)?.dia ?? '')}. Veja na agenda.`,
+        `Plano criado: ${r.blocos.length} ${r.blocos.length === 1 ? 'bloco' : 'blocos'} de estudo, do dia ${formatar(r.blocos[0]?.dia ?? '')} ao dia ${formatar(r.blocos.at(-1)?.dia ?? '')}. Veja na agenda.`,
       );
       aoPlanejar();
     } catch (x) {
@@ -214,6 +223,52 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
       <button type="submit" className="btn btn-soft btn-sm mt-sm" disabled={!tarefa.prazo}>
         Montar plano
       </button>
+    </form>
+  );
+}
+
+// Altera ou remove o prazo de uma atividade já criada
+function EditarPrazo({
+  t,
+  agir,
+}: {
+  t: Tarefa;
+  agir: (f: () => Promise<unknown>) => Promise<void>;
+}) {
+  const [prazo, setPrazo] = useState(t.prazo ?? '');
+  return (
+    <form
+      className="flex"
+      style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}
+      aria-label={`Prazo de ${t.titulo}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void agir(() => api.atualizarTarefa(t.id, { prazo: prazo || null }));
+      }}
+    >
+      <Campo rotulo="Prazo" dica={DICA_DATA}>
+        {({ id, descricao }) => (
+          <input
+            id={id}
+            aria-describedby={descricao}
+            type="date"
+            value={prazo}
+            onChange={(e) => setPrazo(e.target.value)}
+          />
+        )}
+      </Campo>
+      <button type="submit" className="btn btn-outline btn-sm" disabled={prazo === (t.prazo ?? '')}>
+        Salvar prazo
+      </button>
+      {t.prazo ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => void agir(() => api.atualizarTarefa(t.id, { prazo: null }))}
+        >
+          Tirar prazo
+        </button>
+      ) : null}
     </form>
   );
 }
@@ -273,6 +328,8 @@ function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
           Adicionar
         </button>
       </form>
+      <hr className="divider" />
+      <EditarPrazo t={t} agir={agir} />
       <hr className="divider" />
       <Planejar tarefa={t} aoPlanejar={aoMudar} />
       <hr className="divider" />
@@ -370,7 +427,9 @@ export function Atividades() {
         <div className="card-head">
           <div>
             <h2>Trabalhos e entregas</h2>
-            <small>{todas.length} atividades</small>
+            <small>
+              {todas.length} {todas.length === 1 ? 'atividade' : 'atividades'}
+            </small>
           </div>
         </div>
         <fieldset className="chip-row mb" style={{ border: 0, padding: 0 }}>

@@ -19,6 +19,11 @@ export function Agenda() {
   const hoje = paraTexto(new Date());
   const [base, setBase] = useState(hoje);
   const [selecionado, setSelecionado] = useState(hoje);
+  // Troca de semana: o dia selecionado anda junto e continua dentro da semana mostrada
+  const mudarSemana = (n: number) => {
+    setBase(somarDias(base, n));
+    setSelecionado(somarDias(selecionado, n));
+  };
   const semana = semanaDe(base);
   const { dados, erro, recarregar } = useCarregar(
     () => api.eventos(semana[0] as string, semana[6] as string),
@@ -95,7 +100,7 @@ export function Agenda() {
               <button
                 type="button"
                 className="btn btn-outline btn-sm"
-                onClick={() => setBase(somarDias(base, -7))}
+                onClick={() => mudarSemana(-7)}
               >
                 Anterior
               </button>
@@ -112,7 +117,7 @@ export function Agenda() {
               <button
                 type="button"
                 className="btn btn-outline btn-sm"
-                onClick={() => setBase(somarDias(base, 7))}
+                onClick={() => mudarSemana(7)}
               >
                 Próxima
               </button>

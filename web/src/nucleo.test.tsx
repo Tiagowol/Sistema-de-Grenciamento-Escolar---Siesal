@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { dataLonga, paraTexto, somarDias } from './datas';
 
 afterEach(() => {
   cleanup();
@@ -143,6 +144,33 @@ describe('telas do aluno', () => {
     expect(chamadas).toContain('PATCH /microetapas/m1');
     expect(screen.getByRole('button', { name: 'Montar plano' })).toBeTruthy();
     expect(await violacoes(container)).toEqual([]);
+  });
+
+  it('atividades: singular na contagem e prazo editável com dica (Lote 12, defeitos 2, 3 e 6)', async () => {
+    const chamadas = simular();
+    render(<App />);
+    await irPara('Atividades');
+    await screen.findByText('Resumo de História');
+    expect(screen.getByText('1 atividade')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /Ver etapas e plano/ }));
+    const campo = await screen.findByLabelText('Prazo');
+    expect(campo.getAttribute('aria-describedby')).toBeTruthy();
+    expect(screen.getAllByText(/dia, mês e ano/i).length).toBeGreaterThan(0);
+    fireEvent.change(campo, { target: { value: '2099-02-20' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar prazo' }));
+    expect(chamadas).toContain('PATCH /tarefas/t1');
+  });
+
+  it('agenda: ao trocar de semana o dia selecionado acompanha (Lote 12, defeito 4)', async () => {
+    simular();
+    render(<App />);
+    await irPara('Agenda');
+    await screen.findByRole('heading', { name: /Agenda visual/ });
+    await userEvent.click(screen.getByRole('button', { name: 'Próxima' }));
+    const esperado = dataLonga(somarDias(paraTexto(new Date()), 7));
+    expect(screen.getByText(`Será criado em ${esperado}.`)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Anterior' }));
+    expect(screen.getByText(`Será criado em ${dataLonga(paraTexto(new Date()))}.`)).toBeTruthy();
   });
 
   it('agenda, foco, notas e avisos passam no axe', async () => {

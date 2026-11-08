@@ -33,8 +33,11 @@ export function Acessibilidade({ valor, aoMudar }: Props) {
         {AJUSTES.map((a) => (
           <div className="setting" key={a.chave}>
             <div className="flex-between">
-              <b id={`aj-${a.chave}`}>{a.titulo}</b>
+              <label id={`aj-${a.chave}`} htmlFor={`sw-${a.chave}`}>
+                <b>{a.titulo}</b>
+              </label>
               <button
+                id={`sw-${a.chave}`}
                 type="button"
                 role="switch"
                 className="switch"
