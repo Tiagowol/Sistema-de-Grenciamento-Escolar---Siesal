@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { PERFIS_CADASTRAVEIS, podeAdministrarUsuarios } from '../api/src/auth/politica.js';
+import {
+  PERFIS_CADASTRAVEIS,
+  podeAdministrarUsuarios,
+  podeUsarNucleo,
+} from '../api/src/auth/politica.js';
 import { PERFIS } from '../shared/src/perfis.js';
 import { permitido } from '../shared/src/permissoes.js';
 
@@ -13,5 +17,14 @@ describe('política de cadastro x matriz de permissões', () => {
 
   it('os perfis cadastráveis são exatamente os escolares', () => {
     expect([...PERFIS_CADASTRAVEIS].sort()).toEqual(PERFIS.filter((p) => p !== 'master').sort());
+  });
+});
+
+describe('política do Núcleo x matriz de permissões', () => {
+  it.each(PERFIS)('perfil %s: tarefas, plano e notas pessoais batem com a matriz', (perfil) => {
+    const esperado = permitido(perfil, 'tarefas', 'administrar') === 'proprio';
+    expect(podeUsarNucleo(perfil)).toBe(esperado);
+    expect(permitido(perfil, 'plano_regressivo', 'administrar') === 'proprio').toBe(esperado);
+    expect(permitido(perfil, 'notas_pessoais', 'administrar') === 'proprio').toBe(esperado);
   });
 });

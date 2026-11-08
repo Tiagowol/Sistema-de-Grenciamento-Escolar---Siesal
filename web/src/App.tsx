@@ -2,9 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ErroApi, type Eu } from './api';
 import { type Pagina, Shell } from './componentes/Shell';
 import { Acessibilidade } from './paginas/Acessibilidade';
+import { Agenda } from './paginas/Agenda';
+import { Atividades } from './paginas/Atividades';
+import { Avisos } from './paginas/Avisos';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
+import { Foco } from './paginas/Foco';
 import { Inicio } from './paginas/Inicio';
 import { Login } from './paginas/Login';
+import { MeuDia } from './paginas/MeuDia';
+import { Notas } from './paginas/Notas';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Usuarios } from './paginas/Usuarios';
 import {
@@ -19,6 +25,7 @@ export function App() {
   const [eu, setEu] = useState<Eu | null>(null);
   const [padrao, setPadrao] = useState<string | null>(null);
   const [pagina, setPagina] = useState<Pagina>('inicio');
+  const [naoLidas, setNaoLidas] = useState(0);
   const [prefs, setPrefs] = useState<Preferencias>(() => carregarPreferencias());
 
   const atualizarEu = useCallback(async () => {
@@ -29,6 +36,22 @@ export function App() {
       setEu(null);
     }
   }, []);
+
+  // Contador de avisos no menu (só para o aluno, com sessão completa)
+  const contarAvisos = useCallback(async () => {
+    try {
+      setNaoLidas((await api.notificacoes()).nao_lidas);
+    } catch {
+      setNaoLidas(0);
+    }
+  }, []);
+  const ehAluno = eu?.usuario.perfil === 'aluno' && eu.nivel === 'completo';
+  useEffect(() => {
+    if (ehAluno) {
+      setPagina((p) => (p === 'inicio' ? 'meudia' : p));
+      void contarAvisos();
+    }
+  }, [ehAluno, contarAvisos]);
 
   useEffect(() => {
     (async () => {
@@ -70,12 +93,26 @@ export function App() {
     ) : null;
 
   return (
-    <Shell eu={eu} pagina={pagina} aoIr={setPagina} aoSair={sair}>
+    <Shell eu={eu} pagina={pagina} aoIr={setPagina} aoSair={sair} naoLidas={naoLidas}>
       {etapa ??
-        (pagina === 'usuarios' ? (
-          <Usuarios />
-        ) : pagina === 'acessibilidade' ? (
+        (pagina === 'acessibilidade' ? (
           <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />
+        ) : ehAluno && pagina === 'meudia' ? (
+          <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
+        ) : ehAluno && pagina === 'atividades' ? (
+          <Atividades />
+        ) : ehAluno && pagina === 'agenda' ? (
+          <Agenda />
+        ) : ehAluno && pagina === 'foco' ? (
+          <Foco />
+        ) : ehAluno && pagina === 'notas' ? (
+          <Notas />
+        ) : ehAluno && pagina === 'avisos' ? (
+          <Avisos aoMudar={() => void contarAvisos()} />
+        ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (
+          <Usuarios />
+        ) : ehAluno ? (
+          <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
         ) : (
           <Inicio eu={eu} aoIr={setPagina} />
         ))}

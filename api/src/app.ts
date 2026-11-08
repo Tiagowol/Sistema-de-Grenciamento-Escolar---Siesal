@@ -18,6 +18,7 @@ import {
   serializarCookie,
 } from './auth/sessao.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
+import { registrarNucleo } from './nucleo/rotas.js';
 
 export type OpcoesApp = {
   banco?: PrismaClient;
@@ -71,6 +72,16 @@ export function criarApp(opcoes: OpcoesApp = {}) {
 
   // Só JSON é aceito: sem o parser de texto, formulário de outro site não chega às rotas (415)
   app.removeContentTypeParser('text/plain');
+
+  // Erro interno nunca mostra detalhe ao cliente (nada de SQL ou caminho); o detalhe vai só para o log
+  app.setErrorHandler((erro: { statusCode?: number; message: string }, requisicao, resposta) => {
+    const status = erro.statusCode && erro.statusCode >= 400 ? erro.statusCode : 500;
+    if (status >= 500) {
+      requisicao.log.error({ err: erro }, 'erro interno');
+      return resposta.code(500).send({ erro: 'Erro interno. Tente de novo.' });
+    }
+    return resposta.code(status).send({ erro: erro.message });
+  });
 
   // Respostas de autenticação nunca ficam em cache
   app.addHook('onSend', async (requisicao, resposta) => {
@@ -131,6 +142,8 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     await auth.logout(sessao);
     return resposta.header('set-cookie', cookieDeSaida(cookie)).code(204).send();
   });
+
+  registrarNucleo(app, { banco: opcoes.banco, exigirSessao, agora: opcoes.agora });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
     const sessao = await exigirSessao(requisicao, resposta);

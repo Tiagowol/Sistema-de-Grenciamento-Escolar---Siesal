@@ -3,7 +3,16 @@ import { useState } from 'react';
 import type { Eu } from '../api';
 import { Icone, type NomeIcone } from '../icones';
 
-export type Pagina = 'inicio' | 'usuarios' | 'acessibilidade';
+export type Pagina =
+  | 'inicio'
+  | 'usuarios'
+  | 'acessibilidade'
+  | 'meudia'
+  | 'atividades'
+  | 'agenda'
+  | 'foco'
+  | 'notas'
+  | 'avisos';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -14,8 +23,20 @@ const ROTULO_PERFIL: Record<string, string> = {
 };
 
 type Item = { id: Pagina; rotulo: string; icone: NomeIcone; so?: string[] };
+const ALUNO = ['aluno'];
 const ITENS: Item[] = [
-  { id: 'inicio', rotulo: 'Início', icone: 'home' },
+  { id: 'meudia', rotulo: 'Meu dia', icone: 'home', so: ALUNO },
+  { id: 'atividades', rotulo: 'Atividades', icone: 'tasks', so: ALUNO },
+  { id: 'agenda', rotulo: 'Agenda', icone: 'calendar', so: ALUNO },
+  { id: 'foco', rotulo: 'Modo foco', icone: 'focus', so: ALUNO },
+  { id: 'notas', rotulo: 'Notas', icone: 'chart', so: ALUNO },
+  { id: 'avisos', rotulo: 'Avisos', icone: 'bell', so: ALUNO },
+  {
+    id: 'inicio',
+    rotulo: 'Início',
+    icone: 'home',
+    so: ['admin', 'professor', 'pedagogico', 'responsavel'],
+  },
   { id: 'usuarios', rotulo: 'Usuários', icone: 'users', so: ['admin'] },
   { id: 'acessibilidade', rotulo: 'Acessibilidade', icone: 'access' },
 ];
@@ -25,11 +46,12 @@ type Props = {
   pagina: Pagina;
   aoIr: (p: Pagina) => void;
   aoSair: () => void;
+  naoLidas?: number;
   children: ReactNode;
 };
 
 // Estrutura do protótipo: menu lateral, barra superior e conteúdo
-export function Shell({ eu, pagina, aoIr, aoSair, children }: Props) {
+export function Shell({ eu, pagina, aoIr, aoSair, naoLidas = 0, children }: Props) {
   const [aberto, setAberto] = useState(false);
   const itens = ITENS.filter((i) => !i.so || i.so.includes(eu.usuario.perfil));
   const atual = itens.find((i) => i.id === pagina);
@@ -73,6 +95,12 @@ export function Shell({ eu, pagina, aoIr, aoSair, children }: Props) {
                   <Icone nome={i.icone} />
                 </span>
                 {i.rotulo}
+                {i.id === 'avisos' && naoLidas > 0 ? (
+                  <span className="counter">
+                    {naoLidas}
+                    <span className="sr-only"> não lidos</span>
+                  </span>
+                ) : null}
               </button>
             ))}
           </nav>

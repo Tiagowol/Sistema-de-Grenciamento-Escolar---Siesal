@@ -26,3 +26,15 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: o ambiente do Claude usa Node 22, que não tem `crypto.argon2` (existe no Node 24.7 ou mais novo). O projeto usa Node 26.
 - Correção: nenhuma no código. Testes rodados com Node 26: 317 passam.
 - Como voltar atrás: não se aplica. Quem rodar fora do Docker precisa de Node 26.
+
+## F-021 — 08/11/2026 — Consulta SQL do Núcleo falhou e a API mostrou o erro do banco
+- O que falhou: `PATCH /tarefas/:id` devolveu 500 com a mensagem do Prisma (código 42P18, "could not determine data type of parameter").
+- Causa: parâmetros nulos ou booleanos sem tipo explícito dentro de `coalesce`/`CASE` em SQL cru. Além disso, a API não tinha tratador de erro e repassava a mensagem do banco ao cliente (risco de segurança: vaza detalhe interno).
+- Correção: casts explícitos (`::text`, `::boolean`, `::date`) nas consultas; novo `setErrorHandler` na API: erro 5xx devolve só "Erro interno. Tente de novo." e o detalhe vai para o log.
+- Como voltar atrás: reverter o commit do Núcleo; a migração 0006 só cria tabelas novas (para desfazer no banco, restaurar o backup feito antes da migração).
+
+## F-022 — 08/11/2026 — Processos de fundo morrem entre comandos no ambiente do Claude
+- O que falhou: o PostgreSQL de teste e a API pararam entre dois comandos ("ECONNREFUSED"; lock `/tmp/.s.PGSQL.54329.lock` velho).
+- Causa: o ambiente encerra processos ao fim de cada comando. Não é defeito do SIESAL.
+- Correção: a fumaça ponta a ponta sobe tudo em um só comando (`/tmp/smoke.sh`) e limpa o lock antes.
+- Como voltar atrás: não se aplica.

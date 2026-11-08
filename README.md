@@ -65,16 +65,3 @@ A documentação de planejamento (Visão, ADRs, matriz de permissões, modelo de
 
 ## Conformidade
 Projetado para atender LGPD, ECA Digital (Lei 15.211/2025), WCAG 2.2 AA e eMAG. Sem parecer jurídico até o momento; não afirmamos "em conformidade".
-
-## Abrir no navegador (localhost, IP e porta)
-
-Todos os comandos são na pasta do projeto. Dados fictícios apenas.
-
-1. Preencha o `.env` (copie de `.env.example`). Para demonstração em http: `AUTH_MODO_LOCAL=sim`.
-2. Backup e migração (use `--build`): `bash scripts/backup.sh`, depois `CONFIRMA_BACKUP=sim docker compose --profile release run --rm --build migrate`.
-3. Crie a instituição fictícia: `docker compose --profile release run --rm --build instituicao`. Anote o `INSTITUICAO_ID` e a senha provisória (aparecem uma vez). Coloque o ID em `INSTITUICAO_PADRAO_ID` no `.env`.
-4. Suba tudo: `docker compose up -d --build`.
-5. Abra `http://localhost:8080`. Para outro aparelho da rede: `WEB_BIND=0.0.0.0` no `.env`, suba de novo e abra `http://IP-DO-COMPUTADOR:8080`.
-
-Critério de "terminou": a tela "Entrar" abre; o login do administrador pede a troca da senha e depois o segundo fator.
-Em http o cookie não tem `Secure` (somente demonstração). Com https, use `AUTH_MODO_LOCAL=nao`.
