@@ -38,3 +38,9 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: o ambiente encerra processos ao fim de cada comando. Não é defeito do SIESAL.
 - Correção: a fumaça ponta a ponta sobe tudo em um só comando (`/tmp/smoke.sh`) e limpa o lock antes.
 - Como voltar atrás: não se aplica.
+
+## F-023 — 08/11/2026 — Push recusado pelo GitHub (e-mail privado nos commits)
+- O que falhou: `git push` recusado com GH007 ("would publish a private email address").
+- Causa: os 3 commits novos (`9323b93`, `b5691a2`, `6b7d22c`) foram criados pelo Claude com o e-mail pessoal do proprietário como autor. O GitHub bloqueia e-mail privado. Erro do Claude: o autor deve vir da configuração do git do proprietário.
+- Correção: regravar o autor dos 3 commits locais (ainda não enviados) com a configuração do proprietário e enviar de novo. Nenhum dado foi publicado.
+- Como voltar atrás: `git reflog` guarda os commits antigos; `git reset --hard <hash antigo>` restaura. Antes de regravar, o Claude não cria mais commits com autor próprio.
