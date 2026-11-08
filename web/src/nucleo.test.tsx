@@ -108,7 +108,9 @@ async function violacoes(no: Element) {
 async function irPara(nome: string) {
   await screen.findByRole('navigation');
   await userEvent.click(
-    within(screen.getByRole('navigation')).getByRole('button', { name: new RegExp(`^${nome}`) }),
+    within(screen.getByRole('navigation')).getByRole('button', {
+      name: new RegExp(`^${nome}(?! oficiais)`),
+    }),
   );
 }
 
@@ -123,11 +125,14 @@ describe('telas do aluno', () => {
       'Agenda',
       'Modo foco',
       'Notas',
+      'Notas oficiais',
       'Avisos',
       'Acessibilidade',
     ]) {
       expect(
-        within(screen.getByRole('navigation')).getByRole('button', { name: new RegExp(`^${n}`) }),
+        within(screen.getByRole('navigation')).getByRole('button', {
+          name: new RegExp(`^${n}(?! oficiais)|^${n}$`),
+        }),
       ).toBeTruthy();
     }
     expect(screen.queryByRole('button', { name: 'Usuários' })).toBeNull();

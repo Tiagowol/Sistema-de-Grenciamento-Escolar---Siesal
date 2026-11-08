@@ -82,6 +82,59 @@ export type NotaPessoal = {
   valor: number;
   dia: string;
 };
+// Notas oficiais (L15): lançadas e revisadas pelo professor; os outros perfis leem e pedem revisão
+export type VersaoNota = {
+  numero: number;
+  valor: number;
+  motivo: string;
+  autor_nome: string;
+  dia: string;
+};
+export type NotaOficial = {
+  id: string;
+  aluno_id: string;
+  aluno_nome: string;
+  turma_id: string;
+  turma_nome: string;
+  disciplina_id: string;
+  disciplina_nome: string;
+  descricao: string;
+  dia: string;
+  versao: number;
+  valor: number;
+  atualizada_em: string;
+  pode_revisar: boolean;
+  pedido_aberto_meu: boolean;
+  versoes?: VersaoNota[]; // só professor e Admin
+};
+export type TurmaDoProfessor = {
+  turma_id: string;
+  turma_nome: string;
+  ano_letivo: number;
+  disciplina_id: string;
+  disciplina_nome: string;
+  alunos: { id: string; nome: string }[];
+};
+export type EstadoPedido = 'aberto' | 'revisada' | 'mantida';
+export type PedidoRevisao = {
+  id: string;
+  nota_id: string;
+  perfil_pedinte: Perfil;
+  pedinte_nome: string;
+  texto: string;
+  estado: EstadoPedido;
+  criado_em: string;
+  motivo_resposta: string;
+  respondido_em: string | null;
+  aluno_nome: string;
+  turma_nome: string;
+  disciplina_nome: string;
+  nota_descricao: string;
+  nota_dia: string;
+  valor_atual: number;
+  versao_atual: number;
+  pode_responder: boolean;
+};
 export type MeuDia = {
   hoje: string;
   atrasadas: ResumoTarefa[];
@@ -166,6 +219,23 @@ export const api = {
   vinculos: () => chamar<{ vinculos: VinculoLista[] }>('GET', '/vinculos'),
   criarVinculo: (d: NovoVinculo) => chamar<{ id: string }>('POST', '/vinculos', d),
   inativarVinculo: (id: string) => chamar<void>('POST', `/vinculos/${id}/inativar`),
+  turmasDoProfessor: () => chamar<{ turmas: TurmaDoProfessor[] }>('GET', '/professor/turmas'),
+  notasOficiais: () => chamar<{ notas: NotaOficial[] }>('GET', '/notas-oficiais'),
+  lancarNotaOficial: (d: {
+    aluno_id: string;
+    turma_id: string;
+    disciplina_id: string;
+    descricao?: string;
+    valor: number;
+    dia: string;
+  }) => chamar<{ id: string }>('POST', '/notas-oficiais', d),
+  revisarNota: (id: string, d: { valor: number; motivo: string; pedido_id?: string }) =>
+    chamar<{ versao: number }>('POST', `/notas-oficiais/${id}/revisoes`, d),
+  pedirRevisao: (id: string, texto: string) =>
+    chamar<{ id: string }>('POST', `/notas-oficiais/${id}/pedidos`, { texto }),
+  pedidosRevisao: () => chamar<{ pedidos: PedidoRevisao[] }>('GET', '/pedidos-revisao'),
+  manterNota: (pedidoId: string, motivo: string) =>
+    chamar<void>('POST', `/pedidos-revisao/${pedidoId}/manter`, { motivo }),
   meuDia: () => chamar<MeuDia>('GET', '/meu-dia'),
   tarefas: () => chamar<{ tarefas: Tarefa[] }>('GET', '/tarefas'),
   criarTarefa: (d: {

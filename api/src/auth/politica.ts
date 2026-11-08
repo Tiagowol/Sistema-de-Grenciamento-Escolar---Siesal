@@ -24,3 +24,14 @@ export function podeUsarNucleo(perfil: string): boolean {
 export function podeAdministrarTurmas(perfil: string): boolean {
   return perfil === 'admin';
 }
+
+// Notas oficiais (L15). Espelham a matriz v4; o teste em verificacao/politica-coerente.test.ts garante a coerência.
+export const podeLancarNota = (perfil: string): boolean => perfil === 'professor'; // lancar e revisar
+export const podeLerNotas = (perfil: string): boolean =>
+  ['admin', 'professor', 'aluno', 'pedagogico', 'responsavel'].includes(perfil);
+export const podeVerHistoricoNotas = (perfil: string): boolean =>
+  perfil === 'admin' || perfil === 'professor';
+export const PERFIS_QUE_PEDEM_REVISAO = ['admin', 'aluno', 'pedagogico', 'responsavel'] as const;
+export const podePedirRevisao = (perfil: string): boolean =>
+  (PERFIS_QUE_PEDEM_REVISAO as readonly string[]).includes(perfil);
+export const podeResponderPedido = (perfil: string): boolean => perfil === 'professor';

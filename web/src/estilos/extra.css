@@ -150,3 +150,40 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Notas oficiais (L15): mesmos alvos de 44 px e listas que quebram linha da tela de turmas */
+.pag-notas .btn,
+.pag-notas select,
+.pag-notas textarea,
+.pag-notas input:not([type="radio"]) {
+  min-height: 44px;
+}
+.pag-notas summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.pag-notas .nota-valor {
+  max-width: 420px;
+  margin-top: 6px;
+}
+.pag-notas .nota-valor strong {
+  font-size: 1.25rem;
+}
+.pag-notas .form-inline {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  max-width: 560px;
+}
+.pag-notas .historico {
+  margin-top: 6px;
+}
+.lista-simples {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}

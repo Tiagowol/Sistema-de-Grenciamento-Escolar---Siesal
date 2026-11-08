@@ -11,6 +11,8 @@ import { Inicio } from './paginas/Inicio';
 import { Login } from './paginas/Login';
 import { MeuDia } from './paginas/MeuDia';
 import { Notas } from './paginas/Notas';
+import { NotasOficiais } from './paginas/NotasOficiais';
+import { NotasProfessor } from './paginas/NotasProfessor';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Turmas } from './paginas/Turmas';
 import { Usuarios } from './paginas/Usuarios';
@@ -108,6 +110,14 @@ export function App() {
           <Foco />
         ) : ehAluno && pagina === 'notas' ? (
           <Notas />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'notasoficiais' &&
+          ['aluno', 'responsavel', 'admin', 'pedagogico'].includes(eu.usuario.perfil) ? (
+          <NotasOficiais perfil={eu.usuario.perfil} />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'notasprof' &&
+          eu.usuario.perfil === 'professor' ? (
+          <NotasProfessor />
         ) : ehAluno && pagina === 'avisos' ? (
           <Avisos aoMudar={() => void contarAvisos()} />
         ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (

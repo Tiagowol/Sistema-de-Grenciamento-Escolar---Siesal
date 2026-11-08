@@ -51,6 +51,7 @@ const RECURSOS_ESCOLARES = [
   'disciplinas',
   'vinculos',
   'notas',
+  'pedidos_revisao',
   'tarefas',
   'plano_regressivo',
   'comentarios_aluno',
@@ -109,6 +110,44 @@ describe('regras fixas da matriz', () => {
     expect(permitido('aluno', 'vinculos', 'ler')).toBe('proprio');
     expect(permitido('responsavel', 'turmas', 'ler')).toBeNull();
     expect(permitido('professor', 'turmas', 'administrar')).toBeNull();
+  });
+
+  it('versão 4: só o professor lança e revisa nota; ninguém mais altera nota', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(4);
+    for (const perfil of PERFIS) {
+      for (const acao of ['lancar', 'revisar']) {
+        expect(permitido(perfil, 'notas', acao), `${perfil}.${acao}`).toBe(
+          perfil === 'professor' ? 'vinculo' : null,
+        );
+      }
+    }
+  });
+
+  it('versão 4: leitura de notas; o Pedagógico lê a nota atual da instituição, sem histórico', () => {
+    expect(permitido('aluno', 'notas', 'ler')).toBe('proprio');
+    expect(permitido('responsavel', 'notas', 'ler')).toBe('vinculo');
+    expect(permitido('pedagogico', 'notas', 'ler')).toBe('instituicao');
+    expect(permitido('admin', 'notas', 'ler')).toBe('instituicao');
+    for (const perfil of PERFIS) {
+      const historico = permitido(perfil, 'notas', 'ler_historico');
+      expect(historico, perfil).toBe(
+        perfil === 'professor' ? 'vinculo' : perfil === 'admin' ? 'instituicao' : null,
+      );
+    }
+  });
+
+  it('versão 4: pedido de revisão; aluno só o próprio, responsável só do vinculado, Master nunca', () => {
+    expect(permitido('aluno', 'pedidos_revisao', 'pedir')).toBe('proprio');
+    expect(permitido('responsavel', 'pedidos_revisao', 'pedir')).toBe('vinculo');
+    expect(permitido('admin', 'pedidos_revisao', 'pedir')).toBe('instituicao');
+    expect(permitido('pedagogico', 'pedidos_revisao', 'pedir')).toBe('instituicao');
+    expect(permitido('professor', 'pedidos_revisao', 'pedir')).toBeNull();
+    expect(permitido('master', 'pedidos_revisao', 'pedir')).toBeNull();
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'pedidos_revisao', 'responder')).toBe(
+        perfil === 'professor' ? 'vinculo' : null,
+      );
+    }
   });
 
   it('as preferências de acessibilidade são só do próprio aluno', () => {

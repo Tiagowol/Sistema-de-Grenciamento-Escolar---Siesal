@@ -7,6 +7,8 @@ export type Pagina =
   | 'inicio'
   | 'usuarios'
   | 'turmas'
+  | 'notasprof'
+  | 'notasoficiais'
   | 'acessibilidade'
   | 'meudia'
   | 'atividades'
@@ -31,12 +33,20 @@ const ITENS: Item[] = [
   { id: 'agenda', rotulo: 'Agenda', icone: 'calendar', so: ALUNO },
   { id: 'foco', rotulo: 'Modo foco', icone: 'focus', so: ALUNO },
   { id: 'notas', rotulo: 'Notas', icone: 'chart', so: ALUNO },
+  { id: 'notasoficiais', rotulo: 'Notas oficiais', icone: 'book', so: ['aluno'] },
   { id: 'avisos', rotulo: 'Avisos', icone: 'bell', so: ALUNO },
   {
     id: 'inicio',
     rotulo: 'Início',
     icone: 'home',
     so: ['admin', 'professor', 'pedagogico', 'responsavel'],
+  },
+  { id: 'notasprof', rotulo: 'Notas da turma', icone: 'book', so: ['professor'] },
+  {
+    id: 'notasoficiais',
+    rotulo: 'Notas oficiais',
+    icone: 'book',
+    so: ['admin', 'pedagogico', 'responsavel'],
   },
   { id: 'usuarios', rotulo: 'Usuários', icone: 'users', so: ['admin'] },
   { id: 'turmas', rotulo: 'Turmas e vínculos', icone: 'school', so: ['admin'] },

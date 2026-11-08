@@ -3,7 +3,12 @@ import {
   PERFIS_CADASTRAVEIS,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
+  podeLancarNota,
+  podeLerNotas,
+  podePedirRevisao,
+  podeResponderPedido,
   podeUsarNucleo,
+  podeVerHistoricoNotas,
 } from '../api/src/auth/politica.js';
 import { PERFIS } from '../shared/src/perfis.js';
 import { permitido } from '../shared/src/permissoes.js';
@@ -37,4 +42,22 @@ describe('política de turmas x matriz de permissões', () => {
     expect(permitido(perfil, 'disciplinas', 'administrar') === 'instituicao').toBe(esperado);
     expect(permitido(perfil, 'vinculos', 'administrar') === 'instituicao').toBe(esperado);
   });
+});
+
+describe('política de notas oficiais x matriz de permissões (v4)', () => {
+  it.each(PERFIS)(
+    'perfil %s: lançar, revisar, ler, pedir e responder batem com a matriz',
+    (perfil) => {
+      expect(podeLancarNota(perfil)).toBe(permitido(perfil, 'notas', 'lancar') !== null);
+      expect(podeLancarNota(perfil)).toBe(permitido(perfil, 'notas', 'revisar') !== null);
+      expect(podeLerNotas(perfil)).toBe(permitido(perfil, 'notas', 'ler') !== null);
+      expect(podeVerHistoricoNotas(perfil)).toBe(
+        permitido(perfil, 'notas', 'ler_historico') !== null,
+      );
+      expect(podePedirRevisao(perfil)).toBe(permitido(perfil, 'pedidos_revisao', 'pedir') !== null);
+      expect(podeResponderPedido(perfil)).toBe(
+        permitido(perfil, 'pedidos_revisao', 'responder') !== null,
+      );
+    },
+  );
 });

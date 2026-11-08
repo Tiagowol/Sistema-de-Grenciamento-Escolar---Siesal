@@ -1,8 +1,9 @@
 import type { Eu } from '../api';
+import type { Pagina } from '../componentes/Shell';
 import { Icone } from '../icones';
 
 // Início simples. Tarefas, agenda e foco chegam nos próximos lotes.
-export function Inicio({ eu, aoIr }: { eu: Eu; aoIr: (p: 'acessibilidade' | 'usuarios') => void }) {
+export function Inicio({ eu, aoIr }: { eu: Eu; aoIr: (p: Pagina) => void }) {
   const primeiro = eu.usuario.nome.split(' ')[0];
   return (
     <>
@@ -27,6 +28,36 @@ export function Inicio({ eu, aoIr }: { eu: Eu; aoIr: (p: 'acessibilidade' | 'usu
             <Icone nome="access" /> Abrir acessibilidade
           </button>
         </section>
+        {eu.usuario.perfil === 'professor' ? (
+          <section className="card">
+            <div className="card-head">
+              <h2>Notas da turma</h2>
+            </div>
+            <p>Lance notas, revise o que lançou e responda pedidos de revisão.</p>
+            <button
+              type="button"
+              className="btn btn-primary mt-sm"
+              onClick={() => aoIr('notasprof')}
+            >
+              <Icone nome="book" /> Abrir notas da turma
+            </button>
+          </section>
+        ) : null}
+        {['admin', 'pedagogico', 'responsavel'].includes(eu.usuario.perfil) ? (
+          <section className="card">
+            <div className="card-head">
+              <h2>Notas oficiais</h2>
+            </div>
+            <p>Veja as notas lançadas pelos professores e peça uma revisão, se precisar.</p>
+            <button
+              type="button"
+              className="btn btn-outline mt-sm"
+              onClick={() => aoIr('notasoficiais')}
+            >
+              <Icone nome="book" /> Abrir notas oficiais
+            </button>
+          </section>
+        ) : null}
         {eu.usuario.perfil === 'admin' ? (
           <section className="card">
             <div className="card-head">

@@ -92,3 +92,27 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: seletores dos testes novos amplos demais. A tela estava certa.
 - Correção: texto ancorado (`^...$`) e busca do botão por `getAllByText('Inativar', { selector: 'button' })`.
 - Como voltar atrás: editar só `web/src/turmas.test.tsx`.
+
+## F-032 — 08/11/2026 — Lote 15: comando de shell com aspas mal fechadas
+- O que falhou: um comando que gravava `NotasProfessor.tsx` de uma vez não rodou (erro de sintaxe do shell). Nada foi gravado.
+- Causa: erro do Claude ao montar o comando longo (repetição de F-027 e F-029).
+- Correção: o arquivo passou a ser gravado pela ferramenta de escrita. Conferido com `git status` que nada ficou pela metade.
+- Como voltar atrás: não se aplica.
+
+## F-033 — 08/11/2026 — Lote 15: resposta da API saía antes do commit
+- O que falhou: 2 testes de integração novos falharam. Depois de um 201 ou 403, a consulta direta ao banco não achou a linha de negócio nem a de auditoria recém-gravada.
+- Causa: as rotas novas enviavam a resposta (`reply.send`) dentro da transação do `withTenant`; o cliente recebia o status antes do commit. Era só uma corrida de leitura imediata, sem perda de dado.
+- Correção: nas rotas de notas, o sucesso e a negação auditada passaram a definir o código e devolver o corpo; a resposta sai depois do commit. 110 de 110 testes de integração passam.
+- Como voltar atrás: editar só `api/src/notas/rotas.ts`. Observação: as rotas do L14 (`api/src/turmas/rotas.ts`) usam o mesmo padrão antigo; não foram alteradas (fora do escopo).
+
+## F-034 — 08/11/2026 — Lote 15: formatador e seletor de teste antigo
+- O que falhou: (1) `biome check` acusou formatação em 9 arquivos do lote; (2) 2 testes antigos de `nucleo.test.tsx` acharam dois botões ("Notas" e "Notas oficiais") com a busca `^Notas`.
+- Causa: (1) código escrito sem passar o formatador antes; (2) o menu do aluno ganhou o item "Notas oficiais", e a busca antiga era ampla.
+- Correção: `biome check --write` em contêiner Node (cópia do repositório), arquivos devolvidos à pasta; busca do teste antigo passou a excluir " oficiais" e o menu esperado ganhou "Notas oficiais". Lint, tipos e 497 testes unitários passam.
+- Como voltar atrás: reverter só `web/src/nucleo.test.tsx`.
+
+## F-035 — 08/11/2026 — Lote 15: acentos quebrados em dados de teste do banco local
+- O que falhou: 3 pedidos de revisão de teste ficaram com "�" no lugar de acentos (por exemplo "quest�o") na Instituição Demonstração.
+- Causa: o texto foi enviado por `curl` no Git Bash do Windows (página de código não UTF-8). Não é defeito do sistema: pela tela os acentos funcionam.
+- Correção: nenhuma na linha (pedido e nota são append-only de propósito). São dados fictícios de teste. Não foi apagado nada.
+- Como voltar atrás: restaurar o backup `backups/siesal-20261108-142240.dump` (feito antes da migração 0008) apagaria também tudo que foi criado depois; só vale se quiser voltar ao estado anterior ao L15.
