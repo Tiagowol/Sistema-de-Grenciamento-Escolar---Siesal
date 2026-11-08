@@ -6,6 +6,9 @@ const urlBanco = process.env.DATABASE_URL;
 const app = criarApp({
   banco: urlBanco ? criarBanco(urlBanco) : undefined,
   authSecret: process.env.AUTH_SECRET,
+  cookieLocal: process.env.AUTH_MODO_LOCAL === 'sim',
+  instituicaoPadrao: process.env.INSTITUICAO_PADRAO_ID || undefined,
+  trustProxy: process.env.TRUST_PROXY === 'sim',
   logger: true,
 });
 

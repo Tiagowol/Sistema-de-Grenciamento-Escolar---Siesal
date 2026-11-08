@@ -64,6 +64,7 @@ model Credencial {
   senha_hash           String
   totp_segredo_cifrado String?
   totp_ativo           Boolean   @default(false)
+  senha_provisoria     Boolean   @default(false)
   totp_ultimo_passo    BigInt?
   falhas_seguidas      Int       @default(0)
   bloqueado_ate        DateTime? @db.Timestamptz(6)

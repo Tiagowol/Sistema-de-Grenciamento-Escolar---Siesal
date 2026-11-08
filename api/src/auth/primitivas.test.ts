@@ -163,3 +163,15 @@ describe('limitador por janela', () => {
     expect(limitador.permitir('ip', 1000)).toBe(true);
   });
 });
+
+describe('cookie em modo local', () => {
+  it('não tem Secure nem prefixo __Host-, mas mantém HttpOnly e SameSite=Strict', async () => {
+    const { COOKIE_LOCAL } = await import('./sessao.js');
+    const cookie = serializarCookie('valor', 60, COOKIE_LOCAL);
+    expect(cookie).toContain('siesal_sessao=valor');
+    expect(cookie).not.toContain('Secure');
+    expect(cookie).not.toContain('__Host-');
+    for (const atributo of ['HttpOnly', 'SameSite=Strict', 'Path=/'])
+      expect(cookie).toContain(atributo);
+  });
+});

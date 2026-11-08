@@ -20,4 +20,9 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 | F-014 | 07/11/2026 | `typescript-eslint` aceita só TypeScript abaixo de 6.1.0, incompatível com o TypeScript 7.0.2 aprovado (A-007). Lint feito com Biome 2.6.6 por decisão do proprietário. Retorno: remover `biome.json` e a dependência | corrigida |
 | F-017 | 07/11/2026 | Teste de gravações simultâneas na auditoria quebrou: o `id` é atribuído antes da trava, então a ordem por `id` não era a ordem da cadeia. Corrigido com a coluna `seq` definida pelo gatilho sob trava (migração 0002 ainda não aplicada em nenhum banco). Teste passou em 3 rodadas seguidas | corrigida |
 | F-018 | 07/11/2026 | Teste de integração da autenticação esperava 415 para `text/plain`, mas a API respondeu 400: o Fastify aceita texto por padrão. Nada era processado, mas formulário de outro site chegava até a validação. Corrigido removendo o parser de texto (agora 415). Retorno: apagar a linha `removeContentTypeParser` em `api/src/app.ts` | corrigida |
-| F-019 | 08/11/2026 | `docker compose run migrate` usou a imagem antiga do Lote 1 e falhou com `Cannot find module /app/dist/migrar/executar.js`. Nada foi alterado no banco. Causa: `run` não reconstrói a imagem sozinho. Correção: usar `--build` (`docker compose --profile release run --rm --build migrate`). Retorno: não se aplica | corrigida |
+
+## F-020 — 08/11/2026 — Teste de senha falhou no ambiente do Claude
+- O que falhou: `primitivas.test.ts` com "original argument must be of type function" em `senha.ts`.
+- Causa: o ambiente do Claude usa Node 22, que não tem `crypto.argon2` (existe no Node 24.7 ou mais novo). O projeto usa Node 26.
+- Correção: nenhuma no código. Testes rodados com Node 26: 317 passam.
+- Como voltar atrás: não se aplica. Quem rodar fora do Docker precisa de Node 26.

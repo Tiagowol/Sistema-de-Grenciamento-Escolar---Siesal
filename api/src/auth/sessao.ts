@@ -28,13 +28,25 @@ export function lerToken(
   return { instituicaoId: instituicaoId as string, hash: hashToken(token) };
 }
 
-// Cookie sem Domain e com Path=/ (exigências do prefixo __Host-), HttpOnly, Secure e SameSite=Strict
-export function serializarCookie(token: string, duracaoSegundos: number): string {
-  return `${NOME_COOKIE}=${token}; Max-Age=${duracaoSegundos}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+// Nome e atributos do cookie. Padrão: prefixo __Host- (exige HTTPS), HttpOnly, Secure e SameSite=Strict.
+// Modo local (AUTH_MODO_LOCAL=sim): só para demonstração em http://localhost ou http://IP:porta, sem Secure.
+export const NOME_COOKIE_LOCAL = 'siesal_sessao';
+
+export type ConfigCookie = { nome: string; seguro: boolean };
+export const COOKIE_PADRAO: ConfigCookie = { nome: NOME_COOKIE, seguro: true };
+export const COOKIE_LOCAL: ConfigCookie = { nome: NOME_COOKIE_LOCAL, seguro: false };
+
+export function serializarCookie(
+  token: string,
+  duracaoSegundos: number,
+  config: ConfigCookie = COOKIE_PADRAO,
+): string {
+  const seguro = config.seguro ? ' Secure;' : '';
+  return `${config.nome}=${token}; Max-Age=${duracaoSegundos}; Path=/; HttpOnly;${seguro} SameSite=Strict`;
 }
 
-export function cookieDeSaida(): string {
-  return `${NOME_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict`;
+export function cookieDeSaida(config: ConfigCookie = COOKIE_PADRAO): string {
+  return serializarCookie('', 0, config);
 }
 
 export function lerCookie(cabecalho: string | undefined, nome = NOME_COOKIE): string | undefined {

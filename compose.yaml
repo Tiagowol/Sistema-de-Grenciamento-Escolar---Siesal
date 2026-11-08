@@ -38,6 +38,11 @@ services:
     environment:
       DATABASE_URL: postgres://siesal_app:${SIESAL_APP_PASSWORD:-}@db:5432/${POSTGRES_DB}
       AUTH_SECRET: ${AUTH_SECRET:-}
+      # Só demonstração em http (localhost/IP/porta): cookie sem Secure. Em produção use https e "nao".
+      AUTH_MODO_LOCAL: ${AUTH_MODO_LOCAL:-nao}
+      # Atrás do nginx, a API lê o IP real do cabeçalho X-Forwarded-For
+      TRUST_PROXY: ${TRUST_PROXY:-sim}
+      INSTITUICAO_PADRAO_ID: ${INSTITUICAO_PADRAO_ID:-}
     networks: [web, backend]
     read_only: true
     tmpfs: [/tmp]
@@ -51,6 +56,24 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  # Site: nginx serve o React e repassa /api para a API. Único ponto de entrada para o navegador.
+  # Local: http://localhost:8080. Na rede: defina WEB_BIND=0.0.0.0 e acesse http://IP-DO-COMPUTADOR:8080.
+  web:
+    build: ./web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORTA:-8080}:8080"
+    networks: [web]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 128m
+    cpus: 0.25
 
   # Migração: job único, só roda com --profile release. Aplica as migrações SQL como administrador
   # do banco e cria os papéis siesal_owner e siesal_app. Exige backup confirmado (CONFIRMA_BACKUP=sim).
@@ -82,6 +105,24 @@ services:
       DATABASE_URL_ADMIN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       MASTER_1_USUARIO: ${MASTER_1_USUARIO:-}
       MASTER_2_USUARIO: ${MASTER_2_USUARIO:-}
+    networks: [backend]
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  # Cria uma instituição fictícia e o primeiro administrador (senha provisória impressa uma vez).
+  instituicao:
+    build: ./api
+    profiles: [release]
+    command: ["node", "dist/migrar/executar-instituicao.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL_ADMIN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      INSTITUICAO_NOME: ${INSTITUICAO_NOME:-Instituição Demonstração}
+      ADMIN_NOME: ${ADMIN_NOME:-Administrador Demonstração}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@exemplo.invalid}
     networks: [backend]
     read_only: true
     security_opt: ["no-new-privileges:true"]

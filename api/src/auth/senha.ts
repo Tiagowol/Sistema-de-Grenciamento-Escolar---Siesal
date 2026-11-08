@@ -1,4 +1,4 @@
-import { argon2, randomBytes, timingSafeEqual } from 'node:crypto';
+import { argon2, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const argon2Async = promisify(argon2);
@@ -53,4 +53,16 @@ export async function verificarSenhaFalsa(senha: string): Promise<false> {
   falso ??= hashSenha(randomBytes(16).toString('hex'));
   await verificarSenha(senha, await falso);
   return false;
+}
+
+// Senha provisória: 16 caracteres de um alfabeto sem letras parecidas (0/O, 1/I), em 4 grupos. Mostrada uma única vez.
+const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function gerarSenhaProvisoria(): string {
+  const grupos: string[] = [];
+  for (let g = 0; g < 4; g++) {
+    let grupo = '';
+    for (let i = 0; i < 4; i++) grupo += ALFABETO[randomInt(ALFABETO.length)];
+    grupos.push(grupo);
+  }
+  return grupos.join('-');
 }

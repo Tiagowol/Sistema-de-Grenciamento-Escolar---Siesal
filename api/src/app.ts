@@ -4,11 +4,19 @@ import {
   type Autenticacao,
   criarAutenticacao,
   MENSAGEM_FALHA,
+  type Nivel,
   type SessaoAtiva,
 } from './auth/autenticacao.js';
 import { derivarChave } from './auth/cifra.js';
 import { LimitadorJanela } from './auth/limitador.js';
-import { cookieDeSaida, lerCookie, serializarCookie } from './auth/sessao.js';
+import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
+import {
+  COOKIE_LOCAL,
+  COOKIE_PADRAO,
+  cookieDeSaida,
+  lerCookie,
+  serializarCookie,
+} from './auth/sessao.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
 
 export type OpcoesApp = {
@@ -16,6 +24,9 @@ export type OpcoesApp = {
   authSecret?: string;
   agora?: () => Date;
   limiteTentativasPorMinuto?: number;
+  instituicaoPadrao?: string; // id exibido no login (demonstração com uma escola só)
+  trustProxy?: boolean; // atrás do nginx do compose: usa o IP real para o limite por tentativas
+  cookieLocal?: boolean; // só demonstração em http (localhost/IP); padrão: cookie seguro com __Host-
   logger?: boolean;
 };
 
@@ -25,13 +36,29 @@ const corpoLogin = z.strictObject({
   senha: z.string().min(1).max(128),
   codigo: z.string().min(6).max(20).optional(),
 });
+const corpoTrocaSenha = z.strictObject({
+  senha_atual: z.string().min(1).max(128),
+  senha_nova: z.string().min(1).max(200),
+});
+const corpoUsuario = z.strictObject({
+  perfil: z.enum(PERFIS_CADASTRAVEIS),
+  nome: z.string().trim().min(1).max(120),
+  email: z.email().max(254),
+});
+const parametroUsuario = z.strictObject({ id: z.uuid() });
 const corpoCodigo = z.strictObject({ codigo: z.string().min(6).max(20) });
 
 // Monta a API. Sem banco ou AUTH_SECRET, só a rota de saúde existe (deny by default).
 export function criarApp(opcoes: OpcoesApp = {}) {
-  const app = Fastify({ logger: opcoes.logger ?? false });
+  const app = Fastify({ logger: opcoes.logger ?? false, trustProxy: opcoes.trustProxy ?? false });
   app.get('/saude', async () => ({ status: 'ok' }));
   if (!opcoes.banco || !opcoes.authSecret) return app;
+
+  // Configuração pública mínima para a tela de login (nenhum segredo)
+  app.get('/config', async () => ({
+    instituicao_padrao: opcoes.instituicaoPadrao ?? null,
+    modo_local: Boolean(opcoes.cookieLocal),
+  }));
 
   const auth: Autenticacao = criarAutenticacao({
     banco: opcoes.banco,
@@ -40,6 +67,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   });
   const limitador = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
   const relogio = opcoes.agora ?? (() => new Date());
+  const cookie = opcoes.cookieLocal ? COOKIE_LOCAL : COOKIE_PADRAO;
 
   // Só JSON é aceito: sem o parser de texto, formulário de outro site não chega às rotas (415)
   app.removeContentTypeParser('text/plain');
@@ -59,12 +87,23 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return false;
   };
 
+  // Sessão válida e, se pedido, em um dos níveis aceitos; nível errado = 403 com a etapa pendente
   const exigirSessao = async (
     requisicao: FastifyRequest,
     resposta: FastifyReply,
+    niveis?: Nivel[],
   ): Promise<SessaoAtiva | null> => {
-    const sessao = await auth.obterSessao(lerCookie(requisicao.headers.cookie));
-    if (!sessao) void resposta.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    const sessao = await auth.obterSessao(lerCookie(requisicao.headers.cookie, cookie.nome));
+    if (!sessao) {
+      void resposta.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+      return null;
+    }
+    if (niveis && !niveis.includes(sessao.nivel)) {
+      void resposta
+        .code(403)
+        .send({ erro: 'Conclua a etapa pendente antes de continuar.', nivel: sessao.nivel });
+      return null;
+    }
     return sessao;
   };
 
@@ -82,7 +121,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       return resposta.code(401).send({ erro: 'segundo_fator_necessario' });
     if (r.tipo === 'falha') return resposta.code(401).send({ erro: MENSAGEM_FALHA });
     return resposta
-      .header('set-cookie', serializarCookie(r.token, r.duracao))
+      .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
       .send({ nivel: r.nivel, usuario: r.usuario });
   });
 
@@ -90,7 +129,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     const sessao = await exigirSessao(requisicao, resposta);
     if (!sessao) return resposta;
     await auth.logout(sessao);
-    return resposta.header('set-cookie', cookieDeSaida()).code(204).send();
+    return resposta.header('set-cookie', cookieDeSaida(cookie)).code(204).send();
   });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
@@ -103,7 +142,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   });
 
   app.post('/auth/totp/iniciar', async (requisicao, resposta) => {
-    const sessao = await exigirSessao(requisicao, resposta);
+    const sessao = await exigirSessao(requisicao, resposta, ['completo', 'configurar_totp']);
     if (!sessao) return resposta;
     const r = await auth.iniciarTotp(sessao);
     if (r.tipo === 'ja_ativo') return resposta.code(409).send({ erro: 'O TOTP já está ativo.' });
@@ -112,7 +151,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
 
   app.post('/auth/totp/confirmar', async (requisicao, resposta) => {
     if (!limitar(requisicao, resposta)) return resposta;
-    const sessao = await exigirSessao(requisicao, resposta);
+    const sessao = await exigirSessao(requisicao, resposta, ['completo', 'configurar_totp']);
     if (!sessao) return resposta;
     const corpo = corpoCodigo.safeParse(requisicao.body);
     if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
@@ -122,8 +161,60 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       return resposta.code(409).send({ erro: 'Inicie o TOTP antes de confirmar.' });
     if (r.tipo === 'codigo_invalido') return resposta.code(401).send({ erro: 'Código inválido.' });
     return resposta
-      .header('set-cookie', serializarCookie(r.token, r.duracao))
+      .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
       .send({ codigos_recuperacao: r.codigosRecuperacao });
+  });
+
+  app.post('/auth/senha/trocar', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const sessao = await exigirSessao(requisicao, resposta);
+    if (!sessao) return resposta;
+    const corpo = corpoTrocaSenha.safeParse(requisicao.body);
+    if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await auth.trocarSenha(sessao, corpo.data.senha_atual, corpo.data.senha_nova);
+    if (r.tipo === 'senha_fraca') return resposta.code(400).send({ erro: r.mensagem });
+    if (r.tipo === 'senha_igual') {
+      return resposta.code(400).send({ erro: 'A senha nova precisa ser diferente da atual.' });
+    }
+    if (r.tipo === 'senha_atual_invalida') {
+      return resposta.code(401).send({ erro: 'Senha atual incorreta.' });
+    }
+    return resposta
+      .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
+      .send({ nivel: r.nivel });
+  });
+
+  app.get('/usuarios', async (requisicao, resposta) => {
+    const sessao = await exigirSessao(requisicao, resposta, ['completo']);
+    if (!sessao) return resposta;
+    const r = await auth.listarUsuarios(sessao);
+    if (r.tipo === 'proibido') return resposta.code(403).send({ erro: 'Sem permissão.' });
+    return { usuarios: r.usuarios };
+  });
+
+  app.post('/usuarios', async (requisicao, resposta) => {
+    const sessao = await exigirSessao(requisicao, resposta, ['completo']);
+    if (!sessao) return resposta;
+    const corpo = corpoUsuario.safeParse(requisicao.body);
+    if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await auth.criarUsuario(sessao, corpo.data);
+    if (r.tipo === 'proibido') return resposta.code(403).send({ erro: 'Sem permissão.' });
+    if (r.tipo === 'email_em_uso') {
+      return resposta.code(409).send({ erro: 'Já existe usuário com este e-mail.' });
+    }
+    return resposta.code(201).send({ usuario: r.usuario, senha_provisoria: r.senhaProvisoria });
+  });
+
+  app.post('/usuarios/:id/senha-provisoria', async (requisicao, resposta) => {
+    const sessao = await exigirSessao(requisicao, resposta, ['completo']);
+    if (!sessao) return resposta;
+    const parametros = parametroUsuario.safeParse(requisicao.params);
+    if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await auth.redefinirSenha(sessao, parametros.data.id);
+    if (r.tipo === 'proibido') return resposta.code(403).send({ erro: 'Sem permissão.' });
+    if (r.tipo === 'nao_encontrado')
+      return resposta.code(404).send({ erro: 'Usuário não encontrado.' });
+    return { senha_provisoria: r.senhaProvisoria };
   });
 
   return app;

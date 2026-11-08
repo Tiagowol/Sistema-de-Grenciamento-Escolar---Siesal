@@ -3,7 +3,18 @@ import { type ClienteTransacao, withTenant } from '../banco/withTenant.js';
 import type { PrismaClient } from '../gerado/prisma/client.js';
 import { cifrar, decifrar } from './cifra.js';
 import { gerarCodigosRecuperacao, hashCodigo, pareceCodigoRecuperacao } from './codigos.js';
-import { verificarSenha, verificarSenhaFalsa } from './senha.js';
+import {
+  PERFIS_CADASTRAVEIS,
+  type PerfilCadastravel,
+  podeAdministrarUsuarios,
+} from './politica.js';
+import {
+  gerarSenhaProvisoria,
+  hashSenha,
+  validarSenha,
+  verificarSenha,
+  verificarSenhaFalsa,
+} from './senha.js';
 import {
   DURACAO_CONFIGURAR_TOTP_SEGUNDOS,
   DURACAO_SESSAO_SEGUNDOS,
@@ -16,7 +27,7 @@ export const MAX_FALHAS = 5;
 export const BLOQUEIO_MINUTOS = 15;
 export const MENSAGEM_FALHA = 'Credenciais inválidas ou conta temporariamente bloqueada.';
 
-export type Nivel = 'completo' | 'configurar_totp';
+export type Nivel = 'completo' | 'configurar_totp' | 'trocar_senha';
 export type SessaoAtiva = {
   sessaoId: string;
   instituicaoId: string;
@@ -154,6 +165,12 @@ export function criarAutenticacao(dep: Dependencias) {
     return gravado.count === 1;
   }
 
+  // Senha provisória: só troca de senha. Administrador sem TOTP: só configura o TOTP. Senão: acesso completo.
+  function nivelInicial(perfil: string, cred: Cred): Nivel {
+    if (cred.senha_provisoria) return 'trocar_senha';
+    return perfil === 'admin' && !cred.totp_ativo ? 'configurar_totp' : 'completo';
+  }
+
   async function login(entrada: {
     instituicaoId: string;
     email: string;
@@ -222,9 +239,7 @@ export function criarAutenticacao(dep: Dependencias) {
           },
           data: { falhas_seguidas: 0, bloqueado_ate: null, atualizado_em: agora },
         });
-        // Administrador sem TOTP só consegue configurar o TOTP
-        const nivel: Nivel =
-          usuario.perfil === 'admin' && !cred.totp_ativo ? 'configurar_totp' : 'completo';
+        const nivel = nivelInicial(usuario.perfil, cred);
         const { token, duracao } = await abrirSessao(
           tx,
           entrada.instituicaoId,
@@ -388,12 +403,245 @@ export function criarAutenticacao(dep: Dependencias) {
     });
   }
 
+  // Troca a senha (obrigatória com senha provisória). Encerra todas as sessões do usuário e abre uma nova.
+  async function trocarSenha(
+    sessao: SessaoAtiva,
+    senhaAtual: string,
+    senhaNova: string,
+  ): Promise<
+    | { tipo: 'ok'; token: string; duracao: number; nivel: Nivel }
+    | { tipo: 'senha_fraca'; mensagem: string }
+    | { tipo: 'senha_atual_invalida' }
+    | { tipo: 'senha_igual' }
+  > {
+    const agora = relogio();
+    const fraca = validarSenha(senhaNova);
+    if (fraca) return { tipo: 'senha_fraca', mensagem: fraca };
+    if (senhaNova === senhaAtual) return { tipo: 'senha_igual' };
+    return withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+      const cred = await tx.credencial.findUnique({ where: chaveCred(sessao) });
+      if (!cred) return { tipo: 'senha_atual_invalida' as const };
+      if (cred.bloqueado_ate && cred.bloqueado_ate > agora) {
+        await verificarSenhaFalsa(senhaAtual);
+        return { tipo: 'senha_atual_invalida' as const };
+      }
+      if (!(await verificarSenha(senhaAtual, cred.senha_hash))) {
+        await registrarFalha(tx, cred, 'troca_senha', agora);
+        return { tipo: 'senha_atual_invalida' as const };
+      }
+      const atualizada = await tx.credencial.update({
+        where: chaveCred(sessao),
+        data: {
+          senha_hash: await hashSenha(senhaNova),
+          senha_provisoria: false,
+          falhas_seguidas: 0,
+          bloqueado_ate: null,
+          atualizado_em: agora,
+        },
+      });
+      await tx.sessao.updateMany({
+        where: { usuario_id: sessao.usuarioId, revogada_em: null },
+        data: { revogada_em: agora },
+      });
+      const nivel = nivelInicial(sessao.perfil, atualizada);
+      const nova = await abrirSessao(tx, sessao.instituicaoId, sessao.usuarioId, nivel, agora);
+      await registrarAuditoria(tx, {
+        instituicaoId: sessao.instituicaoId,
+        ator: ator(sessao.usuarioId),
+        acao: 'auth.senha_trocada',
+        alvo: ator(sessao.usuarioId),
+      });
+      return { tipo: 'ok' as const, token: nova.token, duracao: nova.duracao, nivel };
+    });
+  }
+
+  // Lista os usuários da própria instituição (só admin). Nunca devolve hash, segredo ou código.
+  async function listarUsuarios(sessao: SessaoAtiva): Promise<
+    | {
+        tipo: 'ok';
+        usuarios: {
+          id: string;
+          perfil: string;
+          nome: string;
+          email: string;
+          situacao: string;
+          senhaProvisoria: boolean;
+        }[];
+      }
+    | { tipo: 'proibido' }
+  > {
+    if (sessao.nivel !== 'completo' || !podeAdministrarUsuarios(sessao.perfil)) {
+      await negarAcesso(sessao, 'usuario.listagem_negada');
+      return { tipo: 'proibido' };
+    }
+    return withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+      const linhas = await tx.usuario.findMany({ orderBy: [{ perfil: 'asc' }, { nome: 'asc' }] });
+      const provisorias = await tx.credencial.findMany({
+        where: { senha_provisoria: true },
+        select: { usuario_id: true },
+      });
+      const marcados = new Set(provisorias.map((c) => c.usuario_id));
+      return {
+        tipo: 'ok' as const,
+        usuarios: linhas.map((u) => ({
+          id: u.id,
+          perfil: u.perfil,
+          nome: u.nome,
+          email: u.email,
+          situacao: u.situacao,
+          senhaProvisoria: marcados.has(u.id),
+        })),
+      };
+    });
+  }
+
+  // Tentativa sem permissão também fica na auditoria
+  async function negarAcesso(sessao: SessaoAtiva, acao: string): Promise<void> {
+    await withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, (tx) =>
+      registrarAuditoria(tx, {
+        instituicaoId: sessao.instituicaoId,
+        ator: ator(sessao.usuarioId),
+        acao,
+        alvo: ator(sessao.usuarioId),
+      }),
+    );
+  }
+
+  // Admin cria usuário da própria instituição com senha provisória (mostrada uma vez, nunca gravada em claro)
+  async function criarUsuario(
+    sessao: SessaoAtiva,
+    dados: { perfil: PerfilCadastravel; nome: string; email: string },
+  ): Promise<
+    | {
+        tipo: 'ok';
+        usuario: { id: string; perfil: string; nome: string; email: string };
+        senhaProvisoria: string;
+      }
+    | { tipo: 'proibido' }
+    | { tipo: 'email_em_uso' }
+  > {
+    if (
+      sessao.nivel !== 'completo' ||
+      !podeAdministrarUsuarios(sessao.perfil) ||
+      !PERFIS_CADASTRAVEIS.includes(dados.perfil)
+    ) {
+      await negarAcesso(sessao, 'usuario.criacao_negada');
+      return { tipo: 'proibido' };
+    }
+    const email = dados.email.trim().toLowerCase();
+    const senhaProvisoria = gerarSenhaProvisoria();
+    const senhaHash = await hashSenha(senhaProvisoria);
+    const agora = relogio();
+    try {
+      return await withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+        const existente = await tx.usuario.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
+        });
+        if (existente) return { tipo: 'email_em_uso' as const };
+        const usuario = await tx.usuario.create({
+          data: {
+            instituicao_id: sessao.instituicaoId,
+            perfil: dados.perfil,
+            nome: dados.nome.trim(),
+            email,
+          },
+        });
+        await tx.credencial.create({
+          data: {
+            instituicao_id: sessao.instituicaoId,
+            usuario_id: usuario.id,
+            senha_hash: senhaHash,
+            senha_provisoria: true,
+            atualizado_em: agora,
+          },
+        });
+        await registrarAuditoria(tx, {
+          instituicaoId: sessao.instituicaoId,
+          ator: ator(sessao.usuarioId),
+          acao: 'usuario.criado',
+          alvo: ator(usuario.id),
+          depois: { perfil: usuario.perfil },
+        });
+        return {
+          tipo: 'ok' as const,
+          usuario: {
+            id: usuario.id,
+            perfil: usuario.perfil,
+            nome: usuario.nome,
+            email: usuario.email,
+          },
+          senhaProvisoria,
+        };
+      });
+    } catch (erro) {
+      // Corrida entre dois cadastros do mesmo e-mail: a restrição única do banco decide
+      if (
+        typeof erro === 'object' &&
+        erro !== null &&
+        (erro as { code?: string }).code === 'P2002'
+      ) {
+        return { tipo: 'email_em_uso' };
+      }
+      throw erro;
+    }
+  }
+
+  // Admin gera nova senha provisória para um usuário da própria instituição (esquecimento ou bloqueio)
+  async function redefinirSenha(
+    sessao: SessaoAtiva,
+    usuarioId: string,
+  ): Promise<
+    { tipo: 'ok'; senhaProvisoria: string } | { tipo: 'proibido' } | { tipo: 'nao_encontrado' }
+  > {
+    if (sessao.nivel !== 'completo' || !podeAdministrarUsuarios(sessao.perfil)) {
+      await negarAcesso(sessao, 'usuario.redefinicao_negada');
+      return { tipo: 'proibido' };
+    }
+    const senhaProvisoria = gerarSenhaProvisoria();
+    const senhaHash = await hashSenha(senhaProvisoria);
+    const agora = relogio();
+    return withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+      const alvo = await tx.credencial.findFirst({ where: { usuario_id: usuarioId } });
+      if (!alvo) return { tipo: 'nao_encontrado' as const };
+      await tx.credencial.update({
+        where: {
+          instituicao_id_usuario_id: {
+            instituicao_id: alvo.instituicao_id,
+            usuario_id: alvo.usuario_id,
+          },
+        },
+        data: {
+          senha_hash: senhaHash,
+          senha_provisoria: true,
+          falhas_seguidas: 0,
+          bloqueado_ate: null,
+          atualizado_em: agora,
+        },
+      });
+      await tx.sessao.updateMany({
+        where: { usuario_id: usuarioId, revogada_em: null },
+        data: { revogada_em: agora },
+      });
+      await registrarAuditoria(tx, {
+        instituicaoId: sessao.instituicaoId,
+        ator: ator(sessao.usuarioId),
+        acao: 'usuario.senha_redefinida',
+        alvo: ator(usuarioId),
+      });
+      return { tipo: 'ok' as const, senhaProvisoria };
+    });
+  }
+
   return {
     login,
     obterSessao,
     logout,
     iniciarTotp,
     confirmarTotp,
+    trocarSenha,
+    criarUsuario,
+    redefinirSenha,
+    listarUsuarios,
     passoAtual: () => passoDe(relogio()),
   };
 }
