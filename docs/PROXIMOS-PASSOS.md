@@ -1,6 +1,6 @@
 # Próximos passos (registro de 09/11/2026)
 
-> **Atualização de 10/11/2026:** os lotes L17, L17a, L17b, L17c e L18 estão **Implementados** (migrações até a 0014 aplicadas no banco do site). A ordem abaixo é histórica. O estado atual, o que falta e o gate de verificação estão em `docs/RELATORIO-L18.md`. Próximos lotes: L19 e L20, cada um só com "aprovo".
+> **Atualização de 10/11/2026, 15:30 (A-036):** L17, L17a, L17b, L17c e L18 estão **Implementados** (migrações até a 0014 aplicadas no banco do site) e já estão no ramo `siesal-4` do GitHub (avanço rápido até `05f3d01`). Nenhum é "Verificado": o retorno do NAPNE e do professor chega em 12/11/2026. **Próximo lote: L17d** (rótulos, chave do menu, ajuda "?" e VLibras), ramo `lote-17d-rotulos-libras`, plano em `docs/PLANO-L17D.md`. Depois: L19 e L20, já aprovados (A-036), cada um em ramo próprio. A ordem abaixo é histórica; o que falta do L18 está em `docs/RELATORIO-L18.md`.
 
 Estado: L16, L16a, L16b, L16c, L16d e L16e commitados no ramo `lote-16-avisos` (um commit só; os arquivos se misturam entre os sublotes). Estado dos lotes: **Implementado**, não "Verificado".
 
@@ -17,7 +17,7 @@ Estado: L16, L16a, L16b, L16c, L16d e L16e commitados no ramo `lote-16-avisos` (
 - Falta também: revisão dos textos pelo NAPNE (`web/src/linguagem-curta.ts`) e o commit do L17.
 
 ## Pendências sem lote
-- **F-036:** o commit d428548 (L15) tem o defeito; está corrigido no L16. Não enviar o L15 sozinho ao GitHub.
+- **F-036:** o commit d428548 (L15) tem o defeito; está corrigido no L16. Desde 10/11/2026 o `siesal-4` no GitHub já tem o L15 junto com a correção. Continua valendo: não enviar o ramo `lote-15-notas` sozinho.
 - Texto da A-029 (comandos manuais de manutenção): os nomes são do Code; o arquivo `claude/lote-16a-e/PROPOSTA-LOTES-16A-A-16E.md` não está no repositório.
 - Docker Scout (CVEs das imagens), tela de Admin com TOTP, varredura de segredos no histórico do Git, carga pelo nginx, ensaio de restauração.
 

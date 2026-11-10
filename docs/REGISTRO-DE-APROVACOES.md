@@ -51,3 +51,14 @@ Mensagem do autor em chat, em 10/11/2026, com 5 itens:
 4. Criar o ramo `lote-17a-calendario` a partir do ponto atual do L18. **Não executado.** Estado encontrado: o ramo `lote-17a-calendario` já existe desde 09/11/2026, no commit `6442f77`, e já está no GitHub (A-033). Recriá-lo no ponto do L18 trocaria o que ele aponta e exigiria envio forçado. O ramo do L18 já contém o L17a, o L17b, o L17c, a correção F-045 e o roteiro.
 5. Começar o L17a pelo plano e avisar antes da migração 0011. **Não executado.** Estado encontrado: o L17a está Implementado desde 09/11/2026 e a migração 0011 foi aplicada naquele dia, com backup antes (`backups/siesal-20261109-223319.dump`) e retorno em `docs/RETORNO-0011.md`.
 - **Não coberto:** merge, deploy fora do computador, envio forçado, ligar o acesso público e criar senha dos Masters.
+
+## A-036 — L17d, L19 e L20 aprovados; organização do git (10/11/2026, 15:30)
+Mensagem do autor em chat, em 10/11/2026:
+1. "Aprovo o L17d, aprovo o L19 e aprovo o L20." Ordem: organizar o git → L17d → L19 → L20.
+2. O retorno do NAPNE e do professor chega na quinta, 12/11/2026. O trabalho segue sem esperar. **Nenhum lote vira "Verificado" antes disso.**
+3. Git: merge de `lote-18-masters-fechamento` em `siesal-4` só por avanço rápido (`--ff-only`) e push de `siesal-4`. Apagar o ramo local vazio `lote-18-fechamento`. Não tocar no `main` (v3, A-003). Sem deploy, sem envio forçado, sem enviar os ramos antigos L14 a L17 um a um. **Feito em 10/11/2026:** conferido antes que `siesal-4` e `origin/siesal-4` eram ancestrais do L18 e que a correção da F-036 (`api/src/notas/rotas.ts`) estava no ramo; `siesal-4` avançou de `12dd82c` para `05f3d01` e foi enviado; `lote-18-fechamento` (`802dac8`) apagado.
+4. Commit e push de cada lote (L17d, L19, L20) no ramo próprio, com os arquivos listados um a um. **Merge em `siesal-4` de cada lote novo: pedir de novo.**
+5. Migração só com backup antes e retorno escrito em `docs/`; avisar o autor antes de aplicar no banco do site.
+6. Não usar nem alterar as contas `@teste.com`. Nunca imprimir senha. Não tocar no TI-REX nem na v3.
+- Especificação do L17d em `docs/PLANO-L17D.md`. L19 inclui o item que sobrou do L17a (aluno vê os eventos da turma vinculada, origem `calendario_escolar`). L20: a trilha `operator_auditoria` já existe desde o L18.
+- Nota: os documentos atualizados neste passo (este registro, `PROXIMOS-PASSOS.md` e `README.md`) vão no primeiro commit do ramo `lote-17d-rotulos-libras`, porque o commit direto em `siesal-4` não foi autorizado. Chegam ao `siesal-4` no merge do L17d.
