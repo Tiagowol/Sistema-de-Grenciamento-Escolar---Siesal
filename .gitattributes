@@ -1,0 +1,2 @@
+# Scripts de shell rodam em Linux (contêiner ou WSL): sempre com fim de linha LF (F-047)
+*.sh text eol=lf

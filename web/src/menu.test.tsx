@@ -130,21 +130,21 @@ describe('Shell: busca e menu recolhível', () => {
     expect(caixa.value).toBe('');
   });
 
-  it('o botão recolhe e mostra o menu, anuncia o estado e lembra neste aparelho', async () => {
+  it('a chave liga e desliga o menu lateral, anuncia o estado e lembra neste aparelho (L17d)', async () => {
     const { container } = montar();
-    const botao = screen.getByRole('button', { name: 'Recolher menu' });
-    expect(botao.getAttribute('aria-expanded')).toBe('true');
-    expect(botao.getAttribute('aria-controls')).toBe('menu-principal');
+    const chave = screen.getByRole('switch', { name: 'Menu lateral' });
+    expect(chave.getAttribute('aria-checked')).toBe('true');
+    expect(chave.getAttribute('aria-controls')).toBe('menu-principal');
     expect(document.getElementById('menu-principal')).toBeTruthy();
-    await userEvent.click(botao);
-    const mostrar = screen.getByRole('button', { name: 'Mostrar menu' });
-    expect(mostrar.getAttribute('aria-expanded')).toBe('false');
+    await userEvent.click(chave);
+    expect(chave.getAttribute('aria-checked')).toBe('false');
     expect(container.querySelector('.app')?.className).toContain('menu-recolhido');
     expect(localStorage.getItem('siesal-menu-recolhido-v1')).toBe('sim');
     cleanup();
     montar();
-    expect(screen.getByRole('button', { name: 'Mostrar menu' })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Mostrar menu' }));
+    const de_novo = screen.getByRole('switch', { name: 'Menu lateral' });
+    expect(de_novo.getAttribute('aria-checked')).toBe('false');
+    await userEvent.click(de_novo);
     expect(localStorage.getItem('siesal-menu-recolhido-v1')).toBe('nao');
   });
 

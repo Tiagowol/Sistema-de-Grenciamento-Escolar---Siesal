@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ErroApi, type Eu } from './api';
 import { type Pagina, Shell } from './componentes/Shell';
+import { BotaoVLibras } from './componentes/VLibras';
+import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } from './interface';
 import { Acessibilidade } from './paginas/Acessibilidade';
 import { Agenda } from './paginas/Agenda';
 import { Ajuda } from './paginas/Ajuda';
@@ -38,6 +40,8 @@ export function App() {
   const [pagina, setPagina] = useState<Pagina>('inicio');
   const [naoLidas, setNaoLidas] = useState(0);
   const [prefs, setPrefs] = useState<Preferencias>(() => carregarPreferencias());
+  // L17d: rótulos do topo e VLibras. Com sessão, vem do banco; sem sessão, a cópia deste aparelho.
+  const [interfaceAtual, setInterfaceAtual] = useState<Interface>(() => carregarInterface());
   // Atividade escolhida no cartão "Escolha o que fazer agora" (L17): o Foco abre com ela marcada
   const [focoTarefa, setFocoTarefa] = useState('');
   const comecar = (id: string) => {
@@ -87,6 +91,41 @@ export function App() {
     }
   }, [ehAluno, contarAvisos]);
 
+  const completo = eu?.nivel === 'completo';
+  useEffect(() => {
+    if (!completo) return;
+    api
+      .interfaceServidor()
+      .then(({ interface: i }) => {
+        if (!i) return;
+        setInterfaceAtual(i);
+        salvarInterface(i);
+      })
+      .catch(() => undefined);
+  }, [completo]);
+
+  // Grava neste aparelho e, com sessão completa, na conta. Se o banco falhar, vale neste aparelho.
+  function mudarInterface(i: Interface) {
+    setInterfaceAtual(i);
+    salvarInterface(i);
+    if (completo)
+      void api
+        .salvarInterfaceServidor(i)
+        .then(({ interface: s }) => {
+          if (s) setInterfaceAtual(s);
+        })
+        .catch(() => undefined);
+  }
+  const aceitarAvisoVLibras = () =>
+    mudarInterface({ ...interfaceAtual, vlibras: true, vlibras_aviso_aceito: true });
+  const vlibras = (
+    <BotaoVLibras
+      ligado={interfaceAtual.vlibras}
+      avisoAceito={interfaceAtual.vlibras_aviso_aceito}
+      aoAceitar={aceitarAvisoVLibras}
+    />
+  );
+
   useEffect(() => {
     (async () => {
       try {
@@ -114,6 +153,11 @@ export function App() {
     salvarPreferencias(p);
     aplicarPreferencias(p);
     if (ehAluno) void api.preferenciasPadrao().catch(() => undefined);
+    // Rótulos e VLibras também voltam ao padrão; o aceite do aviso continua (é um fato, não uma preferência)
+    mudarInterface({
+      ...INTERFACE_PADRAO,
+      vlibras_aviso_aceito: interfaceAtual.vlibras_aviso_aceito,
+    });
   }
 
   async function sair() {
@@ -128,7 +172,13 @@ export function App() {
         Carregando…
       </p>
     );
-  if (!eu) return <Login instituicaoPadrao={padrao} aoEntrar={setEu} />;
+  if (!eu)
+    return (
+      <>
+        <Login instituicaoPadrao={padrao} aoEntrar={setEu} />
+        {vlibras}
+      </>
+    );
 
   const etapa =
     eu.nivel === 'trocar_senha' ? (
@@ -138,14 +188,27 @@ export function App() {
     ) : null;
 
   return (
-    <Shell eu={eu} pagina={pagina} aoIr={ir} aoSair={sair} naoLidas={naoLidas}>
+    <Shell
+      eu={eu}
+      pagina={pagina}
+      aoIr={ir}
+      aoSair={sair}
+      naoLidas={naoLidas}
+      rotulos={interfaceAtual.rotulos}
+      vlibras={vlibras}
+    >
       {etapa ??
         (pagina === 'conta' && eu.nivel === 'completo' ? (
           <Conta aoSair={sair} />
         ) : pagina === 'ajuda' ? (
           <Ajuda perfil={eu.usuario.perfil} />
         ) : pagina === 'acessibilidade' ? (
-          <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />
+          <Acessibilidade
+            valor={prefs}
+            aoMudar={mudarPrefs}
+            interfaceAtual={interfaceAtual}
+            aoMudarInterface={mudarInterface}
+          />
         ) : ehAluno && pagina === 'meudia' ? (
           <MeuDia nome={prefs.apelido ?? eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : ehAluno && pagina === 'atividades' ? (
@@ -153,7 +216,13 @@ export function App() {
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'personalizar' ? (
-          <Personalizar valor={prefs} aoMudar={mudarPrefs} aoPadrao={voltarAoPadrao} />
+          <Personalizar
+            valor={prefs}
+            aoMudar={mudarPrefs}
+            aoPadrao={voltarAoPadrao}
+            interfaceAtual={interfaceAtual}
+            aoMudarInterface={mudarInterface}
+          />
         ) : ehAluno && pagina === 'calendario' ? (
           <Calendario />
         ) : ehAluno && pagina === 'foco' ? (

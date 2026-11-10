@@ -62,3 +62,23 @@ Mensagem do autor em chat, em 10/11/2026:
 6. Não usar nem alterar as contas `@teste.com`. Nunca imprimir senha. Não tocar no TI-REX nem na v3.
 - Especificação do L17d em `docs/PLANO-L17D.md`. L19 inclui o item que sobrou do L17a (aluno vê os eventos da turma vinculada, origem `calendario_escolar`). L20: a trilha `operator_auditoria` já existe desde o L18.
 - Nota: os documentos atualizados neste passo (este registro, `PROXIMOS-PASSOS.md` e `README.md`) vão no primeiro commit do ramo `lote-17d-rotulos-libras`, porque o commit direto em `siesal-4` não foi autorizado. Chegam ao `siesal-4` no merge do L17d.
+
+## A-037 — VLibras completo, mesmo com envio de texto ao servidor do governo (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026, depois do aviso do Code de que o VLibras envia o texto da página para `vlibras.gov.br`:
+1. "Registre na documentação e faça o pacote completo do VLibras, pois hoje é uma exigência de acessibilidade."
+2. Aceitas as sugestões do Code: liga/desliga em Acessibilidade; aviso literal ao ligar; o script só carrega depois que a pessoa aceita o aviso.
+3. Na tela de entrada (login) o VLibras já aparece por padrão. Dentro do sistema, ícone flutuante do lado direito. No primeiro clique, aviso de que ao ativar o texto clicado vai para o servidor do governo.
+4. A opção de desativar fica em Personalizar e em Acessibilidade.
+5. O VLibras não traduz o que está dentro dos campos de usuário e senha.
+6. "Siga e conclua."
+- Como o Code atende ao "aparece por padrão" sem enviar nada antes do aviso: o ícone flutuante é do SIESAL e aparece por padrão; o script do governo só é carregado depois do "Ativar" no aviso. Antes disso nenhum dado sai do SIESAL.
+- Risco aceito pelo autor (registrado, não é parecer jurídico): texto clicado, IP e navegador vão para `vlibras.gov.br`, órgão público federal. Fica como ponto para o parecer jurídico (LGPD e ECA Digital).
+
+## A-038 — Fechamento do L17d e sequência L19 → L20 (10/11/2026, noite)
+Mensagem de abertura do autor em chat, em 10/11/2026 (nova sessão, depois da pausa por créditos):
+1. L17d: rodar lint, tipos e testes do zero; registrar a sobreposição dos sinos (feito: F-048). "AUTORIZO o commit" no ramo `lote-17d-rotulos-libras`, arquivos listados um a um.
+2. Migração 0015 no banco do site: backup antes (`bash scripts/backup.sh`) e aviso de 1 linha ao autor antes de rodar o `migrate`.
+3. "AUTORIZO o push" do ramo `lote-17d-rotulos-libras` para o `origin`. Merge em `siesal-4` só depois de "aprovo o merge do L17d".
+4. L19 (ramo `lote-19-admin`) e L20 (ramo `lote-20-master`): commit e push no ramo próprio autorizados por esta mensagem; merge em `siesal-4` com autorização separada por lote. Proposta curta antes do código; nenhuma migração sem aviso prévio. L19 parte do `siesal-4` depois do merge do L17d, ou do `lote-17d-rotulos-libras` se o merge ainda não foi autorizado.
+5. Sem tocar no `main` (v3), sem deploy fora do computador, sem envio forçado, sem usar as contas `@teste.com`, sem imprimir senha.
+- Lembrete: nenhum lote vira "Verificado" antes do retorno do NAPNE e do professor (12/11/2026). Ajuste pedido nesse retorno entra nos lotes já feitos, salvo decisão do autor.

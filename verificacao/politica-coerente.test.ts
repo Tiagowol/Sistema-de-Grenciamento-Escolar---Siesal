@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PERFIS_CADASTRAVEIS,
   podeAdministrarConta,
+  podeAdministrarInterface,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
   podeAtenderAjuda,
@@ -117,6 +118,14 @@ describe('política da conta e do suporte (L17c) x matriz de permissões (v9)', 
     expect(podePedirSuporte(perfil)).toBe(permitido(perfil, 'pedidos_suporte', 'pedir') !== null);
     expect(podeAtenderSuporte(perfil)).toBe(
       permitido(perfil, 'pedidos_suporte', 'atender') !== null,
+    );
+  });
+});
+
+describe('política das preferências de interface (L17d) x matriz de permissões (v10)', () => {
+  it.each(PERFIS)('perfil %s: rótulos e VLibras batem com a matriz', (perfil) => {
+    expect(podeAdministrarInterface(perfil)).toBe(
+      permitido(perfil, 'preferencias_interface', 'administrar') === 'proprio',
     );
   });
 });

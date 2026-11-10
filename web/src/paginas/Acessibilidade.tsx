@@ -1,6 +1,13 @@
+import { AjustesInterface } from '../componentes/AjustesInterface';
+import { INTERFACE_PADRAO, type Interface } from '../interface';
 import type { Preferencias } from '../preferencias';
 
-type Props = { valor: Preferencias; aoMudar: (p: Preferencias) => void };
+type Props = {
+  valor: Preferencias;
+  aoMudar: (p: Preferencias) => void;
+  interfaceAtual?: Interface; // L17d; sem valor, vale o padrão
+  aoMudarInterface?: (p: Interface) => void;
+};
 
 type Chave =
   | 'escuro'
@@ -42,17 +49,26 @@ const AJUSTES: { chave: Chave; titulo: string; texto: string }[] = [
   },
 ];
 
-export function Acessibilidade({ valor, aoMudar }: Props) {
+export function Acessibilidade({
+  valor,
+  aoMudar,
+  interfaceAtual = INTERFACE_PADRAO,
+  aoMudarInterface = () => undefined,
+}: Props) {
   return (
     <>
       <div className="page-title">
         <div>
           <div className="eyebrow">Preferências</div>
           <h1>Acessibilidade</h1>
-          <p>Estes ajustes ficam salvos neste aparelho.</p>
+          <p>
+            Botões do topo e VLibras ficam salvos na sua conta. Os outros ajustes ficam neste
+            aparelho.
+          </p>
         </div>
       </div>
       <div className="settings-grid">
+        <AjustesInterface valor={interfaceAtual} aoMudar={aoMudarInterface} />
         {AJUSTES.map((a) => (
           <div className="setting" key={a.chave}>
             <div className="flex-between">

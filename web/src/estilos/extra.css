@@ -834,3 +834,146 @@ body.dark .btn-primary {
     overflow-wrap: anywhere;
   }
 }
+
+/* L17d: rótulos do topo. Padrão: só ícones (o nome fica no aria-label). Em "texto", ícone e palavra. */
+.rotulos-icones .rotulo-topo,
+.rotulos-icones .sino-rotulo {
+  display: none;
+}
+.topbar .sair-topo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.rotulos-icones .top-button,
+.rotulos-icones .sair-topo {
+  min-width: 44px;
+  justify-content: center;
+}
+/* Chave do menu lateral: o desenho segue o estado anunciado (aria-checked) */
+.recolher-menu .chave-topo {
+  pointer-events: none;
+}
+.recolher-menu[aria-checked="true"] .chave-topo {
+  background: var(--teal);
+}
+.recolher-menu[aria-checked="true"] .chave-topo:after {
+  transform: translateX(17px);
+}
+/* Celular: o "?" da Ajuda também aparece. Linha 1 = Menu | sinos | ? | Sair */
+@media (max-width: 780px) {
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+  .topbar .ajuda-topo {
+    display: inline-flex;
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  .topbar .top-actions .btn {
+    grid-column: 4;
+  }
+}
+
+/* L17d: ícone flutuante do VLibras (A-037), no canto direito, acima do conteúdo */
+.vlibras-siesal {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+}
+.vlibras-botao {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 6px 8px;
+  border: 2px solid #ffffff;
+  border-radius: 14px;
+  background: #1f4f8f;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+  cursor: pointer;
+}
+.vlibras-botao svg {
+  width: 26px;
+  height: 26px;
+}
+.vlibras-botao:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 2px;
+}
+.vlibras-aviso {
+  width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 25%);
+  overflow-wrap: anywhere;
+}
+.vlibras-aviso h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.vlibras-aviso p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.vlibras-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.vlibras-acoes .btn {
+  min-height: 44px;
+}
+.vlibras-erro {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+/* Opção de rótulos (Acessibilidade e Personalizar) */
+.opcoes-rotulos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.opcoes-rotulos label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+/* L17d: modo texto no celular. Linha 1 = Menu | ? | Sair; linha 2 = sinos com o nome; linha 3 = nome e perfil */
+@media (max-width: 780px) {
+  .topbar.rotulos-texto .sinos {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+  .topbar.rotulos-texto .rolebox {
+    grid-row: 3;
+  }
+}

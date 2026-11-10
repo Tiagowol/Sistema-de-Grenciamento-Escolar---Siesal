@@ -66,6 +66,7 @@ const RECURSOS_ESCOLARES = [
   'pedidos_suporte',
   'pedidos_informacao',
   'preferencias_acessibilidade',
+  'preferencias_interface',
 ];
 
 describe('regras fixas da matriz', () => {
@@ -255,5 +256,15 @@ describe('matriz v9 (L17c: conta e suporte)', () => {
       );
     }
     expect(permitido('responsavel', 'conta_menor', 'decidir')).toBe('vinculo');
+  });
+});
+
+describe('matriz v10 (L17d: rótulos e VLibras)', () => {
+  it('todo perfil escolar escolhe a própria interface; o master não tem acesso', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(10);
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'preferencias_interface', 'administrar'), perfil).toBe(
+        perfil === 'master' ? null : 'proprio',
+      );
   });
 });

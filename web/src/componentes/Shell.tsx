@@ -168,11 +168,22 @@ type Props = {
   aoIr: (p: Pagina) => void;
   aoSair: () => void;
   naoLidas?: number;
+  rotulos?: 'icones' | 'texto'; // L17d: topo com ícones (padrão) ou com texto
+  vlibras?: ReactNode; // L17d: ícone flutuante do VLibras, fora do conteúdo
   children: ReactNode;
 };
 
 // Estrutura do protótipo: menu lateral, barra superior e conteúdo
-export function Shell({ eu, pagina, aoIr, aoSair, naoLidas = 0, children }: Props) {
+export function Shell({
+  eu,
+  pagina,
+  aoIr,
+  aoSair,
+  naoLidas = 0,
+  rotulos = 'icones',
+  vlibras = null,
+  children,
+}: Props) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState('');
   const idBusca = useId();
@@ -298,26 +309,42 @@ export function Shell({ eu, pagina, aoIr, aoSair, naoLidas = 0, children }: Prop
           onClick={() => setAberto(false)}
         />
         <div className="main">
-          <header className="topbar">
+          <header className={`topbar rotulos-${rotulos}`}>
+            {/* L17d: chave liga/desliga do menu lateral (computador). O leitor de tela anuncia "ligado" ou "desligado". */}
             <button
               type="button"
+              role="switch"
               className="top-button recolher-menu"
-              aria-expanded={!recolhido}
+              aria-checked={!recolhido}
+              aria-label="Menu lateral"
               aria-controls="menu-principal"
+              title="Menu lateral"
               onClick={alternarMenu}
             >
-              {recolhido ? 'Mostrar menu' : 'Recolher menu'}
+              <Icone nome="painel" />
+              <span className="rotulo-topo">Menu lateral</span>
+              <span className="switch chave-topo" aria-hidden="true" />
             </button>
-            <button type="button" className="top-button ajuda-topo" onClick={() => aoIr('ajuda')}>
-              Ajuda
+            <button
+              type="button"
+              className="top-button ajuda-topo"
+              aria-label="Ajuda"
+              title="Ajuda"
+              onClick={() => aoIr('ajuda')}
+            >
+              <Icone nome="help" />
+              <span className="rotulo-topo">Ajuda</span>
             </button>
             <button
               type="button"
               className="top-button mob-menu"
+              aria-label="Menu"
               aria-expanded={aberto}
+              title="Menu"
               onClick={() => setAberto(!aberto)}
             >
-              Menu
+              <Icone nome="menu" />
+              <span className="rotulo-topo">Menu</span>
             </button>
             <div className="breadcrumb">
               SIESAL / <b>{atual?.rotulo ?? ''}</b>
@@ -341,8 +368,15 @@ export function Shell({ eu, pagina, aoIr, aoSair, naoLidas = 0, children }: Prop
                   </small>
                 </span>
               </div>
-              <button type="button" className="btn btn-outline btn-sm" onClick={aoSair}>
-                Sair
+              <button
+                type="button"
+                className="btn btn-outline btn-sm sair-topo"
+                aria-label="Sair"
+                title="Sair"
+                onClick={aoSair}
+              >
+                <Icone nome="sair" />
+                <span className="rotulo-topo">Sair</span>
               </button>
             </div>
           </header>
@@ -351,6 +385,7 @@ export function Shell({ eu, pagina, aoIr, aoSair, naoLidas = 0, children }: Prop
           </main>
         </div>
       </div>
+      {vlibras}
     </>
   );
 }

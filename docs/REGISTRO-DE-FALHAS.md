@@ -213,3 +213,23 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: script gravava antes de validar; comando encadeado sem parar no primeiro erro.
 - Correção: arquivo restaurado do último commit (`git checkout -- docs/ROTEIRO-L17A-A-L20.md`; ele não tinha alteração pendente), script corrigido para calcular antes de gravar, correção aplicada, commit feito e segundo push enviado. Nada foi perdido e o arquivo vazio nunca entrou em commit.
 - Como voltar atrás: não se aplica.
+
+## F-047 — 10/11/2026 — Link externo fora do ar (502) depois de refazer o site
+- O que falhou: depois de `docker compose up -d --build`, o proxy (`siesal-proxy-1`) reiniciava sem parar e o link externo respondia 502. O site local (porta 18080) funcionava.
+- Causa: ao trocar de ramo (`git checkout`), o git do Windows regravou `proxy/vigia.sh` com fim de linha CRLF. O `sh` do contêiner não aceita CRLF ("syntax error: unexpected word"). A imagem do proxy foi refeita com esse arquivo.
+- Correção: todos os `*.sh` do repositório voltaram para LF, e um `.gitattributes` novo (`*.sh text eol=lf`) impede a repetição. Proxy refeito com `docker compose up -d --build proxy`. Link externo respondeu 200, com a mesma versão do site local.
+- Como voltar atrás: apagar o `.gitattributes`. Não é recomendado: a falha volta na próxima troca de ramo.
+- Também neste lote (corrigida antes da entrega): no modo texto do celular, os sinos se sobrepunham no topo; agora ficam numa linha própria (`web/src/estilos/extra.css`, bloco "L17d: modo texto no celular").
+
+## F-048 — 10/11/2026 — L17d: sinos sobrepostos no topo, no modo texto do celular
+- O que falhou: com os rótulos em modo texto (Personalizar), em telas de até 780 px, os botões dos sinos ("Mensagens" e "Prazos", com o nome escrito) não cabiam na linha 1 da grade do topo (Menu, sinos, Sair) e ficavam por cima uns dos outros.
+- Causa: a grade de 3 colunas da F-045 foi feita para os sinos só com ícone. Com o nome escrito, a coluna do meio fica mais larga que o espaço livre, e a grade não quebra linha.
+- Correção (feita antes do commit do L17d): no modo texto, em telas de até 780 px, os sinos vão para uma linha própria (linha 2) e o nome e o perfil para a linha 3. Linha 1: Menu, "?" e Sair. Bloco "L17d: modo texto no celular" em `web/src/estilos/extra.css`. Medido no navegador embutido (motor do Chrome) de 280 a 1280 px, nos dois modos: sem sobreposição, sem rolagem horizontal e com alvos de 44 px. Não medido no Firefox real: falta a checagem humana.
+- Como voltar atrás: apagar o bloco "L17d: modo texto no celular" de `extra.css` e refazer o site (`docker compose up -d --build web`). A sobreposição volta no modo texto.
+
+## F-049 — 10/11/2026 — L17d: lint com 73 erros de formatação na rodada final (fim de linha CRLF na cópia de trabalho)
+- O que falhou: `pnpm lint` (contêiner node:26, cópia da pasta de trabalho) acusou 73 erros "format" em arquivos que o L17d não mudou.
+- Causa: `core.autocrlf=true` no git do Windows. Na troca de ramo (a mesma da F-047), 113 arquivos foram regravados na pasta com CRLF; no git eles continuam LF. O Biome do contêiner lê CRLF como formatação errada. Dois documentos (`REGISTRO-DE-APROVACOES.md` e `REGISTRO-DE-FALHAS.md`) ficaram com fim de linha misturado.
+- Correção: os 2 documentos misturados voltaram para LF. O lint foi rodado de novo numa cópia com fim de linha LF (igual ao conteúdo que entra no commit): 0 erros e 1 aviso antigo (`api/src/conta/rotas.ts:386`, do L17c). Tipos sem erro; 805 testes unitários e 211 de integração passando. Nenhum arquivo do commit tem CRLF (o git converte ao gravar).
+- Como voltar atrás: não se aplica (nenhum código mudou).
+- Sugestão (não feita, precisa de aprovação): ampliar o `.gitattributes` para `* text=auto eol=lf`, para a pasta de trabalho ficar igual ao git e o lint local não depender da cópia.

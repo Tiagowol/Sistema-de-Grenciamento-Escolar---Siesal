@@ -1,11 +1,13 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, ErroApi } from '../api';
+import { AjustesInterface } from '../componentes/AjustesInterface';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
 import { useCarregar } from '../componentes/useCarregar';
 import { Icone, type NomeIcone } from '../icones';
+import { INTERFACE_PADRAO, type Interface } from '../interface';
 import { CORES, combinacaoLegivel, ICONES_DE_TIPO, type Tema } from '../paleta';
 import { type Preferencias, temaDe } from '../preferencias';
 
@@ -15,6 +17,8 @@ type Props = {
   valor: Preferencias;
   aoMudar: (p: Preferencias) => void;
   aoPadrao: () => void;
+  interfaceAtual?: Interface; // L17d; sem valor, vale o padrão
+  aoMudarInterface?: (p: Interface) => void;
 };
 
 const TEMAS: { id: Tema; nome: string; texto: string }[] = [
@@ -172,7 +176,13 @@ function TiposDeAtividade() {
   );
 }
 
-export function Personalizar({ valor, aoMudar, aoPadrao }: Props) {
+export function Personalizar({
+  valor,
+  aoMudar,
+  aoPadrao,
+  interfaceAtual = INTERFACE_PADRAO,
+  aoMudarInterface = () => undefined,
+}: Props) {
   const tema = temaDe(valor);
   const [msg, setMsg] = useState('');
   const mudar = (p: Partial<Preferencias>) => {
@@ -278,6 +288,8 @@ export function Personalizar({ valor, aoMudar, aoPadrao }: Props) {
           />
           <p>De 90% a 150%.</p>
         </div>
+
+        <AjustesInterface valor={interfaceAtual} aoMudar={aoMudarInterface} />
 
         <Chave
           titulo="Reduzir movimento"

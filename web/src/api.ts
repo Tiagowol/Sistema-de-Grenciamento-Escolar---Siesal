@@ -211,6 +211,12 @@ export type ItemSuporteAberto = ItemBase & {
   autor_nome: string;
   autor_perfil: Perfil;
 };
+// Preferências de interface (L17d): rótulos do topo e VLibras, por usuário, nos 5 perfis
+export type InterfaceServidor = {
+  rotulos: 'icones' | 'texto';
+  vlibras: boolean;
+  vlibras_aviso_aceito: boolean;
+};
 export type ContaDados = {
   conta: { nome: string; email: string; perfil: Perfil; menor: boolean };
   pedidos: {
@@ -373,6 +379,9 @@ export const api = {
     ),
   pedirAjuda: (d: NovoPedidoAjuda) => chamar<{ id: string }>('POST', '/ajuda', d),
   conta: () => chamar<ContaDados>('GET', '/conta'),
+  interfaceServidor: () => chamar<{ interface: InterfaceServidor }>('GET', '/conta/interface'),
+  salvarInterfaceServidor: (d: InterfaceServidor) =>
+    chamar<{ interface: InterfaceServidor }>('POST', '/conta/interface', d),
   pedirTrocaEmail: (d: { email_novo: string; senha_atual: string }) =>
     chamar<{ pedido: { id: string } }>('POST', '/conta/email', d),
   pedirEncerramento: (d: { senha_atual: string }) =>

@@ -4,6 +4,7 @@ import { registrarAuditoria } from '../auditoria/auditoria.js';
 import type { SessaoAtiva } from '../auth/autenticacao.js';
 import {
   podeAdministrarConta,
+  podeAdministrarInterface,
   podeAtenderSuporte,
   podeDecidirContaDeMenor,
   podePedirSuporte,
@@ -217,6 +218,47 @@ export function registrarConta(app: FastifyInstance, opcoes: Opcoes): void {
     )[0];
 
   // ---------- Minha conta ----------
+  // ---------- Preferências de interface (L17d): rótulos do topo e VLibras, por usuário ----------
+  // Sem linha gravada vale o padrão: ícones, VLibras mostrado e aviso ainda não aceito.
+  const lerInterface = async (tx: ClienteTransacao, sessao: SessaoAtiva) => {
+    const [p] = await tx.$queryRaw<Linha[]>`
+      SELECT rotulos, vlibras, (vlibras_aviso_aceito IS NOT NULL) AS vlibras_aviso_aceito
+        FROM preferencia_interface WHERE usuario_id = ${sessao.usuarioId}::uuid`;
+    return p ?? { rotulos: 'icones', vlibras: true, vlibras_aviso_aceito: false };
+  };
+  rota('get', '/conta/interface', podeAdministrarInterface, {}, async ({ tx, sessao }) => ({
+    interface: await lerInterface(tx, sessao),
+  }));
+  rota(
+    'post',
+    '/conta/interface',
+    podeAdministrarInterface,
+    {
+      corpo: z.strictObject({
+        rotulos: z.enum(['icones', 'texto']),
+        vlibras: z.boolean(),
+        // true = a pessoa aceitou agora o aviso do VLibras; o aceite não se desfaz (fica a data do primeiro)
+        vlibras_aviso_aceito: z.boolean(),
+      }),
+    },
+    async ({ tx, sessao, corpo }) => {
+      await tx.$executeRaw`
+        INSERT INTO preferencia_interface (instituicao_id, usuario_id, rotulos, vlibras, vlibras_aviso_aceito)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.rotulos}, ${corpo.vlibras},
+                CASE WHEN ${corpo.vlibras_aviso_aceito}::boolean THEN now() END)
+        ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET
+          rotulos = EXCLUDED.rotulos, vlibras = EXCLUDED.vlibras,
+          vlibras_aviso_aceito = coalesce(preferencia_interface.vlibras_aviso_aceito, EXCLUDED.vlibras_aviso_aceito),
+          atualizado_em = now()`;
+      await auditar(tx, sessao, 'interface.salva', `usuario:${sessao.usuarioId}`, {
+        rotulos: corpo.rotulos,
+        vlibras: corpo.vlibras,
+        vlibras_aviso_aceito: corpo.vlibras_aviso_aceito,
+      });
+      return { interface: await lerInterface(tx, sessao) };
+    },
+  );
+
   rota('get', '/conta', podeAdministrarConta, {}, async ({ tx, sessao }) => {
     const [u] = await tx.$queryRaw<
       Linha[]

@@ -66,3 +66,7 @@ export const podeDecidirContaDeMenor = (perfil: string): boolean =>
 export const podePedirSuporte = (perfil: string): boolean => PERFIS_ESCOLARES.includes(perfil);
 export const podeAtenderSuporte = (perfil: string): boolean =>
   perfil === 'admin' || perfil === 'pedagogico';
+
+// Preferências de interface (L17d). Espelham a matriz v10: todo perfil escolar escolhe rótulos e VLibras para si.
+export const podeAdministrarInterface = (perfil: string): boolean =>
+  PERFIS_ESCOLARES.includes(perfil);
