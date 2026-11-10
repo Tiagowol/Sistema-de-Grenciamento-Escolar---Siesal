@@ -187,3 +187,381 @@
   display: grid;
   gap: 6px;
 }
+
+/* Dois sinos no topo (L16): "Mensagens" (amarelo) e "Prazos" (azul). Ícone e rótulo sempre aparecem;
+   a cor nunca é a única diferença. Sem vermelho. Contraste de pelo menos 4,5:1 no texto e 3:1 na borda. */
+:root {
+  --msg-bg: #ffe08a;
+  --msg-texto: #3d2c00;
+  --msg-borda: #7a5900;
+  --prz-bg: #d6e6ff;
+  --prz-texto: #0b2b57;
+  --prz-borda: #155bb4;
+}
+body.dark {
+  --msg-bg: #5c4600;
+  --msg-texto: #ffefb8;
+  --msg-borda: #f2c96c;
+  --prz-bg: #1d3a63;
+  --prz-texto: #dbe9ff;
+  --prz-borda: #8cbcff;
+}
+.sinos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sino {
+  position: relative;
+}
+.sino-mensagens {
+  --sino-bg: var(--msg-bg);
+  --sino-texto: var(--msg-texto);
+  --sino-borda: var(--msg-borda);
+}
+.sino-prazos {
+  --sino-bg: var(--prz-bg);
+  --sino-texto: var(--prz-texto);
+  --sino-borda: var(--prz-borda);
+}
+.sino-botao {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 2px solid var(--sino-borda);
+  border-radius: 11px;
+  background: var(--sino-bg);
+  color: var(--sino-texto);
+  font-size: 0.79rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sino-contagem {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--sino-texto);
+  color: var(--sino-bg);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+.sino-painel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(70vh, 540px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 2px solid var(--sino-borda);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 10px 34px rgba(15, 35, 63, 0.18);
+}
+.sino-titulo {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.sino-grupo {
+  margin: 12px 0 2px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.sino-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sino-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sino-item:last-child {
+  border-bottom: 0;
+}
+.sino-item h3 {
+  margin: 0 0 4px;
+  font-size: 0.86rem;
+}
+.sino-item p {
+  margin: 2px 0;
+  font-size: 0.79rem;
+  overflow-wrap: anywhere;
+}
+.sino-item blockquote {
+  margin: 6px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--border);
+  font-size: 0.79rem;
+  overflow-wrap: anywhere;
+}
+.sino-data {
+  margin: 6px 0;
+  font-size: 0.76rem;
+}
+.sino-novo {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--msg-borda);
+  border-radius: 999px;
+  background: var(--msg-bg);
+  color: var(--msg-texto);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+/* AUD-01: o topo cresce com a fonte ampliada e com nomes longos; nada fica fora da tela */
+.topbar {
+  height: auto;
+  min-height: 75px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  row-gap: 6px;
+}
+.breadcrumb {
+  white-space: normal;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.top-actions {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-end;
+}
+.rolebox {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* Alvos de toque de 44 px nos botões do topo e dentro dos painéis */
+.top-actions .btn,
+.topbar .top-button,
+.sino-painel .btn,
+.sino-item .btn {
+  min-height: 44px;
+}
+@media (max-width: 780px) {
+  /* O topo pode ocupar duas linhas: nada fica cortado e não há rolagem horizontal */
+  .topbar {
+    height: auto;
+    min-height: 66px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    row-gap: 6px;
+  }
+  /* Linha 1: Menu, sinos e Sair. Linha 2: nome e perfil. */
+  .top-actions {
+    display: contents;
+  }
+  .topbar {
+    justify-content: space-between;
+  }
+  .sinos {
+    order: 1;
+  }
+  .topbar .top-actions .btn {
+    order: 2;
+  }
+  .rolebox {
+    order: 3;
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    padding-left: 0;
+    border-left: 0;
+  }
+  /* Ícone em cima, rótulo embaixo */
+  .sino-botao {
+    flex-direction: column;
+    gap: 1px;
+    min-width: 62px;
+    padding: 4px 8px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+  }
+  .sino-contagem {
+    position: absolute;
+    top: -9px;
+    right: -7px;
+  }
+  .sino {
+    position: static;
+  }
+  .sino-painel {
+    left: 12px;
+    right: 12px;
+    top: calc(100% + 6px);
+    width: auto;
+    max-height: 68vh;
+  }
+}
+/* Foco visível com contraste de pelo menos 3:1 sobre o fundo do topo e do painel */
+.sino :focus-visible {
+  outline: 3px solid var(--sino-texto);
+  outline-offset: 3px;
+}
+@media (min-width: 520px) and (max-width: 780px) {
+  /* Tablet: painel mais estreito, alinhado à direita */
+  .sino-painel {
+    left: auto;
+    right: 12px;
+    width: min(480px, calc(100vw - 24px));
+  }
+}
+
+/* L16b: contador de avisos não lidos sem vermelho de alarme: azul escuro com texto branco (cerca de 11:1) */
+.counter {
+  background: #1d3a63;
+  color: #ffffff;
+}
+
+/* L16b: anel de foco com pelo menos 3:1. #00a5c7 sobre branco dava 2,9:1; no tema claro o anel fica #00718c (5,6:1 sobre branco).
+   Menu lateral (fundo azul escuro) e tema escuro mantêm #00a5c7, que tem contraste alto sobre fundo escuro. */
+body:not(.dark) a:focus-visible,
+body:not(.dark) button:focus-visible,
+body:not(.dark) input:focus-visible,
+body:not(.dark) select:focus-visible,
+body:not(.dark) textarea:focus-visible {
+  outline-color: #00718c;
+}
+body:not(.dark) aside a:focus-visible,
+body:not(.dark) aside button:focus-visible {
+  outline-color: #00a5c7;
+}
+body:not(.dark) .sino :focus-visible {
+  outline-color: var(--sino-texto);
+}
+
+/* L16b: resumo do plano antes de salvar (blocos agrupados por dia) */
+.previa-plano {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.previa-plano p {
+  margin: 0 0 8px;
+}
+.previa-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.previa-lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.mini-blocos {
+  display: inline-flex;
+  gap: 3px;
+}
+.mini-blocos i {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--primary);
+}
+
+/* L16d: menu lateral recolhível (só computador), busca no menu e estado de carregamento */
+.recolher-menu {
+  display: none;
+}
+@media (min-width: 781px) {
+  .recolher-menu {
+    display: inline-flex;
+    min-height: 44px;
+  }
+  .app.menu-recolhido {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+  .app.menu-recolhido .sidebar {
+    visibility: hidden;
+    overflow: hidden;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+.busca-menu {
+  padding: 0 4px 10px;
+}
+.busca-menu label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.busca-menu input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #8cbcff;
+  background: #ffffff;
+  color: #1b2c43;
+  font: inherit;
+}
+.busca-vazia {
+  margin: 4px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.busca-dentro {
+  opacity: 0.85;
+}
+.carregando {
+  margin: 8px 0;
+}
+
+/* L16e: Ajuda no topo (computador) e manual */
+.ajuda-topo {
+  display: none;
+}
+@media (min-width: 781px) {
+  .ajuda-topo {
+    display: inline-flex;
+    min-height: 44px;
+  }
+}
+.ajuda-busca input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  margin-top: 6px;
+}
+.ajuda-indice ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ajuda-indice .btn {
+  min-height: 44px;
+  text-align: left;
+}
+.ajuda-topico {
+  margin-top: 14px;
+  max-width: 46rem;
+}
+.ajuda-topico ol {
+  padding-left: 1.3rem;
+  display: grid;
+  gap: 6px;
+}

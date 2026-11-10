@@ -35,3 +35,11 @@ export const PERFIS_QUE_PEDEM_REVISAO = ['admin', 'aluno', 'pedagogico', 'respon
 export const podePedirRevisao = (perfil: string): boolean =>
   (PERFIS_QUE_PEDEM_REVISAO as readonly string[]).includes(perfil);
 export const podeResponderPedido = (perfil: string): boolean => perfil === 'professor';
+
+// Sino de mensagens e avisos curtos (L16). Espelham a matriz v5.
+export const podeLerCaixa = (perfil: string): boolean =>
+  ['admin', 'professor', 'aluno', 'pedagogico', 'responsavel'].includes(perfil);
+export const podePublicarAviso = (perfil: string): boolean =>
+  perfil === 'admin' || perfil === 'pedagogico';
+export const podeLerAvisoEscolar = (perfil: string): boolean =>
+  perfil === 'aluno' || perfil === 'responsavel';

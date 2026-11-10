@@ -4,8 +4,11 @@ import {
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
   podeLancarNota,
+  podeLerAvisoEscolar,
+  podeLerCaixa,
   podeLerNotas,
   podePedirRevisao,
+  podePublicarAviso,
   podeResponderPedido,
   podeUsarNucleo,
   podeVerHistoricoNotas,
@@ -60,4 +63,14 @@ describe('política de notas oficiais x matriz de permissões (v4)', () => {
       );
     },
   );
+});
+
+describe('política da caixa e dos avisos (L16) x matriz de permissões (v5)', () => {
+  it.each(PERFIS)('perfil %s: caixa, publicar e ler aviso batem com a matriz', (perfil) => {
+    expect(podeLerCaixa(perfil)).toBe(permitido(perfil, 'caixa', 'ler') !== null);
+    expect(podePublicarAviso(perfil)).toBe(
+      permitido(perfil, 'avisos_escolares', 'publicar') !== null,
+    );
+    expect(podeLerAvisoEscolar(perfil)).toBe(permitido(perfil, 'avisos_escolares', 'ler') !== null);
+  });
 });

@@ -9,11 +9,12 @@ import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { formatar, paraTexto } from '../datas';
 import { Icone } from '../icones';
+import { previaPlano } from '../plano';
 
 type Filtro = 'todas' | 'atrasadas' | 'andamento' | 'comecar' | 'concluidas';
 const FILTROS: [Filtro, string][] = [
   ['todas', 'Todas'],
-  ['atrasadas', 'Atrasadas'],
+  ['atrasadas', 'Prazo passou'],
   ['andamento', 'Em andamento'],
   ['comecar', 'Para começar'],
   ['concluidas', 'Concluídas'],
@@ -34,7 +35,7 @@ function situacaoDe(
   hoje: string,
 ): { texto: string; tom: 'teal' | 'red' | 'amber' | 'blue' | 'purple' } {
   if (t.situacao === 'concluida') return { texto: 'Concluída', tom: 'teal' };
-  if (t.prazo && t.prazo < hoje) return { texto: 'Atrasada', tom: 'red' };
+  if (t.prazo && t.prazo < hoje) return { texto: 'Prazo passou', tom: 'blue' };
   if (t.prazo && t.prazo <= paraTexto(new Date(Date.parse(`${hoje}T12:00:00`) + 2 * 86_400_000)))
     return { texto: 'Prazo próximo', tom: 'amber' };
   if (percentual(t) > 0 || t.situacao === 'em_andamento')
@@ -173,6 +174,10 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
   const [quantos, setQuantos] = useState(4);
   const [bloco, setBloco] = useState<(typeof BLOCOS)[number]['id']>('medio');
   const minutos = BLOCOS.find((b) => b.id === bloco)?.minutos ?? 25;
+  const nomeBloco = BLOCOS.find((b) => b.id === bloco)?.nome ?? 'Médio';
+  const previa = tarefa.prazo
+    ? previaPlano(paraTexto(new Date()), tarefa.prazo, quantos, minutos)
+    : null;
   const [msg, setMsg] = useState('');
   const [erro, setErro] = useState('');
   async function gerar(e: FormEvent) {
@@ -184,8 +189,9 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
         minutos_total: quantos * minutos,
         minutos_por_sessao: minutos,
       });
+      const n = r.blocos.length;
       setMsg(
-        `Plano criado: ${r.blocos.length} ${r.blocos.length === 1 ? 'bloco' : 'blocos'} de estudo, do dia ${formatar(r.blocos[0]?.dia ?? '')} ao dia ${formatar(r.blocos.at(-1)?.dia ?? '')}. Veja na agenda.`,
+        `Plano criado: ${n} ${n === 1 ? 'compromisso' : 'compromissos'} de estudo, do dia ${formatar(r.blocos[0]?.dia ?? '')} ao dia ${formatar(r.blocos.at(-1)?.dia ?? '')}. Veja na agenda.`,
       );
       aoPlanejar();
     } catch (x) {
@@ -228,6 +234,41 @@ function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => vo
           )}
         </Campo>
       </div>
+      {previa ? (
+        <section className="previa-plano" aria-label="Resumo do plano antes de salvar">
+          <p>
+            <b>
+              {previa.blocos} {previa.blocos === 1 ? 'bloco' : 'blocos'} ({nomeBloco})
+            </b>{' '}
+            de {minutos} min cada, {previa.minutosTotal} min no total. Dias até o prazo:{' '}
+            {previa.diasDisponiveis}.
+          </p>
+          {previa.agrupado ? (
+            <p>
+              Há menos dias do que blocos. Por isso alguns blocos ficam juntos no mesmo dia, em um
+              compromisso só. Para separar os blocos, escolha menos blocos ou um prazo mais longe.
+            </p>
+          ) : (
+            <p>Cada bloco fica em um dia diferente.</p>
+          )}
+          <ul className="previa-lista" aria-label="Como os blocos ficam por dia">
+            {previa.compromissos.map((c) => (
+              <li key={c.dia}>
+                <span>Dia {formatar(c.dia)}</span>
+                <span className="mini-blocos" aria-hidden="true">
+                  {Array.from({ length: c.blocos }, (_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: blocos iguais, só desenho
+                    <i key={i} />
+                  ))}
+                </span>
+                <span>
+                  {c.blocos} {c.blocos === 1 ? 'bloco' : 'blocos'}, {c.minutos} min
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <button type="submit" className="btn btn-soft btn-sm mt-sm" disabled={!tarefa.prazo}>
         Montar plano
       </button>

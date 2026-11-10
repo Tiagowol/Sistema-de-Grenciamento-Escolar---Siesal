@@ -353,24 +353,22 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
         { versao: atual.numero + 1, valor: corpo.valor, motivo: corpo.motivo },
         { versao: atual.numero, valor: atual.valor },
       );
-      if (corpo.pedido_id) {
-        await tx.$executeRaw`
-          UPDATE pedido_revisao SET estado = 'revisada', versao_resposta_id = ${versao.id}::uuid,
-                 motivo_resposta = ${corpo.motivo}, respondido_por = ${sessao.usuarioId}::uuid, respondido_em = now()
-           WHERE id = ${corpo.pedido_id}::uuid AND estado = 'aberto'`;
-        await auditar(
-          tx,
-          sessao,
-          'pedido_revisao.respondido',
-          `pedido_revisao:${corpo.pedido_id}`,
-          {
-            estado: 'revisada',
-            versao: atual.numero + 1,
-          },
-        );
+      // Fechar juntos (L16): a nova versão responde a TODOS os pedidos abertos desta nota, ligados a ela.
+      // Cada pedido fechado é auditado; o motivo do professor fica guardado, mas só ele e o Admin o leem (A-027).
+      const fechados = await tx.$queryRaw<{ id: string }[]>`
+        UPDATE pedido_revisao SET estado = 'revisada', versao_resposta_id = ${versao.id}::uuid,
+               motivo_resposta = ${corpo.motivo}, respondido_por = ${sessao.usuarioId}::uuid, respondido_em = now()
+         WHERE nota_id = ${params.id}::uuid AND estado = 'aberto'
+        RETURNING id`;
+      for (const f of fechados) {
+        await auditar(tx, sessao, 'pedido_revisao.respondido', `pedido_revisao:${f.id}`, {
+          estado: 'revisada',
+          versao: atual.numero + 1,
+          fechado_junto: f.id !== corpo.pedido_id,
+        });
       }
       resposta.code(201);
-      return { versao: atual.numero + 1 };
+      return { versao: atual.numero + 1, pedidos_fechados: fechados.length };
     },
   );
 
@@ -429,11 +427,15 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
       const pedidos = await tx.$queryRaw<Linha[]>`
         SELECT p.id, p.nota_id, p.perfil_pedinte, u.nome AS pedinte_nome, p.texto, p.estado,
                to_char(p.criado_em AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS criado_em,
-               p.motivo_resposta,
+               -- A-027: o motivo de uma revisão só o professor lê (o Admin lê no histórico da nota);
+               -- o motivo de "mantida" aparece a quem fez o pedido e ao professor
+               CASE WHEN p.estado = 'mantida' OR (p.estado = 'revisada' AND ${ehProfessor}::boolean)
+                    THEN p.motivo_resposta ELSE '' END AS motivo_resposta,
                to_char(p.respondido_em AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS respondido_em,
                a.nome AS aluno_nome, t.nome AS turma_nome, d.nome AS disciplina_nome,
                n.descricao AS nota_descricao, n.dia::text AS nota_dia,
-               vn.valor::float8 AS valor_atual, vn.numero AS versao_atual,
+               vn.valor::float8 AS valor_atual,
+               CASE WHEN ${ehProfessor}::boolean THEN vn.numero END AS versao_atual,
                (n.professor_id = ${eu}::uuid) AS pode_responder
           FROM pedido_revisao p
           JOIN nota_oficial n ON n.id = p.nota_id

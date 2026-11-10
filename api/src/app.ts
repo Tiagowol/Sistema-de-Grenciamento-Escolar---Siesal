@@ -17,6 +17,7 @@ import {
   lerCookie,
   serializarCookie,
 } from './auth/sessao.js';
+import { registrarAvisos } from './avisos/rotas.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
@@ -85,9 +86,9 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return resposta.code(status).send({ erro: erro.message });
   });
 
-  // Respostas de autenticação nunca ficam em cache
+  // Nenhuma resposta da API fica em cache (dado escolar e autenticação); só a saúde fica de fora
   app.addHook('onSend', async (requisicao, resposta) => {
-    if (requisicao.url.startsWith('/auth/')) resposta.header('cache-control', 'no-store');
+    if (!requisicao.url.startsWith('/saude')) resposta.header('cache-control', 'no-store');
   });
 
   // Limite por IP nas rotas que testam senha ou código; passou do limite = 429 e nada é processado
@@ -148,6 +149,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarNucleo(app, { banco: opcoes.banco, exigirSessao, agora: opcoes.agora });
   registrarTurmas(app, { banco: opcoes.banco, exigirSessao });
   registrarNotas(app, { banco: opcoes.banco, exigirSessao });
+  registrarAvisos(app, { banco: opcoes.banco, exigirSessao });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
     const sessao = await exigirSessao(requisicao, resposta);

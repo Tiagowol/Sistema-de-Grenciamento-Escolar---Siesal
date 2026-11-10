@@ -56,6 +56,8 @@ const RECURSOS_ESCOLARES = [
   'plano_regressivo',
   'comentarios_aluno',
   'avisos',
+  'caixa',
+  'avisos_escolares',
   'pedidos_informacao',
   'preferencias_acessibilidade',
 ];
@@ -148,6 +150,23 @@ describe('regras fixas da matriz', () => {
         perfil === 'professor' ? 'vinculo' : null,
       );
     }
+  });
+
+  it('versão 5: caixa do sino por perfil escolar; Master nunca; só Admin e Pedagógico publicam aviso', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(5);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'caixa', 'ler') !== null, `caixa ${perfil}`).toBe(
+        perfil !== 'master',
+      );
+      expect(permitido(perfil, 'avisos_escolares', 'publicar') !== null, `publicar ${perfil}`).toBe(
+        perfil === 'admin' || perfil === 'pedagogico',
+      );
+      expect(permitido(perfil, 'avisos_escolares', 'ler') !== null, `ler ${perfil}`).toBe(
+        perfil === 'aluno' || perfil === 'responsavel',
+      );
+    }
+    // O professor só vê, na caixa, o que é das turmas dele
+    expect(permitido('professor', 'caixa', 'ler')).toBe('vinculo');
   });
 
   it('as preferências de acessibilidade são só do próprio aluno', () => {

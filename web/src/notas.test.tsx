@@ -181,6 +181,19 @@ describe('tela do Professor: notas da turma', () => {
     expect(screen.queryByRole('button', { name: /Manter a nota/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Revisar/ })).toBeNull();
   });
+
+  // AUD-04: a autora que abre a resposta não deve ver a frase "outro professor"
+  it('autora que abre revisar ou manter não vê a mensagem de outro professor', async () => {
+    simular(rotasProfessor);
+    render(<NotasProfessor />);
+    const pedido = (await screen.findByText(/Acho que faltou somar/)).closest('li') as HTMLElement;
+    expect(within(pedido).queryByText(/Outro professor lançou/)).toBeNull();
+    await userEvent.click(within(pedido).getByRole('button', { name: /Revisar a nota/ }));
+    expect(within(pedido).queryByText(/Outro professor lançou/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await userEvent.click(within(pedido).getByRole('button', { name: /Manter a nota/ }));
+    expect(within(pedido).queryByText(/Outro professor lançou/)).toBeNull();
+  });
 });
 
 describe('tela de notas oficiais (aluno, responsável, Admin, Pedagógico)', () => {

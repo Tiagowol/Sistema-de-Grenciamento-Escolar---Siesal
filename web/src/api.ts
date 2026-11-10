@@ -132,9 +132,52 @@ export type PedidoRevisao = {
   nota_descricao: string;
   nota_dia: string;
   valor_atual: number;
-  versao_atual: number;
+  versao_atual: number | null; // só o professor recebe
   pode_responder: boolean;
 };
+
+// Sino "Mensagens" (L16): pedidos (professor), respostas e avisos curtos. Nunca traz motivo de revisão nem versões antigas.
+type ItemBase = { id: string; visto: boolean; dia: string };
+export type ItemPedidoAberto = ItemBase & {
+  tipo: 'pedido_aberto';
+  perfil_pedinte: Perfil;
+  pedinte_nome: string;
+  texto: string;
+  aluno_nome: string;
+  turma_nome: string;
+  disciplina_nome: string;
+  nota_descricao: string;
+  valor_atual: number;
+  pode_responder: boolean;
+};
+export type ItemResposta = ItemBase & {
+  tipo: 'resposta';
+  estado: 'revisada' | 'mantida';
+  motivo: string; // só em "mantida"
+  aluno_nome: string;
+  disciplina_nome: string;
+  nota_descricao: string;
+  valor_atual: number;
+};
+export type ItemAviso = ItemBase & {
+  tipo: 'aviso';
+  escopo: 'turma' | 'instituicao';
+  turma_nome: string | null;
+  texto: string;
+  autor_nome: string;
+};
+export type ItemCaixa = ItemPedidoAberto | ItemResposta | ItemAviso;
+export type Caixa = { itens: ItemCaixa[]; nao_vistos: number };
+export type AvisoPublicado = {
+  id: string;
+  escopo: 'turma' | 'instituicao';
+  turma_nome: string | null;
+  texto: string;
+  autor_nome: string;
+  dia: string;
+  ativo: boolean;
+};
+export type TurmaParaAviso = { id: string; nome: string; ano_letivo: number };
 export type MeuDia = {
   hoje: string;
   atrasadas: ResumoTarefa[];
@@ -236,6 +279,13 @@ export const api = {
   pedidosRevisao: () => chamar<{ pedidos: PedidoRevisao[] }>('GET', '/pedidos-revisao'),
   manterNota: (pedidoId: string, motivo: string) =>
     chamar<void>('POST', `/pedidos-revisao/${pedidoId}/manter`, { motivo }),
+  caixa: () => chamar<Caixa>('GET', '/caixa'),
+  marcarVistos: () => chamar<{ marcados: number }>('POST', '/caixa/vistos'),
+  avisosPublicados: () => chamar<{ avisos: AvisoPublicado[] }>('GET', '/avisos-escolares'),
+  turmasParaAviso: () => chamar<{ turmas: TurmaParaAviso[] }>('GET', '/avisos-escolares/turmas'),
+  publicarAviso: (d: { texto: string; turma_id?: string }) =>
+    chamar<{ id: string }>('POST', '/avisos-escolares', d),
+  desativarAviso: (id: string) => chamar<void>('POST', `/avisos-escolares/${id}/desativar`),
   meuDia: () => chamar<MeuDia>('GET', '/meu-dia'),
   tarefas: () => chamar<{ tarefas: Tarefa[] }>('GET', '/tarefas'),
   criarTarefa: (d: {

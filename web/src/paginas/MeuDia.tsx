@@ -12,14 +12,14 @@ function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pag
   const atrasada = t.prazo !== null && t.prazo < hoje;
   return (
     <div className="task-row">
-      <div className={`task-icon t-${atrasada ? 'red' : 'blue'}`}>
+      <div className="task-icon t-blue">
         <Icone nome="tasks" />
       </div>
       <div className="task-data">
         <div className="flex" style={{ flexWrap: 'wrap', gap: 7 }}>
           <strong style={{ fontSize: '.85rem' }}>{t.titulo}</strong>
           {atrasada ? (
-            <Pill tom="red">Atrasada</Pill>
+            <Pill tom="blue">Prazo passou</Pill>
           ) : t.prazo === hoje ? (
             <Pill tom="amber">Prazo hoje</Pill>
           ) : (
@@ -64,10 +64,10 @@ export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void
       <div className="grid cols-4">
         <Kpi
           numero={d.atrasadas.length}
-          rotulo="Atrasadas"
+          rotulo="Prazo passou"
           nota="Podemos reorganizar juntos"
           icone="clock"
-          tom="red"
+          tom="blue"
         />
         <Kpi
           numero={d.para_hoje.length}

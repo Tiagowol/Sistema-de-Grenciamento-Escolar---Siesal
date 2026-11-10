@@ -2,7 +2,7 @@ import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, ErroApi, type NotaOficial, type PedidoRevisao } from '../api';
 import { Aviso } from '../componentes/Aviso';
-import { Titulo, Vazio } from '../componentes/Basicos';
+import { Carregando, Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
 import {
   CampoTexto,
@@ -204,7 +204,7 @@ export function NotasProfessor() {
               Manter a nota<span className="sr-only"> de {p.aluno_nome}</span>
             </button>
           </div>
-        ) : p.estado === 'aberto' ? (
+        ) : !p.pode_responder && p.estado === 'aberto' ? (
           <span className="small muted">Outro professor lançou esta nota. Só ele responde.</span>
         ) : null}
       </li>
@@ -266,7 +266,9 @@ export function NotasProfessor() {
         <div className="card-head">
           <h2 id="h-pedidos">Pedidos de revisão abertos</h2>
         </div>
-        {abertos.length === 0 ? (
+        {pedidos.carregando ? (
+          <Carregando />
+        ) : abertos.length === 0 ? (
           <Vazio>Nenhum pedido aberto nas suas turmas.</Vazio>
         ) : (
           <ul className="lista-adm">{abertos.map(cartaoPedido)}</ul>
@@ -363,7 +365,9 @@ export function NotasProfessor() {
                 Notas lançadas · {atual.turma_nome} · {atual.disciplina_nome}
               </h2>
             </div>
-            {notasDaTurma.length === 0 ? (
+            {notas.carregando ? (
+              <Carregando />
+            ) : notasDaTurma.length === 0 ? (
               <Vazio>Nenhuma nota lançada nesta turma e disciplina.</Vazio>
             ) : (
               <ul className="lista-adm">{notasDaTurma.map(cartaoNota)}</ul>

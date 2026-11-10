@@ -1,0 +1,40 @@
+/* Página de manutenção: texto grande, contraste alto, sem rolagem horizontal */
+:root {
+  color-scheme: light dark;
+  --fundo: #ffffff;
+  --texto: #1b2430;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #14181f;
+    --texto: #f2f5f9;
+  }
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font:
+    1.25rem / 1.6 system-ui,
+    sans-serif;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+main {
+  max-width: 32rem;
+  text-align: center;
+}
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+}
+p {
+  margin: 0;
+}

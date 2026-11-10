@@ -1,10 +1,11 @@
 import { api } from '../api';
 import { Aviso } from '../componentes/Aviso';
-import { Pill, Titulo, Vazio } from '../componentes/Basicos';
+import { Carregando, Pill, Titulo, Vazio } from '../componentes/Basicos';
 import { useCarregar } from '../componentes/useCarregar';
 
-const TIPOS: Record<string, { nome: string; tom: 'red' | 'amber' | 'blue' | 'teal' }> = {
-  atrasada: { nome: 'Prazo passou', tom: 'red' },
+// Sem vermelho de alarme: o prazo que passou usa a mesma cor calma dos outros avisos (a palavra diz o estado)
+const TIPOS: Record<string, { nome: string; tom: 'amber' | 'blue' | 'teal' }> = {
+  atrasada: { nome: 'Prazo passou', tom: 'blue' },
   prazo_hoje: { nome: 'Prazo hoje', tom: 'amber' },
   prazo_amanha: { nome: 'Prazo amanhã', tom: 'blue' },
   evento_hoje: { nome: 'Compromisso', tom: 'teal' },
@@ -13,7 +14,7 @@ const TIPOS: Record<string, { nome: string; tom: 'red' | 'amber' | 'blue' | 'tea
 
 // Avisos dentro do sistema. Push e e-mail ficam para a Parte 2.
 export function Avisos({ aoMudar }: { aoMudar: () => void }) {
-  const { dados, erro, recarregar } = useCarregar(api.notificacoes);
+  const { dados, erro, carregando, recarregar } = useCarregar(api.notificacoes);
   const agir = async (f: () => Promise<unknown>) => {
     await f();
     await recarregar();
@@ -71,7 +72,9 @@ export function Avisos({ aoMudar }: { aoMudar: () => void }) {
               );
             })}
           </ul>
-        ) : (
+        ) : carregando ? (
+          <Carregando />
+        ) : erro ? null : (
           <Vazio>Sem avisos por enquanto. Quando houver prazo perto, ele aparece aqui.</Vazio>
         )}
       </div>

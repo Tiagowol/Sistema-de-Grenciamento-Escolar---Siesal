@@ -2,7 +2,13 @@
 
 Sistema Inteligente de Estudos, Agenda e Aprendizagem: sistema escolar inclusivo e multi-instituição, feito como TCC (IFRN Canguaretama) e simulado como SaaS.
 
-Estado: Lote 1 concluído em 07/11/2026 (base do repositório e esqueleto Docker com /saude, verificado no PC do autor). Lotes 3 e 4 (banco base com RLS, isolamento, auditoria com hash, matriz de permissões e Masters no banco) implementados em 07/11/2026; falta a verificação no Docker do autor. Lote 5 (autenticação própria) implementado em 07/11/2026, aguardando verificação no Docker. Ainda não há telas.
+Estado (08/11/2026): lotes L1 a L16 implementados e com telas (login, Agenda, Foco, Atividades, notas oficiais com revisão, turmas e vínculos, avisos curtos, sinos de Mensagens e Prazos, usuários do Admin). Os lotes L16a, L16b, L16c, L16d (menu recolhível, estados de carregamento, busca no menu) e L16e (ajuda e manual por perfil) estão implementados, aguardando checagem humana e commit. Seguem L17 (Apoio ao aluno) e L18 (Fechamento, com login dos Masters). Nada é "Verificado": faltam as checagens humanas (leitor de tela, teclado, contraste real, zoom de 200%, NAPNE) e o parecer jurídico. Login e painel de Master ainda não existem.
+
+Como ver o sistema:
+- Site local: http://localhost:18080 (`WEB_PORTA=18080` no `.env`). Subir ou refazer: `docker compose up -d --build`.
+- Entrada pública (Funnel/túnel): proxy em `127.0.0.1:18081`, com página de manutenção fora da janela 06:00-23:59 (America/Sao_Paulo) e comandos manuais em `scripts/manutencao.sh`. Ver `docs/FUNNEL-E-MANUTENCAO.md` e `docs/ACESSO-PUBLICO-TEMPORARIO.md`.
+- Testes: `pnpm verificar` (lint, tipos e testes) e, no Docker, `docker compose --profile teste run --rm --build teste`.
+- Critério de entrega: lint, tipos e testes passando, axe sem violação nas telas novas, medição em 360, 768 e 1280 px, e registro de falhas em `docs/REGISTRO-DE-FALHAS.md`.
 
 ## O que este projeto não é
 - Não é ferramenta clínica: sem diagnóstico, sem ranking e sem comparação entre alunos.

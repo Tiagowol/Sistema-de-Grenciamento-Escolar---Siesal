@@ -80,3 +80,12 @@ export function Progresso({ percentual, rotulo }: { percentual: number; rotulo: 
 export function Vazio({ children }: { children: ReactNode }) {
   return <div className="timeline-empty">{children}</div>;
 }
+
+// Estado "carregando": diferente de "vazio" e de "erro". Texto literal, sem número nem contagem.
+export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
+  return (
+    <p role="status" className="carregando muted">
+      {texto}
+    </p>
+  );
+}

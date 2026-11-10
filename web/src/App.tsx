@@ -3,8 +3,10 @@ import { api, ErroApi, type Eu } from './api';
 import { type Pagina, Shell } from './componentes/Shell';
 import { Acessibilidade } from './paginas/Acessibilidade';
 import { Agenda } from './paginas/Agenda';
+import { Ajuda } from './paginas/Ajuda';
 import { Atividades } from './paginas/Atividades';
 import { Avisos } from './paginas/Avisos';
+import { AvisosEscola } from './paginas/AvisosEscola';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
 import { Foco } from './paginas/Foco';
 import { Inicio } from './paginas/Inicio';
@@ -98,7 +100,9 @@ export function App() {
   return (
     <Shell eu={eu} pagina={pagina} aoIr={setPagina} aoSair={sair} naoLidas={naoLidas}>
       {etapa ??
-        (pagina === 'acessibilidade' ? (
+        (pagina === 'ajuda' ? (
+          <Ajuda perfil={eu.usuario.perfil} />
+        ) : pagina === 'acessibilidade' ? (
           <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />
         ) : ehAluno && pagina === 'meudia' ? (
           <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
@@ -118,6 +122,10 @@ export function App() {
           pagina === 'notasprof' &&
           eu.usuario.perfil === 'professor' ? (
           <NotasProfessor />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'avisosescola' &&
+          ['admin', 'pedagogico'].includes(eu.usuario.perfil) ? (
+          <AvisosEscola perfil={eu.usuario.perfil} />
         ) : ehAluno && pagina === 'avisos' ? (
           <Avisos aoMudar={() => void contarAvisos()} />
         ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (

@@ -357,11 +357,24 @@ describe('revisão da nota (nova versão, nada se apaga)', () => {
     });
     expect(r.statusCode).toBe(201);
     expect(r.json().versao).toBe(2);
+    // Fechar juntos (L16): os outros 3 pedidos abertos da mesma nota fecham com a mesma versão
+    expect(r.json().pedidos_fechados).toBe(4);
     const aluno = (await chamar('GET', '/notas-oficiais', 'alunoA')).json().notas[0];
     expect(aluno.valor).toBe(8.3);
     expect(aluno).not.toHaveProperty('versoes');
     const meu = (await chamar('GET', '/pedidos-revisao', 'alunoA')).json().pedidos[0];
     expect(meu).toMatchObject({ estado: 'revisada', valor_atual: 8.3 });
+    // A-027: quem pediu não recebe o motivo da revisão nem o número de versão; o professor recebe
+    expect(meu.motivo_resposta).toBe('');
+    expect(meu.versao_atual).toBeNull();
+    const doProf = (await chamar('GET', '/pedidos-revisao', 'profA'))
+      .json()
+      .pedidos.find((p: { id: string }) => p.id === ids.pedidoAluno);
+    expect(doProf.motivo_resposta).toBe('Somei um item que faltava.');
+    for (const quem of ['adminA', 'pedA', 'alunoA', 'respA']) {
+      const corpo = (await chamar('GET', '/pedidos-revisao', quem)).body;
+      expect(corpo, quem).not.toContain('Somei um item que faltava.');
+    }
     // a versão anterior continua visível ao professor e ao Admin
     for (const quem of ['profA', 'adminA']) {
       const nota = (await chamar('GET', '/notas-oficiais', quem))
@@ -394,28 +407,137 @@ describe('resposta "mantida"', () => {
     chamar('POST', `/pedidos-revisao/${ids[pedido]}/manter`, quem, corpo);
 
   it('só o professor que lançou responde; exige motivo; não responde duas vezes', async () => {
-    expect((await manter('profC', 'pedidoAdmin', { motivo: 'x' })).statusCode).toBe(403);
-    expect((await manter('adminA', 'pedidoAdmin', { motivo: 'x' })).statusCode).toBe(403);
-    expect((await manter('alunoA', 'pedidoAdmin', { motivo: 'x' })).statusCode).toBe(403);
-    expect((await manter('profB', 'pedidoAdmin', { motivo: 'x' })).statusCode).toBe(404);
-    expect((await manter('profA', 'pedidoAdmin', {})).statusCode).toBe(400);
-    expect((await manter('profA', 'pedidoAdmin', { motivo: ' ' })).statusCode).toBe(400);
+    // Os pedidos da nota 1 já fecharam juntos na revisão; estes são sobre a nota 2
+    const a = await chamar('POST', `/notas-oficiais/${ids.nota2}/pedidos`, 'adminA', {
+      texto: 'Pode olhar de novo?',
+    });
+    ids.pedidoAdmin2 = a.json().id;
+    const b = await chamar('POST', `/notas-oficiais/${ids.nota2}/pedidos`, 'alunoA2', {
+      texto: 'Acho que faltou um item.',
+    });
+    ids.pedidoAluno2 = b.json().id;
+    expect((await manter('profC', 'pedidoAdmin2', { motivo: 'x' })).statusCode).toBe(403);
+    expect((await manter('adminA', 'pedidoAdmin2', { motivo: 'x' })).statusCode).toBe(403);
+    expect((await manter('alunoA2', 'pedidoAdmin2', { motivo: 'x' })).statusCode).toBe(403);
+    expect((await manter('profB', 'pedidoAdmin2', { motivo: 'x' })).statusCode).toBe(404);
+    expect((await manter('profA', 'pedidoAdmin2', {})).statusCode).toBe(400);
+    expect((await manter('profA', 'pedidoAdmin2', { motivo: ' ' })).statusCode).toBe(400);
     expect(
-      (await manter('profA', 'pedidoAdmin', { motivo: 'A correção está certa.' })).statusCode,
+      (await manter('profA', 'pedidoAdmin2', { motivo: 'A correção está certa.' })).statusCode,
     ).toBe(204);
-    expect((await manter('profA', 'pedidoAdmin', { motivo: 'de novo' })).statusCode).toBe(409);
-    const admin = (await chamar('GET', '/pedidos-revisao', 'adminA')).json().pedidos[0];
+    expect((await manter('profA', 'pedidoAdmin2', { motivo: 'de novo' })).statusCode).toBe(409);
+    const admin = (await chamar('GET', '/pedidos-revisao', 'adminA'))
+      .json()
+      .pedidos.find((p: { id: string }) => p.id === ids.pedidoAdmin2);
     expect(admin).toMatchObject({ estado: 'mantida', motivo_resposta: 'A correção está certa.' });
   });
 
   it('o professor vê abertos primeiro e os respondidos depois', async () => {
     const lista = (await chamar('GET', '/pedidos-revisao', 'profA')).json().pedidos;
-    expect(lista).toHaveLength(4);
-    expect(lista.slice(0, 2).every((p: { estado: string }) => p.estado === 'aberto')).toBe(true);
-    expect(lista.slice(2).every((p: { estado: string }) => p.estado !== 'aberto')).toBe(true);
-    expect(lista.slice(0, 2).every((p: { pode_responder: boolean }) => p.pode_responder)).toBe(
-      true,
+    expect(lista).toHaveLength(6);
+    expect(lista[0]).toMatchObject({
+      id: ids.pedidoAluno2,
+      estado: 'aberto',
+      pode_responder: true,
+    });
+    expect(lista.slice(1).every((p: { estado: string }) => p.estado !== 'aberto')).toBe(true);
+  });
+});
+
+describe('fechar juntos (L16)', () => {
+  const pedirEm = (quem: string, nota: string) =>
+    chamar('POST', `/notas-oficiais/${nota}/pedidos`, quem, { texto: 'Pode conferir a nota?' });
+
+  it('revisar a nota fecha os outros pedidos abertos da mesma nota, na mesma transação, e só dela', async () => {
+    ids.nota3 = (await lancar('profA', 'alunoA2', 'turmaA', 'discA', 5)).json().id;
+    for (const quem of ['alunoA2', 'respA2', 'pedA'])
+      expect((await pedirEm(quem, ids.nota3 as string)).statusCode, quem).toBe(201);
+    const abertos = await amb.admin.query(
+      "SELECT id, pedido_por FROM pedido_revisao WHERE nota_id = $1 AND estado = 'aberto'",
+      [ids.nota3],
     );
+    expect(abertos.rows).toHaveLength(3);
+    const pedidoDoAluno = abertos.rows.find((r) => r.pedido_por === ids.alunoA2).id;
+
+    const r = await chamar('POST', `/notas-oficiais/${ids.nota3}/revisoes`, 'profA', {
+      valor: 6.5,
+      motivo: 'Conferi a questão 3.',
+      pedido_id: pedidoDoAluno,
+    });
+    expect(r.statusCode).toBe(201);
+    expect(r.json()).toMatchObject({ versao: 2, pedidos_fechados: 3 });
+
+    // Todos ligados à nova versão, com a mesma data e hora da versão (mesma transação)
+    const versao = (
+      await amb.admin.query(
+        'SELECT id, criado_em FROM nota_oficial_versao WHERE nota_id = $1 AND numero = 2',
+        [ids.nota3],
+      )
+    ).rows[0];
+    const fechados = (
+      await amb.admin.query(
+        'SELECT estado, versao_resposta_id, respondido_em, respondido_por FROM pedido_revisao WHERE nota_id = $1',
+        [ids.nota3],
+      )
+    ).rows;
+    expect(fechados).toHaveLength(3);
+    for (const p of fechados) {
+      expect(p.estado).toBe('revisada');
+      expect(p.versao_resposta_id).toBe(versao.id);
+      expect(p.respondido_por).toBe(ids.profA);
+      expect(p.respondido_em.getTime()).toBe(versao.criado_em.getTime());
+    }
+    // Pedido de outra nota continua aberto
+    const outra = await amb.admin.query('SELECT estado FROM pedido_revisao WHERE id = $1', [
+      ids.pedidoAluno2,
+    ]);
+    expect(outra.rows[0].estado).toBe('aberto');
+    // Cada pedido fechado é auditado; só o indicado ficou de fora da marca "fechado junto"
+    const auditoria = await amb.admin.query(
+      "SELECT depois FROM auditoria_evento WHERE acao = 'pedido_revisao.respondido' AND alvo = ANY($1)",
+      [
+        (
+          await amb.admin.query('SELECT id FROM pedido_revisao WHERE nota_id = $1', [ids.nota3])
+        ).rows.map((x) => `pedido_revisao:${x.id}`),
+      ],
+    );
+    expect(auditoria.rows).toHaveLength(3);
+    expect(auditoria.rows.filter((a) => a.depois.fechado_junto === true)).toHaveLength(2);
+    // A-027: ninguém além do professor lê o motivo; o Pedagógico não vê o histórico
+    for (const quem of ['alunoA2', 'respA2', 'pedA']) {
+      const corpo = (await chamar('GET', '/pedidos-revisao', quem)).body;
+      expect(corpo, quem).not.toContain('Conferi a questão 3.');
+    }
+  });
+
+  it('revisar sem indicar pedido também fecha os pedidos abertos da nota', async () => {
+    ids.nota4 = (await lancar('profA', 'alunoA', 'turmaA', 'discA', 3)).json().id;
+    expect((await pedirEm('alunoA', ids.nota4 as string)).statusCode).toBe(201);
+    const r = await chamar('POST', `/notas-oficiais/${ids.nota4}/revisoes`, 'profA', {
+      valor: 4,
+      motivo: 'Ajuste de soma.',
+    });
+    expect(r.json().pedidos_fechados).toBe(1);
+    const abertos = await amb.admin.query(
+      "SELECT count(*)::int AS n FROM pedido_revisao WHERE nota_id = $1 AND estado = 'aberto'",
+      [ids.nota4],
+    );
+    expect(abertos.rows[0].n).toBe(0);
+  });
+
+  it('revisão recusada (valor igual) não fecha nenhum pedido', async () => {
+    ids.nota5 = (await lancar('profA', 'alunoA', 'turmaA', 'discA', 2)).json().id;
+    expect((await pedirEm('alunoA', ids.nota5 as string)).statusCode).toBe(201);
+    const r = await chamar('POST', `/notas-oficiais/${ids.nota5}/revisoes`, 'profA', {
+      valor: 2,
+      motivo: 'Igual.',
+    });
+    expect(r.statusCode).toBe(422);
+    const abertos = await amb.admin.query(
+      "SELECT count(*)::int AS n FROM pedido_revisao WHERE nota_id = $1 AND estado = 'aberto'",
+      [ids.nota5],
+    );
+    expect(abertos.rows[0].n).toBe(1);
   });
 });
 
