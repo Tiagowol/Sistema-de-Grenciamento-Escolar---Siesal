@@ -53,3 +53,6 @@ export const podeLerAjuda = (perfil: string): boolean =>
 
 // Calendário do aluno (L17a). Espelha a matriz v7: só o aluno, nos próprios eventos.
 export const podeUsarCalendario = (perfil: string): boolean => perfil === 'aluno';
+
+// Tipos de atividade do aluno e preferências por usuário (L17b). Espelham a matriz v8: só o aluno, só os próprios.
+export const podeUsarTiposAtividade = (perfil: string): boolean => perfil === 'aluno';

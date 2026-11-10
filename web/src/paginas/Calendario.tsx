@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { api, ErroApi, type Evento } from '../api';
+import { api, ErroApi, type Evento, type TipoAtividade } from '../api';
 import { BLOCOS, blocoDe } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
@@ -100,6 +100,7 @@ type Rascunho = {
   dia: string;
   hora: string;
   minutos: number | null;
+  tipoAtividade: string;
 };
 
 const plural = (n: number) => (n === 1 ? 'entrada' : 'entradas');
@@ -111,6 +112,8 @@ export function Calendario() {
   const [de, ate] = intervalo(visao, base);
   const { dados, erro, recarregar } = useCarregar(() => api.eventos(de, ate), [visao, base]);
   const eventos = dados?.eventos ?? [];
+  const tipos = useCarregar(api.tiposAtividade).dados?.tipos ?? [];
+  const tipoDe = (id?: string | null): TipoAtividade | undefined => tipos.find((t) => t.id === id);
   const [msg, setMsg] = useState('');
   const vazio: Rascunho = {
     id: null,
@@ -119,6 +122,7 @@ export function Calendario() {
     dia: base,
     hora: '',
     minutos: null,
+    tipoAtividade: '',
   };
   const [rascunho, setRascunho] = useState<Rascunho>(vazio);
 
@@ -134,6 +138,7 @@ export function Calendario() {
       dia: rascunho.dia,
       hora_inicio: rascunho.hora || null,
       minutos: rascunho.minutos,
+      tipo_atividade_id: rascunho.tipoAtividade || null,
     };
     try {
       if (rascunho.id) await api.editarEvento(rascunho.id, corpo);
@@ -168,6 +173,9 @@ export function Calendario() {
             {e.minutos
               ? ` · Bloco ${blocoDe(e.minutos).nome.toLowerCase()} (${e.minutos} min)`
               : ''}
+            {tipoDe(e.tipo_atividade_id) ? (
+              <span className="cal-selo">{tipoDe(e.tipo_atividade_id)?.nome}</span>
+            ) : null}
             {selo ? <span className="cal-selo">{selo}</span> : null}
           </div>
           <div className="small">
@@ -187,6 +195,7 @@ export function Calendario() {
                   dia: e.dia,
                   hora: e.hora_inicio ?? '',
                   minutos: e.minutos,
+                  tipoAtividade: e.tipo_atividade_id ?? '',
                 })
               }
             >
@@ -399,6 +408,24 @@ export function Calendario() {
                 </select>
               )}
             </Campo>
+            {tipos.length > 0 ? (
+              <Campo rotulo="Seu tipo de atividade (opcional)">
+                {({ id }) => (
+                  <select
+                    id={id}
+                    value={rascunho.tipoAtividade}
+                    onChange={(e) => setRascunho({ ...rascunho, tipoAtividade: e.target.value })}
+                  >
+                    <option value="">Nenhum</option>
+                    {tipos.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Campo>
+            ) : null}
             <Campo rotulo="Dia">
               {({ id }) => (
                 <input

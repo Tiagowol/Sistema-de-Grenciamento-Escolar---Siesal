@@ -60,6 +60,7 @@ const RECURSOS_ESCOLARES = [
   'avisos_escolares',
   'pedidos_ajuda',
   'calendario',
+  'tipos_atividade',
   'pedidos_informacao',
   'preferencias_acessibilidade',
 ];
@@ -210,6 +211,17 @@ describe('matriz v7 (L17a: calendário)', () => {
     expect(MATRIZ.versao).toBeGreaterThanOrEqual(7);
     for (const perfil of PERFIS) {
       expect(permitido(perfil, 'calendario', 'administrar'), perfil).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+    }
+  });
+});
+
+describe('matriz v8 (L17b: tipos de atividade do aluno)', () => {
+  it('só o aluno administra os próprios tipos; o master não tem acesso', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(8);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'tipos_atividade', 'administrar'), perfil).toBe(
         perfil === 'aluno' ? 'proprio' : null,
       );
     }

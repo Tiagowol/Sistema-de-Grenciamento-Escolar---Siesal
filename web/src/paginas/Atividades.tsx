@@ -52,6 +52,8 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
   const [tipo, setTipo] = useState<Tarefa['tipo']>('tarefa');
   const [prioridade, setPrioridade] = useState<Tarefa['prioridade']>('media');
   const [etapas, setEtapas] = useState('');
+  const [tipoAtividade, setTipoAtividade] = useState('');
+  const tipos = useCarregar(api.tiposAtividade).dados?.tipos ?? [];
   const [erro, setErro] = useState('');
 
   async function enviar(e: FormEvent) {
@@ -65,6 +67,7 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
         tipo,
         prioridade,
         prazo: prazo || null,
+        tipo_atividade_id: tipoAtividade || null,
         microetapas: etapas
           .split('\n')
           .map((l) => l.trim())
@@ -111,6 +114,24 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
             />
           )}
         </Campo>
+        {tipos.length > 0 ? (
+          <Campo rotulo="Seu tipo de atividade (opcional)">
+            {({ id }) => (
+              <select
+                id={id}
+                value={tipoAtividade}
+                onChange={(e) => setTipoAtividade(e.target.value)}
+              >
+                <option value="">Nenhum</option>
+                {tipos.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Campo>
+        ) : null}
         <Campo rotulo="Prazo (opcional)" dica={DICA_DATA}>
           {({ id, descricao }) => (
             <input
@@ -448,6 +469,7 @@ function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
 
 export function Atividades() {
   const { dados, erro, recarregar } = useCarregar(api.tarefas);
+  const tiposAtividade = useCarregar(api.tiposAtividade).dados?.tipos ?? [];
   const [filtro, setFiltro] = useState<Filtro>('todas');
   const [aberta, setAberta] = useState<string | null>(null);
   const [formulario, setFormulario] = useState(false);
@@ -532,6 +554,11 @@ export function Atividades() {
                   <div className="flex" style={{ flexWrap: 'wrap', gap: 7 }}>
                     <strong style={{ fontSize: '.85rem' }}>{t.titulo}</strong>
                     <Pill tom={s.tom}>{s.texto}</Pill>
+                    {tiposAtividade.find((x) => x.id === t.tipo_atividade_id) ? (
+                      <Pill tom="teal">
+                        {tiposAtividade.find((x) => x.id === t.tipo_atividade_id)?.nome}
+                      </Pill>
+                    ) : null}
                   </div>
                   <div className="task-meta">
                     {t.disciplina ? `${t.disciplina} · ` : ''}

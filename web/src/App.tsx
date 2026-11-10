@@ -16,13 +16,17 @@ import { MeuDia } from './paginas/MeuDia';
 import { Notas } from './paginas/Notas';
 import { NotasOficiais } from './paginas/NotasOficiais';
 import { NotasProfessor } from './paginas/NotasProfessor';
+import { Personalizar } from './paginas/Personalizar';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Turmas } from './paginas/Turmas';
 import { Usuarios } from './paginas/Usuarios';
 import {
   aplicarPreferencias,
   carregarPreferencias,
+  doServidor,
+  PREFERENCIAS_PADRAO,
   type Preferencias,
+  paraServidor,
   salvarPreferencias,
 } from './preferencias';
 
@@ -67,6 +71,18 @@ export function App() {
     if (ehAluno) {
       setPagina((p) => (p === 'inicio' ? 'meudia' : p));
       void contarAvisos();
+      // Preferências por usuário (L17b): valem em qualquer computador. Sem linha no banco, vale o padrão.
+      api
+        .preferenciasServidor()
+        .then(({ preferencias }) => {
+          if (!preferencias) return;
+          const p = doServidor(preferencias);
+          setPrefs(p);
+          salvarPreferencias(p);
+          aplicarPreferencias(p);
+          setPagina((atual) => (atual === 'meudia' ? p.telaInicial : atual));
+        })
+        .catch(() => undefined);
     }
   }, [ehAluno, contarAvisos]);
 
@@ -86,6 +102,17 @@ export function App() {
     setPrefs(p);
     salvarPreferencias(p);
     aplicarPreferencias(p);
+    // O aluno guarda também no banco; se falhar, a mudança vale neste aparelho
+    if (ehAluno) void api.salvarPreferenciasServidor(paraServidor(p)).catch(() => undefined);
+  }
+
+  // "Voltar ao padrão": local e no banco (grava os valores padrão e registra na auditoria)
+  function voltarAoPadrao() {
+    const p = { ...PREFERENCIAS_PADRAO };
+    setPrefs(p);
+    salvarPreferencias(p);
+    aplicarPreferencias(p);
+    if (ehAluno) void api.preferenciasPadrao().catch(() => undefined);
   }
 
   async function sair() {
@@ -117,11 +144,13 @@ export function App() {
         ) : pagina === 'acessibilidade' ? (
           <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />
         ) : ehAluno && pagina === 'meudia' ? (
-          <MeuDia nome={eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
+          <MeuDia nome={prefs.apelido ?? eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : ehAluno && pagina === 'atividades' ? (
           <Atividades />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
+        ) : ehAluno && pagina === 'personalizar' ? (
+          <Personalizar valor={prefs} aoMudar={mudarPrefs} aoPadrao={voltarAoPadrao} />
         ) : ehAluno && pagina === 'calendario' ? (
           <Calendario />
         ) : ehAluno && pagina === 'foco' ? (
@@ -147,7 +176,7 @@ export function App() {
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (
           <Turmas />
         ) : ehAluno ? (
-          <MeuDia nome={eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
+          <MeuDia nome={prefs.apelido ?? eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : (
           <Inicio eu={eu} aoIr={setPagina} />
         ))}

@@ -15,6 +15,7 @@ import {
   podeResponderPedido,
   podeUsarCalendario,
   podeUsarNucleo,
+  podeUsarTiposAtividade,
   podeVerHistoricoNotas,
 } from '../api/src/auth/politica.js';
 import { PERFIS } from '../shared/src/perfis.js';
@@ -91,6 +92,14 @@ describe('política do calendário (L17a) x matriz de permissões (v7)', () => {
   it.each(PERFIS)('perfil %s: usar o calendário bate com a matriz', (perfil) => {
     expect(podeUsarCalendario(perfil)).toBe(
       permitido(perfil, 'calendario', 'administrar') !== null,
+    );
+  });
+});
+
+describe('política dos tipos de atividade (L17b) x matriz de permissões (v8)', () => {
+  it.each(PERFIS)('perfil %s: administrar tipos bate com a matriz', (perfil) => {
+    expect(podeUsarTiposAtividade(perfil)).toBe(
+      permitido(perfil, 'tipos_atividade', 'administrar') !== null,
     );
   });
 });

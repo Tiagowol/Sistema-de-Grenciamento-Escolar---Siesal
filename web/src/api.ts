@@ -50,6 +50,21 @@ export type Tarefa = {
   prioridade: 'baixa' | 'media' | 'alta';
   situacao: 'pendente' | 'em_andamento' | 'concluida';
   microetapas: Microetapa[];
+  tipo_atividade_id?: string | null;
+};
+export type TipoAtividade = { id: string; nome: string; cor: string; icone: string };
+export type PreferenciasServidor = {
+  apelido: string | null;
+  cor_destaque: string | null;
+  tema: 'claro' | 'escuro' | 'alto_contraste';
+  fonte: number;
+  reduzir_movimento: boolean;
+  leitura_facilitada: boolean;
+  modo_simples: boolean;
+  tempo_visual: boolean;
+  linguagem_curta: boolean;
+  escolha_agora: boolean;
+  tela_inicial: 'meudia' | 'agenda' | 'calendario';
 };
 export type Evento = {
   id: string;
@@ -57,6 +72,7 @@ export type Evento = {
   tipo: 'aula' | 'estudo' | 'pessoal' | 'prova' | 'trabalho' | 'lembrete' | 'compromisso';
   origem: 'manual' | 'plano' | 'google_agenda' | 'google_sala_de_aula' | 'calendario_escolar';
   id_externo?: string | null;
+  tipo_atividade_id?: string | null;
   dia: string;
   hora_inicio: string | null;
   minutos: number | null;
@@ -254,7 +270,7 @@ export class ErroApi extends Error {
 }
 
 async function chamar<T>(
-  metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  metodo: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   caminho: string,
   corpo?: unknown,
 ): Promise<T> {
@@ -346,6 +362,7 @@ export const api = {
     prazo?: string | null;
     prioridade?: Tarefa['prioridade'];
     microetapas?: string[];
+    tipo_atividade_id?: string | null;
   }) => chamar<{ tarefa: Tarefa }>('POST', '/tarefas', d),
   atualizarTarefa: (
     id: string,
@@ -366,7 +383,18 @@ export const api = {
     dia: string;
     hora_inicio?: string | null;
     minutos?: number | null;
+    tipo_atividade_id?: string | null;
   }) => chamar<{ evento: Evento }>('POST', '/eventos', d),
+  preferenciasServidor: () =>
+    chamar<{ preferencias: PreferenciasServidor | null }>('GET', '/preferencias'),
+  salvarPreferenciasServidor: (d: PreferenciasServidor) =>
+    chamar<{ preferencias: PreferenciasServidor }>('PUT', '/preferencias', d),
+  preferenciasPadrao: () =>
+    chamar<{ preferencias: PreferenciasServidor }>('POST', '/preferencias/padrao'),
+  tiposAtividade: () => chamar<{ tipos: TipoAtividade[] }>('GET', '/tipos-atividade'),
+  criarTipoAtividade: (d: { nome: string; cor: string; icone: string }) =>
+    chamar<{ tipo: TipoAtividade }>('POST', '/tipos-atividade', d),
+  removerTipoAtividade: (id: string) => chamar<void>('DELETE', `/tipos-atividade/${id}`),
   editarEvento: (
     id: string,
     d: {
@@ -375,6 +403,7 @@ export const api = {
       dia: string;
       hora_inicio?: string | null;
       minutos?: number | null;
+      tipo_atividade_id?: string | null;
     },
   ) => chamar<{ evento: Evento }>('PATCH', `/eventos/${id}`, d),
   ocultarEvento: (id: string) => chamar<void>('POST', `/eventos/${id}/ocultar`),

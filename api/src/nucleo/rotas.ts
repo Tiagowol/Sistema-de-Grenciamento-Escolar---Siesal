@@ -9,6 +9,7 @@ import {
   withTenant,
 } from '../banco/withTenant.js';
 import { hojeBrasilia, somarDias } from './datas.js';
+import { combinacaoLegivel, ICONES_DE_TIPO, IDS_DE_COR, TEMAS } from './paleta.js';
 import { planoRegressivo } from './plano.js';
 
 type Banco = Parameters<typeof WithTenant>[0];
@@ -26,6 +27,7 @@ const corpoTarefa = z.strictObject({
   prazo: dia.nullable().optional(),
   prioridade: z.enum(['baixa', 'media', 'alta']).optional(),
   situacao: z.enum(['pendente', 'em_andamento', 'concluida']).optional(),
+  tipo_atividade_id: z.uuid().nullable().optional(),
 });
 
 type Linha = Record<string, unknown>;
@@ -39,7 +41,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     B extends z.ZodType = z.ZodUndefined,
     Q extends z.ZodType = z.ZodUndefined,
   >(
-    metodo: 'get' | 'post' | 'patch' | 'delete',
+    metodo: 'get' | 'post' | 'put' | 'patch' | 'delete',
     caminho: string,
     esquemas: { params?: P; corpo?: B; consulta?: Q },
     funcao: (c: {
@@ -87,10 +89,18 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   const naoAchou = (c: { resposta: FastifyReply }) =>
     c.resposta.code(404).send({ erro: 'Não encontrado.' });
 
+  // O tipo de atividade precisa ser do próprio aluno e estar ativo (null = sem tipo)
+  const tipoDoAluno = async (tx: ClienteTransacao, usuarioId: string, id?: string | null) => {
+    if (!id) return true;
+    const [t] = await tx.$queryRaw<Linha[]>`
+      SELECT id FROM tipo_atividade WHERE id = ${id}::uuid AND usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL`;
+    return Boolean(t);
+  };
+
   // ---------- Tarefas e microetapas (L6) ----------
   const listarTarefas = async (tx: ClienteTransacao, usuarioId: string, soId?: string) => {
     const tarefas = await tx.$queryRaw<Linha[]>`
-      SELECT id, titulo, descricao, disciplina, tipo, prazo::text AS prazo, prioridade, situacao
+      SELECT id, titulo, descricao, disciplina, tipo, tipo_atividade_id, prazo::text AS prazo, prioridade, situacao
         FROM tarefa
        WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL
          AND (${soId ?? null}::uuid IS NULL OR id = ${soId ?? null}::uuid)
@@ -114,11 +124,13 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     '/tarefas',
     { corpo: corpoTarefa.extend({ microetapas: z.array(texto(200)).max(20).optional() }) },
     async ({ tx, sessao, corpo, resposta }) => {
+      if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
+        return resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
       const [nova] = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, tipo, prazo, prioridade, situacao)
+        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, tipo, prazo, prioridade, situacao, tipo_atividade_id)
         VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.descricao ?? ''},
                 ${corpo.disciplina ?? ''}, ${corpo.tipo ?? 'tarefa'}, ${corpo.prazo ?? null}::date,
-                ${corpo.prioridade ?? 'media'}, ${corpo.situacao ?? 'pendente'})
+                ${corpo.prioridade ?? 'media'}, ${corpo.situacao ?? 'pendente'}, ${corpo.tipo_atividade_id ?? null}::uuid)
         RETURNING id`;
       if (!nova) throw new Error('Falha ao criar tarefa.');
       let ordem = 0;
@@ -143,6 +155,8 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     const [antes] = await tx.$queryRaw<{ situacao: string }[]>`
       SELECT situacao FROM tarefa WHERE id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL`;
     if (!antes) return naoAchou(c);
+    if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
+      return c.resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
     // Campos ausentes mantêm o valor atual; prazo nulo apaga o prazo
     const temPrazo = corpo.prazo !== undefined;
     await tx.$executeRaw`
@@ -152,6 +166,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
         disciplina = coalesce(${corpo.disciplina ?? null}::text, disciplina),
         tipo = coalesce(${corpo.tipo ?? null}::text, tipo),
         prioridade = coalesce(${corpo.prioridade ?? null}::text, prioridade),
+        tipo_atividade_id = CASE WHEN ${corpo.tipo_atividade_id !== undefined}::boolean THEN ${corpo.tipo_atividade_id ?? null}::uuid ELSE tipo_atividade_id END,
         prazo = CASE WHEN ${temPrazo}::boolean THEN ${corpo.prazo ?? null}::date ELSE prazo END,
         situacao = coalesce(${corpo.situacao ?? null}::text, situacao),
         concluida_em = CASE WHEN ${corpo.situacao ?? null}::text = 'concluida' THEN now()
@@ -294,6 +309,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     dia,
     hora_inicio: horaOpcional,
     minutos: minutosOpcional,
+    tipo_atividade_id: z.uuid().nullable().optional(),
   });
   const MAXIMO_DIAS_CONSULTA = 400;
 
@@ -329,7 +345,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
         return resposta.code(400).send({ erro: 'Dados inválidos.' });
       return {
         eventos: await tx.$queryRaw<Linha[]>`
-      SELECT id, tarefa_id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos
+      SELECT id, tarefa_id, titulo, tipo, tipo_atividade_id, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos
         FROM evento
        WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL AND oculto_em IS NULL
          AND dia BETWEEN ${consulta.de}::date AND ${consulta.ate}::date
@@ -339,22 +355,26 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   );
 
   rota('post', '/eventos', { corpo: corpoEvento }, async ({ tx, sessao, corpo, resposta }) => {
+    if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
+      return resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
     const [e] = await tx.$queryRaw<Linha[]>`
-        INSERT INTO evento (instituicao_id, usuario_id, titulo, tipo, dia, hora_inicio, minutos)
-        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.tipo ?? 'pessoal'}, ${corpo.dia}::date, ${corpo.hora_inicio ?? null}::time, ${corpo.minutos ?? null})
-        RETURNING id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
+        INSERT INTO evento (instituicao_id, usuario_id, titulo, tipo, dia, hora_inicio, minutos, tipo_atividade_id)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.tipo ?? 'pessoal'}, ${corpo.dia}::date, ${corpo.hora_inicio ?? null}::time, ${corpo.minutos ?? null}, ${corpo.tipo_atividade_id ?? null}::uuid)
+        RETURNING id, titulo, tipo, tipo_atividade_id, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
     await gravarVersao(tx, sessao, (e as Linha).id as string, 'criado');
     return resposta.code(201).send({ evento: e });
   });
 
   // Edita só evento do próprio aluno e de origem manual. Evento importado ou do plano não se edita.
   rota('patch', '/eventos/:id', { params: idParam, corpo: corpoEvento }, async (c) => {
+    if (!(await tipoDoAluno(c.tx, c.sessao.usuarioId, c.corpo.tipo_atividade_id)))
+      return c.resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
     const [e] = await c.tx.$queryRaw<Linha[]>`
         UPDATE evento SET titulo = ${c.corpo.titulo}, tipo = ${c.corpo.tipo ?? 'pessoal'}, dia = ${c.corpo.dia}::date,
-               hora_inicio = ${c.corpo.hora_inicio ?? null}::time, minutos = ${c.corpo.minutos ?? null}, atualizado_em = now()
+               hora_inicio = ${c.corpo.hora_inicio ?? null}::time, minutos = ${c.corpo.minutos ?? null}, tipo_atividade_id = ${c.corpo.tipo_atividade_id ?? null}::uuid, atualizado_em = now()
          WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid
            AND desativado_em IS NULL AND oculto_em IS NULL AND origem = 'manual'
-        RETURNING id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
+        RETURNING id, titulo, tipo, tipo_atividade_id, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
     if (!e) return naoAchou(c);
     await gravarVersao(c.tx, c.sessao, c.params.id, 'editado');
     return { evento: e };
@@ -375,6 +395,152 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       .$executeRaw`UPDATE evento SET desativado_em = now(), atualizado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL AND origem IN ('manual', 'plano')`;
     if (n === 0) return naoAchou(c);
     await gravarVersao(c.tx, c.sessao, c.params.id, 'desativado');
+    return undefined;
+  });
+
+  // ---------- Personalização e tipos de atividade (L17b) ----------
+  const semLink = (max: number) =>
+    z
+      .string()
+      .trim()
+      .min(1)
+      .max(max)
+      .refine((t) => !/(https?:|www\.|:\/\/|@)/i.test(t), 'Não use links nem e-mail.');
+  const corpoPreferencias = z.strictObject({
+    apelido: semLink(40).nullable(),
+    cor_destaque: z.enum(IDS_DE_COR as [string, ...string[]]).nullable(),
+    tema: z.enum(TEMAS),
+    fonte: z.number().int().min(90).max(150),
+    reduzir_movimento: z.boolean(),
+    leitura_facilitada: z.boolean(),
+    modo_simples: z.boolean(),
+    tempo_visual: z.boolean(),
+    linguagem_curta: z.boolean(),
+    escolha_agora: z.boolean(),
+    tela_inicial: z.enum(['meudia', 'agenda', 'calendario']),
+  });
+  const PADRAO_PREFERENCIAS = {
+    apelido: null,
+    cor_destaque: null,
+    tema: 'claro',
+    fonte: 100,
+    reduzir_movimento: false,
+    leitura_facilitada: false,
+    modo_simples: false,
+    tempo_visual: true,
+    linguagem_curta: false,
+    escolha_agora: true,
+    tela_inicial: 'meudia',
+  } as const;
+
+  const gravarPreferencias = async (
+    tx: ClienteTransacao,
+    sessao: SessaoAtiva,
+    p: z.infer<typeof corpoPreferencias>,
+    acao: string,
+  ) => {
+    const [linha] = await tx.$queryRaw<Linha[]>`
+      INSERT INTO preferencia_usuario (instituicao_id, usuario_id, apelido, cor_destaque, tema, fonte, reduzir_movimento,
+                                       leitura_facilitada, modo_simples, tempo_visual, linguagem_curta, escolha_agora, tela_inicial)
+      VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${p.apelido}, ${p.cor_destaque}, ${p.tema}, ${p.fonte},
+              ${p.reduzir_movimento}, ${p.leitura_facilitada}, ${p.modo_simples}, ${p.tempo_visual}, ${p.linguagem_curta},
+              ${p.escolha_agora}, ${p.tela_inicial})
+      ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET
+        apelido = EXCLUDED.apelido, cor_destaque = EXCLUDED.cor_destaque, tema = EXCLUDED.tema, fonte = EXCLUDED.fonte,
+        reduzir_movimento = EXCLUDED.reduzir_movimento, leitura_facilitada = EXCLUDED.leitura_facilitada,
+        modo_simples = EXCLUDED.modo_simples, tempo_visual = EXCLUDED.tempo_visual, linguagem_curta = EXCLUDED.linguagem_curta,
+        escolha_agora = EXCLUDED.escolha_agora, tela_inicial = EXCLUDED.tela_inicial, atualizado_em = now()
+      RETURNING apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
+                linguagem_curta, escolha_agora, tela_inicial`;
+    await registrarAuditoria(tx, {
+      instituicaoId: sessao.instituicaoId,
+      ator: `usuario:${sessao.usuarioId}`,
+      acao,
+      alvo: `usuario:${sessao.usuarioId}`,
+    });
+    return linha;
+  };
+
+  // null = o aluno nunca personalizou: o padrão acessível continua valendo
+  rota('get', '/preferencias', {}, async ({ tx, sessao }) => {
+    const [p] = await tx.$queryRaw<Linha[]>`
+      SELECT apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
+             linguagem_curta, escolha_agora, tela_inicial
+        FROM preferencia_usuario WHERE usuario_id = ${sessao.usuarioId}::uuid`;
+    return { preferencias: p ?? null };
+  });
+
+  rota(
+    'put',
+    '/preferencias',
+    { corpo: corpoPreferencias },
+    async ({ tx, sessao, corpo, resposta }) => {
+      // O sistema não deixa gravar cor e tema difíceis de ler (contraste mínimo de 4,5 para 1)
+      if (corpo.cor_destaque && !combinacaoLegivel(corpo.cor_destaque, corpo.tema))
+        return resposta
+          .code(422)
+          .send({ erro: 'Essa cor é difícil de ler neste tema. Escolha outra cor.' });
+      return { preferencias: await gravarPreferencias(tx, sessao, corpo, 'preferencias.salvas') };
+    },
+  );
+
+  // "Voltar ao padrão": grava os valores padrão (nada se apaga; a auditoria guarda o histórico)
+  rota('post', '/preferencias/padrao', {}, async ({ tx, sessao }) => ({
+    preferencias: await gravarPreferencias(
+      tx,
+      sessao,
+      { ...PADRAO_PREFERENCIAS },
+      'preferencias.padrao',
+    ),
+  }));
+
+  const corpoTipo = z.strictObject({
+    nome: semLink(40),
+    cor: z.enum(IDS_DE_COR as [string, ...string[]]),
+    icone: z.enum(ICONES_DE_TIPO),
+  });
+  rota('get', '/tipos-atividade', {}, async ({ tx, sessao }) => ({
+    tipos: await tx.$queryRaw<Linha[]>`
+      SELECT id, nome, cor, icone FROM tipo_atividade
+       WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL ORDER BY lower(nome)`,
+  }));
+  rota(
+    'post',
+    '/tipos-atividade',
+    { corpo: corpoTipo },
+    async ({ tx, sessao, corpo, resposta }) => {
+      const [repetido] = await tx.$queryRaw<Linha[]>`
+      SELECT id FROM tipo_atividade WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL
+         AND lower(nome) = lower(${corpo.nome})`;
+      if (repetido) return resposta.code(409).send({ erro: 'Você já tem um tipo com esse nome.' });
+      const [total] = await tx.$queryRaw<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM tipo_atividade WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL`;
+      if ((total?.n ?? 0) >= 30)
+        return resposta.code(409).send({ erro: 'Você chegou ao limite de 30 tipos.' });
+      const [t] = await tx.$queryRaw<Linha[]>`
+      INSERT INTO tipo_atividade (instituicao_id, usuario_id, nome, cor, icone)
+      VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.nome}, ${corpo.cor}, ${corpo.icone})
+      RETURNING id, nome, cor, icone`;
+      await registrarAuditoria(tx, {
+        instituicaoId: sessao.instituicaoId,
+        ator: `usuario:${sessao.usuarioId}`,
+        acao: 'tipo_atividade.criado',
+        alvo: `tipo_atividade:${(t as Linha).id}`,
+      });
+      return resposta.code(201).send({ tipo: t });
+    },
+  );
+  // Desativar: tarefas e eventos que já usam o tipo continuam existindo, só ficam sem ele na tela
+  rota('delete', '/tipos-atividade/:id', { params: idParam }, async (c) => {
+    const n = await c.tx
+      .$executeRaw`UPDATE tipo_atividade SET desativado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL`;
+    if (n === 0) return naoAchou(c);
+    await registrarAuditoria(c.tx, {
+      instituicaoId: c.sessao.instituicaoId,
+      ator: `usuario:${c.sessao.usuarioId}`,
+      acao: 'tipo_atividade.desativado',
+      alvo: `tipo_atividade:${c.params.id}`,
+    });
     return undefined;
   });
 

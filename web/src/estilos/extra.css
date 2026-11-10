@@ -718,3 +718,26 @@ body:not(.dark) .sino :focus-visible {
   padding: 0;
   margin: 8px 0 0;
 }
+
+/* Personalizar (L17b): opções em linha com alvo de toque de 44 px e amostra de cor */
+.opcao {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 44px;
+}
+.opcao input[type="radio"] {
+  width: 22px;
+  height: 22px;
+}
+.amostra {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+body.dark .btn-primary {
+  color: #0c1829;
+}
