@@ -157,7 +157,7 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Como voltar atrás: reverter `proxy/`, `compose.yaml` (serviço `proxy`), `scripts/manutencao.sh` e `.env.example` para a versão com `MANUTENCAO_A_PARTIR_DE`; reverter `web/src/menu*`, `manual.ts`, `paginas/Ajuda.tsx` e os trechos de `Shell.tsx`.
 
 
-## F-042 — 09/11/2026 — L16c: link externo (Funnel) abre só na máquina do autor (ABERTA)
+## F-042 — 09/11/2026 — L16c: link externo (Funnel) abre só na máquina do autor (FECHADA em 09/11/2026; ver o fim desta seção)
 - O que falhou: `https://ntb-w1lopes.tail378cb5.ts.net` abre no Windows do autor, mas não em outras máquinas ("não é possível acessar esse site"). Em 08/11/2026 abriu no celular com dados móveis.
 - Medido (09/11/2026, somente leitura, 20:11): `tailscale funnel status` = Funnel on, `/` → `http://127.0.0.1:18081`; `curl` local em 18081 = HTTP 200; `docker compose ps` = api, db e proxy saudáveis, web em execução; nó Running, sem alerta de saúde; permissões do nó incluem `funnel`, `https` e `funnel-ports` 443/8443/10000 (a política nodeAttrs permite Funnel); `nslookup` do nome em 8.8.8.8, 1.1.1.1 e 9.9.9.9 = "Non-existent domain".
 - Causa provável (não confirmada): o registro DNS público do Funnel não existe ou ainda não propagou (resposta negativa pode ficar em cache). O sistema, o proxy e a permissão estão corretos, então não é defeito do SIESAL nem da política de acesso. Ainda possível: estado do nó/chave, ou bloqueio na rede de quem testa.

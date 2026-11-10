@@ -18,7 +18,7 @@ Procedimento reutilizável: `docs/ACESSO-PUBLICO-TEMPORARIO.md`.
 
 ## Resultado das verificações pela URL HTTPS (104 verificações)
 - 100 aprovadas na primeira execução. 4 marcadas como falha, assim explicadas:
-  1. `Permissions-Policy` ausente na página inicial: **falha real, aberta** (F-038).
+  1. `Permissions-Policy` ausente na página inicial: falha real (F-038), **corrigida no L16a em 08/11/2026** (`web/seguranca.conf`).
   2. HTTP simples responde 200: **limite do `trycloudflare.com`**, sem correção possível aqui. Não há sessão por HTTP, por causa do cookie `Secure`.
   3. "Escola B recebe aviso da Demonstração": **falso alarme do meu teste**. A Escola B tem o próprio aviso, com a mesma turma ("Turma Auditoria 7º A") e o mesmo texto; conferido no banco (1 aviso por turma, cada um na sua instituição).
   4. "Limite de tentativas ignora cabeçalhos forjados": **teste inválido na primeira execução** (a Cloudflare respondeu 403 ao `CF-Connecting-IP` forjado). Repetido só com `X-Forwarded-For` e `X-Real-IP` forjados, com IP diferente a cada chamada: 10 respostas 401 e depois 429. O limite usa o endereço visto pelo nginx, não o do cliente.
@@ -34,5 +34,5 @@ Procedimento reutilizável: `docs/ACESSO-PUBLICO-TEMPORARIO.md`.
 - Um comando meu imprimiu na tela uma linha do arquivo de acesso, com a senha provisória do aluno 1. A senha foi girada logo em seguida, sem imprimir, e a antiga deixou de valer. Nenhuma outra credencial foi exibida.
 
 ## Achados para o autor
-- **F-038 (aberto):** `Permissions-Policy` não chega na página inicial. Causa: no nginx, `add_header` dentro de `location /` substitui os do nível `server`. Correção sugerida: repetir a linha em `location /` de `web/nginx.conf` e refazer o container web. Não foi aplicada (fora da autorização desta auditoria).
+- **F-038 (corrigida no L16a, 08/11/2026):** `Permissions-Policy` não chegava na página inicial. Causa: no nginx, `add_header` dentro de `location /` substitui os do nível `server`. Correção: os cabeçalhos foram para `web/seguranca.conf`, incluído em todos os blocos do nginx.
 - Limite de login compartilhado atrás do túnel (10 por minuto para todos); ver `ACESSO-PUBLICO-TEMPORARIO.md`.

@@ -25,7 +25,7 @@ AUD-01 cabeçalho cresce com fonte grande e nome longo; AUD-02 (F-038) e AUD-03 
 Selo "Prazo passou" sem vermelho (Avisos, Atividades, Meu dia; era o F-040) e contador lateral azul; foco do tema claro de 2,91:1 para 5,6:1 (`#00718c`); explicação dos blocos agrupados antes de salvar o plano (`web/src/plano.ts`).
 
 ### L16c: Funnel e proxy (feito, com ajuste)
-- Funnel: `tailscale funnel --bg 18081`, endereço fixo `https://ntb-w1lopes.tail378cb5.ts.net` (autor ligou e testou).
+- Funnel: `tailscale funnel --bg 18081`, endereço fixo `https://ntb-w1lopes.tail378cb5.ts.net` (autor ligou e testou). **Atualizado em 09/11/2026:** o endereço agora é `https://siesal.tail378cb5.ts.net` (F-042, fechada).
 - Container `proxy` (porta 18081): repassa ao site; fora da janela mostra "Sistema em construção. Entre em contato com o desenvolvedor." (503, sem dado e sem cookie).
 - **Janela automática 06:00 a 23:59 em America/Sao_Paulo**; `MANUTENCAO_MODO` = `auto`, `ligada` ou `liberada`; comandos `bash scripts/manutencao.sh ligar|liberar|automatico|estado`. (A primeira versão tinha só um horário único; corrigido.)
 - Doc: `docs/FUNNEL-E-MANUTENCAO.md`.

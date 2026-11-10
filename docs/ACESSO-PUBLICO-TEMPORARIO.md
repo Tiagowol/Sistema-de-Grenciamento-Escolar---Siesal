@@ -63,4 +63,4 @@ O autor liga e desliga com duas frases ao Code:
 - Atrás do túnel, todos os visitantes aparecem com o mesmo endereço para o limite de tentativas: o limite de 10 por minuto é de todos juntos.
   O sistema não confia em `X-Forwarded-For` nem em `X-Real-IP` do cliente (o nginx sobrescreve); a Cloudflare recusa `CF-Connecting-IP` forjado com 403.
 - O domínio `trycloudflare.com` também responde em HTTP simples e não envia HSTS. Como o cookie é `Secure`, não há sessão por HTTP: use sempre `https://`.
-- Aberta: o cabeçalho `Permissions-Policy` não é enviado na página inicial (F-038 em `REGISTRO-DE-FALHAS.md`).
+- Corrigida no L16a (08/11/2026): o cabeçalho `Permissions-Policy` não era enviado na página inicial (F-038 em `REGISTRO-DE-FALHAS.md`).

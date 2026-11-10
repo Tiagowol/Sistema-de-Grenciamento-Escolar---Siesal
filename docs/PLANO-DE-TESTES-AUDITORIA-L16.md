@@ -89,7 +89,7 @@ Legenda da situação:
 |---|---|---|---|
 | G1 | CSP `default-src 'self'; frame-ancestors 'none'` | Presente | OK-ver |
 | G2 | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` | Presentes | OK-ver |
-| G3 | `Permissions-Policy` na página inicial | Presente | **Aberto (F-038)** |
+| G3 | `Permissions-Policy` na página inicial | Presente | Corrigido no L16a (F-038); conferir de novo pelo HTTPS |
 | G4 | HSTS | Presente em produção | Não aplicável ao túnel temporário; definir em produção |
 | G5 | TLS (versão e cifras) | TLS 1.2 ou superior | Não feito (Cloudflare termina o TLS) |
 | G6 | Cache de dados sensíveis | Respostas da API sem cache compartilhado | Não feito |
@@ -124,7 +124,7 @@ Legenda da situação:
 | J3 | Contraste real na tela | Ferramenta de contraste no navegador, nos 3 temas (claro, escuro, alto contraste) | Mesmo resultado | **Humano** |
 | J4 | Teclado | Tab, Enter, Espaço e Esc nos dois sinos | Abre, fecha, foco volta ao botão | OK-auto; **Humano** |
 | J5 | Leitor de tela | NVDA (Windows), VoiceOver (iOS e macOS), TalkBack (Android) | Nome "Mensagens, N não vistas" e "Prazos, N atividades para hoje ou amanhã"; contagem anunciada | **Humano** (checagem NAPNE) |
-| J6 | Foco visível | Todos os controles | Contorno de pelo menos 3:1 | Sinos OK; **foco global tem cerca de 2,9:1 (Aberto, candidato ao L17)** |
+| J6 | Foco visível | Todos os controles | Contorno de pelo menos 3:1 | Sinos OK; foco global corrigido no L16b (de 2,91:1 para 5,6:1, `#00718c`); **Humano** nos 3 temas |
 | J7 | Alvos de toque | Botões do topo e dos painéis | 44 px ou mais | OK-ver (360, 768 e 1280 px) |
 | J8 | Responsividade | 360, 768 e 1280 px | Sem rolagem horizontal | OK-ver (aluno e professor); **Humano** nos demais perfis |
 | J9 | Zoom e texto | 200% de zoom; fonte maior; espaçamento de texto | Sem perda de conteúdo | Não feito |
@@ -138,7 +138,7 @@ Legenda da situação:
 | K2 | Sem "atrasado" como alerta nos sinos | Texto neutro, sem vermelho | OK-auto |
 | K3 | Texto literal, sem pressão, sem ironia | Revisão de todos os textos novos | **Humano** |
 | K4 | Sem ranking nem comparação entre alunos | Nenhuma tela ou rota | OK-auto |
-| K5 | Página "Avisos" do aluno ainda usa selo vermelho "Prazo passou" | Contra a regra de tempo concreto | **Aberto (candidato ao L17)** |
+| K5 | Página "Avisos" do aluno ainda usa selo vermelho "Prazo passou" | Contra a regra de tempo concreto | Corrigido no L16b (sem vermelho; F-040) |
 
 ## 12. Privacidade, LGPD e ECA Digital
 | ID | Teste | Esperado | Situação |
@@ -167,7 +167,7 @@ Legenda da situação:
 | ID | Teste | Esperado | Situação |
 |---|---|---|---|
 | N1 | Reinício da API | Volta saudável; sessões válidas continuam | OK-ver (reinício feito; sessões não medidas) |
-| N2 | Testes unitários e de integração | Todos passam | OK-auto (557 e 133) |
+| N2 | Testes unitários e de integração | Todos passam | OK-auto (591 e 134, em 09/11/2026) |
 | N3 | Lint e tipos | Sem erros | OK-auto |
 | N4 | Dependências | Versões exatas, sem `^` nem `~`; `pnpm audit` | **Não feito** (`pnpm audit`) |
 | N5 | Imagens base | Digest fixo e atualizações | Túnel por digest; demais imagens: Não feito |
@@ -177,10 +177,10 @@ Legenda da situação:
 Chrome, Firefox, Edge, Safari (iOS e macOS) e Chrome Android; telas de 360, 768 e 1280 px; tema claro, escuro e alto contraste. **Humano.** Só foram medidos, em navegador embutido, 360, 768 e 1280 px, nos perfis Aluno e Professor.
 
 ## 16. Pendências e riscos conhecidos (resumo)
-1. **F-038 (aberta):** `Permissions-Policy` não chega na página inicial (regra do nginx). Correção de uma linha, não aplicada.
+1. F-038: `Permissions-Policy` na página inicial. **Corrigida no L16a** (08/11/2026).
 2. **F-036:** o commit d428548 (L15) ainda contém o vazamento do motivo da revisão. O L15 só vai para push ou merge junto com a correção do L16, ou depois dela.
-3. Página "Avisos" do aluno: selo vermelho "Prazo passou" (contra a regra de tempo concreto).
-4. Contorno de foco global com cerca de 2,9:1 (abaixo de 3:1).
+3. Página "Avisos" do aluno: selo vermelho "Prazo passou". **Corrigido no L16b.**
+4. Contorno de foco global com cerca de 2,9:1. **Corrigido no L16b** (5,6:1).
 5. Tela do Admin (TOTP) não conferida; checagem humana (leitor de tela, teclado, contraste, NAPNE) não feita.
 6. Dados da auditoria semeados por script, sem eventos de criação na trilha.
 7. O túnel temporário não tem login na frente, responde em HTTP e compartilha o limite de login entre todos os visitantes.

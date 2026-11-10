@@ -51,7 +51,7 @@ Antes: preencher `SIESAL_APP_PASSWORD` no `.env` (`openssl rand -hex 24`). O `mi
 docker compose --profile release run --rm bootstrap
 ```
 
-O login dos Masters fica para o Lote 6.
+O login dos Masters fica para o L18 (Fechamento).
 
 ## Lote 5: autenticação própria (ADR-008)
 - Rotas: `POST /auth/login`, `POST /auth/logout`, `GET /auth/eu`, `POST /auth/totp/iniciar`, `POST /auth/totp/confirmar`. Só entram com `AUTH_SECRET` preenchido no `.env`.
