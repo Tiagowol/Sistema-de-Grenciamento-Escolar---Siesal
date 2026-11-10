@@ -32,6 +32,9 @@ async function prepararPapeis(cliente: pg.Client, senhaApp: string): Promise<voi
   );
   await cliente.query('GRANT USAGE, CREATE ON SCHEMA public TO siesal_owner');
   await cliente.query('GRANT USAGE ON SCHEMA public TO siesal_app, siesal_ops');
+  // L18: a API vira siesal_ops só por SET LOCAL ROLE, dentro de uma transação. Sem herança:
+  // fora desse SET ROLE, siesal_app continua sem nenhuma permissão nas tabelas dos Masters.
+  await cliente.query('GRANT siesal_ops TO siesal_app WITH INHERIT FALSE, SET TRUE');
 }
 
 // Aplica as migrações SQL em ordem, cada uma em uma transação, como siesal_owner.

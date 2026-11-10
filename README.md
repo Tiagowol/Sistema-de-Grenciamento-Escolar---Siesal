@@ -2,7 +2,7 @@
 
 Sistema Inteligente de Estudos, Agenda e Aprendizagem: sistema escolar inclusivo e multi-instituição, feito como TCC (IFRN Canguaretama) e simulado como SaaS.
 
-Estado (08/11/2026): lotes L1 a L16 implementados e com telas (login, Agenda, Foco, Atividades, notas oficiais com revisão, turmas e vínculos, avisos curtos, sinos de Mensagens e Prazos, usuários do Admin). Os lotes L16a, L16b, L16c, L16d (menu recolhível, estados de carregamento, busca no menu) e L16e (ajuda e manual por perfil) estão implementados, aguardando checagem humana e commit. Seguem L17 (Apoio ao aluno) e L18 (Fechamento, com login dos Masters). Nada é "Verificado": faltam as checagens humanas (leitor de tela, teclado, contraste real, zoom de 200%, NAPNE) e o parecer jurídico. Login e painel de Master ainda não existem.
+Estado (10/11/2026): lotes L1 a L18 implementados e com telas (login, Agenda, Calendário, Foco, Atividades, Personalizar, Minha conta, notas oficiais com revisão, turmas e vínculos, avisos curtos, sinos de Mensagens e Prazos, usuários do Admin, apoio ao aluno e a entrada dos Masters em `/operacao`). Migrações até a `0014`; matriz de permissões na versão 9. A numeração de lotes vai até o L20: seguem L19 (Admin institucional) e L20 (painel Master real), ainda só planejados. Nada é "Verificado": faltam as checagens humanas (leitor de tela, teclado, contraste real, zoom de 200%, NAPNE) e o parecer jurídico. Roteiro em `docs/ROTEIRO-L17A-A-L20.md`; fechamento em `docs/RELATORIO-L18.md`.
 
 Como ver o sistema:
 - Site local: http://localhost:18080 (`WEB_PORTA=18080` no `.env`). Subir ou refazer: `docker compose up -d --build`.
@@ -40,7 +40,7 @@ CONFIRMA_BACKUP=sim docker compose --profile release run --rm migrate
 docker compose --profile teste run --rm --build teste
 ```
 
-Antes: preencher `SIESAL_APP_PASSWORD` no `.env` (`openssl rand -hex 24`). O `migrate` cria os papéis `siesal_owner` e `siesal_app` e aplica `api/migracoes/*.sql`; o `teste` roda a suíte de isolamento em um banco temporário.
+Antes: preencher `SIESAL_APP_PASSWORD` no `.env` (`openssl rand -hex 24`). O `migrate` cria os papéis `siesal_owner`, `siesal_app` e `siesal_ops` e aplica `api/migracoes/*.sql`; o `teste` roda a suíte de isolamento em um banco temporário.
 
 ## Lote 4: auditoria, permissões e Masters
 - Auditoria: tabela `auditoria_evento` por instituição, com hash calculado no banco; sem UPDATE, DELETE nem TRUNCATE.
@@ -51,7 +51,17 @@ Antes: preencher `SIESAL_APP_PASSWORD` no `.env` (`openssl rand -hex 24`). O `mi
 docker compose --profile release run --rm bootstrap
 ```
 
-O login dos Masters fica para o L18 (Fechamento).
+## Lote 18: login dos Masters (`/operacao`)
+- Entrada separada em `http://localhost:18080/operacao`. Rotas da API: `POST /operacao/login`, `POST /operacao/primeiro-acesso`, `GET /operacao/eu`, `POST /operacao/logout`, `POST /operacao/totp/iniciar`, `POST /operacao/totp/confirmar`, `GET` e `POST /operacao/instituicoes`, `POST /operacao/instituicoes/:id/suspender` e `/reativar`.
+- A API age como o papel `siesal_ops` por `SET LOCAL ROLE`, só dentro de uma transação. Esse papel não tem permissão em nenhuma tabela escolar. Detalhes e provas em `docs/PROPOSTA-L18-ARQUITETURA-MASTER.md`.
+- Cookie próprio (`__Host-siesal_operacao`), TOTP obrigatório, sessão de 1 hora, trilha própria (`operator_auditoria`, append-only com hash).
+- Primeiro acesso: o dono do servidor gera um convite (vale 30 minutos e uma vez) e usa em `/operacao`, em "Primeiro acesso". No terminal WSL, trocando `nome` pelo usuário do Master:
+
+```
+MASTER_USUARIO=nome docker compose --profile release run --rm convite-master
+```
+
+- Suspender uma instituição impede o login e encerra as sessões das pessoas dela, até a reativação.
 
 ## Lote 5: autenticação própria (ADR-008)
 - Rotas: `POST /auth/login`, `POST /auth/logout`, `GET /auth/eu`, `POST /auth/totp/iniciar`, `POST /auth/totp/confirmar`. Só entram com `AUTH_SECRET` preenchido no `.env`.
@@ -67,7 +77,7 @@ O login dos Masters fica para o L18 (Fechamento).
 - Falhas corrigidas ficam em `docs/REGISTRO-DE-FALHAS.md`.
 
 ## Documentos
-A documentação de planejamento (Visão, ADRs, matriz de permissões, modelo de dados, riscos, privacidade) está no projeto de trabalho e será copiada para `docs/` em lote próprio.
+A documentação de planejamento (Visão, ADRs, matriz de permissões, modelo de dados, riscos, privacidade) está no projeto de trabalho e será copiada para `docs/` em lote próprio. Em `docs/` estão o roteiro, o registro de aprovações, o registro de falhas, os planos e os retornos de cada migração (`RETORNO-0008` a `RETORNO-0014`).
 
 ## Conformidade
 Projetado para atender LGPD, ECA Digital (Lei 15.211/2025), WCAG 2.2 AA e eMAG. Sem parecer jurídico até o momento; não afirmamos "em conformidade".

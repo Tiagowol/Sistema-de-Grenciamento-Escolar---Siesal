@@ -464,3 +464,29 @@ export const api = {
   lerNotificacao: (id: string) => chamar<void>('POST', `/notificacoes/${id}/lida`),
   lerTodas: () => chamar<void>('POST', '/notificacoes/lidas'),
 };
+
+// L18: Masters (/operacao). Rotas e cookie próprios; nada daqui toca em dado escolar.
+export type NivelOperacao = 'completo' | 'configurar_totp';
+export type EuOperacao = { nivel: NivelOperacao; usuario: string };
+export type InstituicaoLista = {
+  id: string;
+  nome: string;
+  situacao: 'ativa' | 'suspensa';
+  criado_em: string;
+};
+export const apiOperacao = {
+  eu: () => chamar<EuOperacao>('GET', '/operacao/eu'),
+  login: (d: { usuario: string; senha: string; codigo?: string }) =>
+    chamar<EuOperacao>('POST', '/operacao/login', d),
+  primeiroAcesso: (d: { usuario: string; convite: string; senha_nova: string }) =>
+    chamar<EuOperacao>('POST', '/operacao/primeiro-acesso', d),
+  logout: () => chamar<void>('POST', '/operacao/logout'),
+  iniciarTotp: () => chamar<{ segredo: string; uri: string }>('POST', '/operacao/totp/iniciar'),
+  confirmarTotp: (codigo: string) =>
+    chamar<{ nivel: NivelOperacao }>('POST', '/operacao/totp/confirmar', { codigo }),
+  instituicoes: () => chamar<{ instituicoes: InstituicaoLista[] }>('GET', '/operacao/instituicoes'),
+  criarInstituicao: (nome: string) =>
+    chamar<{ instituicao: InstituicaoLista }>('POST', '/operacao/instituicoes', { nome }),
+  suspender: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/suspender`),
+  reativar: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/reativar`),
+};

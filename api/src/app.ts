@@ -23,6 +23,7 @@ import { registrarConta } from './conta/rotas.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
+import { registrarOperacao } from './operacao/rotas.js';
 import { registrarTurmas } from './turmas/rotas.js';
 
 export type OpcoesApp = {
@@ -154,6 +155,23 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarAvisos(app, { banco: opcoes.banco, exigirSessao });
   registrarAjuda(app, { banco: opcoes.banco, exigirSessao });
   registrarConta(app, { banco: opcoes.banco, exigirSessao, limitar });
+
+  // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)
+  const limitadorOperacao = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
+  registrarOperacao(app, {
+    banco: opcoes.banco,
+    chaveTotp: derivarChave(opcoes.authSecret),
+    agora: opcoes.agora,
+    cookieLocal: Boolean(opcoes.cookieLocal),
+    limitar: (requisicao, resposta) => {
+      if (limitadorOperacao.permitir(requisicao.ip, relogio().getTime())) return true;
+      void resposta
+        .code(429)
+        .header('retry-after', '60')
+        .send({ erro: 'Muitas tentativas. Aguarde 1 minuto.' });
+      return false;
+    },
+  });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
     const sessao = await exigirSessao(requisicao, resposta);

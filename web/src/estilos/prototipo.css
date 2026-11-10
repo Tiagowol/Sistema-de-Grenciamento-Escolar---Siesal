@@ -28,6 +28,10 @@
 }
 html {
   font-size: calc(15px * var(--scale));
+  /* F-043: o navegador do celular não aumenta o texto por conta própria (Firefox e Chrome ficavam diferentes).
+     O tamanho da letra é escolhido em Personalizar; o zoom do navegador continua funcionando. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   scroll-behavior: smooth;
 }
 body {

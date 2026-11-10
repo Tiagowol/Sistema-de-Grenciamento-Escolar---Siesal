@@ -182,6 +182,11 @@ export function criarAutenticacao(dep: Dependencias) {
       dep.banco,
       { instituicaoId: entrada.instituicaoId },
       async (tx): Promise<ResultadoLogin> => {
+        // L18: instituição suspensa pelo Master não entra (a RLS só mostra a própria instituição)
+        if (!(await tx.instituicao.findFirst({ where: { situacao: 'ativa' } }))) {
+          await verificarSenhaFalsa(entrada.senha);
+          return { tipo: 'falha' };
+        }
         const usuario = await tx.usuario.findFirst({
           where: {
             situacao: 'ativo',
@@ -275,6 +280,8 @@ export function criarAutenticacao(dep: Dependencias) {
         where: { token_hash: lido.hash, revogada_em: null, expira_em: { gt: agora } },
       });
       if (!sessao) return null;
+      // L18: sessão aberta antes da suspensão deixa de valer
+      if (!(await tx.instituicao.findFirst({ where: { situacao: 'ativa' } }))) return null;
       const usuario = await tx.usuario.findFirst({
         where: { id: sessao.usuario_id, situacao: 'ativo' },
       });

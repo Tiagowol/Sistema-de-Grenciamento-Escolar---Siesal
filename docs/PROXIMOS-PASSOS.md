@@ -1,5 +1,7 @@
 # Próximos passos (registro de 09/11/2026)
 
+> **Atualização de 10/11/2026:** os lotes L17, L17a, L17b, L17c e L18 estão **Implementados** (migrações até a 0014 aplicadas no banco do site). A ordem abaixo é histórica. O estado atual, o que falta e o gate de verificação estão em `docs/RELATORIO-L18.md`. Próximos lotes: L19 e L20, cada um só com "aprovo".
+
 Estado: L16, L16a, L16b, L16c, L16d e L16e commitados no ramo `lote-16-avisos` (um commit só; os arquivos se misturam entre os sublotes). Estado dos lotes: **Implementado**, não "Verificado".
 
 ## Ordem

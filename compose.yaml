@@ -136,6 +136,23 @@ services:
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
 
+  # Convite de primeiro acesso de um Master (L18): imprime o convite uma vez; vale 30 minutos e uma vez.
+  # Uso: MASTER_USUARIO=nome docker compose --profile release run --rm convite-master
+  convite-master:
+    build: ./api
+    profiles: [release]
+    command: ["node", "dist/migrar/executar-convite-master.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL_ADMIN: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      MASTER_USUARIO: ${MASTER_USUARIO:-}
+    networks: [backend]
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
   # Cria uma instituição fictícia e o primeiro administrador (senha provisória impressa uma vez).
   instituicao:
     build: ./api
