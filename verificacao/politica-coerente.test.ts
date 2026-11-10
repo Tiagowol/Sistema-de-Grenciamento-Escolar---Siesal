@@ -3,10 +3,13 @@ import {
   PERFIS_CADASTRAVEIS,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
+  podeAtenderAjuda,
   podeLancarNota,
+  podeLerAjuda,
   podeLerAvisoEscolar,
   podeLerCaixa,
   podeLerNotas,
+  podePedirAjuda,
   podePedirRevisao,
   podePublicarAviso,
   podeResponderPedido,
@@ -72,5 +75,13 @@ describe('política da caixa e dos avisos (L16) x matriz de permissões (v5)', (
       permitido(perfil, 'avisos_escolares', 'publicar') !== null,
     );
     expect(podeLerAvisoEscolar(perfil)).toBe(permitido(perfil, 'avisos_escolares', 'ler') !== null);
+  });
+});
+
+describe('política do pedido de ajuda (L17) x matriz de permissões (v6)', () => {
+  it.each(PERFIS)('perfil %s: pedir, atender e ler batem com a matriz', (perfil) => {
+    expect(podePedirAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'pedir') !== null);
+    expect(podeAtenderAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'atender') !== null);
+    expect(podeLerAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'ler') !== null);
   });
 });

@@ -1,11 +1,14 @@
 import { api, type ResumoTarefa } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Kpi, Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
+import { EscolhaAgora } from '../componentes/EscolhaAgora';
 import type { Pagina } from '../componentes/Shell';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { dataLonga, formatar } from '../datas';
 import { Icone } from '../icones';
+import { texto } from '../linguagem-curta';
+import { carregarPreferencias } from '../preferencias';
 
 function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pagina) => void }) {
   const pct = t.etapas ? Math.round((t.etapas_feitas / t.etapas) * 100) : 0;
@@ -42,8 +45,17 @@ function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pag
 }
 
 // Painel "Meu dia": o que precisa de atenção, sem pressão
-export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void }) {
+export function MeuDia({
+  nome,
+  aoIr,
+  aoComecar,
+}: {
+  nome: string;
+  aoIr: (p: Pagina) => void;
+  aoComecar?: (tarefaId: string) => void;
+}) {
   const { dados: d, erro } = useCarregar(api.meuDia);
+  const comEscolha = carregarPreferencias().escolhaAgora;
   if (erro) return <Aviso tipo="warn">{erro}</Aviso>;
   if (!d) return <p role="status">Carregando…</p>;
   const atencao = [...d.atrasadas, ...d.para_hoje, ...d.proximas].slice(0, 4);
@@ -52,9 +64,9 @@ export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void
   return (
     <>
       <Titulo
-        olho="Meu espaço de aprendizagem"
-        titulo={`Olá, ${nome.split(' ')[0]}! Vamos por partes.`}
-        sub={`Hoje é ${dataLonga(d.hoje)}. Você não precisa resolver tudo agora.`}
+        olho={texto('meuDiaOlho')}
+        titulo={texto('meuDiaTitulo', { nome: nome.split(' ')[0] ?? '' })}
+        sub={texto('meuDiaSub', { data: dataLonga(d.hoje) })}
         acoes={
           <button type="button" className="btn btn-primary" onClick={() => aoIr('atividades')}>
             <Icone nome="plus" /> Nova atividade
@@ -93,16 +105,18 @@ export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void
       </div>
       <div className="layout mt">
         <div className="stack">
+          {comEscolha ? (
+            <EscolhaAgora
+              hoje={d.hoje}
+              aoComecar={(id) => (aoComecar ? aoComecar(id) : aoIr('foco'))}
+            />
+          ) : null}
           <div className="card hero">
             <span className="hero-tag">
-              <Icone nome="spark" /> SEU PRÓXIMO PEQUENO PASSO
+              <Icone nome="spark" /> {texto('meuDiaPassoTag')}
             </span>
             <h2>{proxima ? proxima.titulo : 'Nada pendente por agora'}</h2>
-            <p>
-              {proxima
-                ? 'Começar por um bloco curto já conta. Você pode continuar depois.'
-                : 'Cadastre uma atividade ou escolha algo leve para revisar.'}
-            </p>
+            <p>{proxima ? texto('meuDiaPassoTexto') : texto('meuDiaNadaTexto')}</p>
             <div className="btns">
               <button type="button" className="btn btn-light" onClick={() => aoIr('foco')}>
                 <Icone nome="play" /> Começar um bloco curto
@@ -116,7 +130,7 @@ export function MeuDia({ nome, aoIr }: { nome: string; aoIr: (p: Pagina) => void
             <div className="card-head">
               <div>
                 <h2>Atividades que precisam de atenção</h2>
-                <small>Organizadas para ajudar, não para pressionar.</small>
+                <small>{texto('meuDiaAtencaoSub')}</small>
               </div>
               <button type="button" className="small-link" onClick={() => aoIr('atividades')}>
                 Ver todas <Icone nome="arrow" />

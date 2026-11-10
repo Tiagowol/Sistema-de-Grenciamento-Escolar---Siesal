@@ -5,10 +5,12 @@ import { BLOCOS } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { PedirAjuda } from '../componentes/PedirAjuda';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { formatar, paraTexto } from '../datas';
 import { Icone } from '../icones';
+import { texto } from '../linguagem-curta';
 import { previaPlano } from '../plano';
 
 type Filtro = 'todas' | 'atrasadas' | 'andamento' | 'comecar' | 'concluidas';
@@ -324,6 +326,7 @@ function EditarPrazo({
 
 function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
   const [nova, setNova] = useState('');
+  const [ajuda, setAjuda] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
   const [erro, setErro] = useState('');
   const agir = async (f: () => Promise<unknown>) => {
@@ -377,6 +380,22 @@ function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
           Adicionar
         </button>
       </form>
+      {/* Pedido de ajuda (L17): ao professor da turma ou à equipe pedagógica */}
+      {ajuda ? (
+        <PedirAjuda
+          tarefa={t}
+          etapaInicial={t.microetapas.find((m) => !m.feita)?.id}
+          aoFechar={() => setAjuda(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          className="btn btn-soft btn-sm mt-sm btn-ajuda"
+          onClick={() => setAjuda(true)}
+        >
+          <Icone nome="help" /> Preciso de ajuda
+        </button>
+      )}
       <hr className="divider" />
       <EditarPrazo t={t} agir={agir} />
       <hr className="divider" />
@@ -447,9 +466,9 @@ export function Atividades() {
   return (
     <>
       <Titulo
-        olho="Organização por etapas"
+        olho={texto('atividadesOlho')}
         titulo="Minhas atividades"
-        sub="Você pode concluir uma etapa de cada vez, sem perder a visão do prazo."
+        sub={texto('atividadesSub')}
         acoes={
           <button
             type="button"

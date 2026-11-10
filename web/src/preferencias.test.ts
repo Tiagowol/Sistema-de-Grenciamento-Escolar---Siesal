@@ -15,5 +15,13 @@ describe('preferências de acessibilidade', () => {
   });
   it('só aceita true de verdade nas chaves', () => {
     expect(carregarPreferencias(armazem('{"escuro":"sim"}')).escuro).toBe(false);
+    expect(carregarPreferencias(armazem('{"linguagemCurta":"sim"}')).linguagemCurta).toBe(false);
+  });
+  it('L17: linguagem curta vem desligada e o cartão de escolha vem ligado; o aluno muda os dois', () => {
+    expect(PREFERENCIAS_PADRAO.linguagemCurta).toBe(false);
+    expect(PREFERENCIAS_PADRAO.escolhaAgora).toBe(true);
+    const p = carregarPreferencias(armazem('{"linguagemCurta":true,"escolhaAgora":false}'));
+    expect(p.linguagemCurta).toBe(true);
+    expect(p.escolhaAgora).toBe(false);
   });
 });

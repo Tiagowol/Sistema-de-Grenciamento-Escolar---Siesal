@@ -2,7 +2,15 @@ import type { Preferencias } from '../preferencias';
 
 type Props = { valor: Preferencias; aoMudar: (p: Preferencias) => void };
 
-type Chave = 'escuro' | 'contraste' | 'movimento' | 'legivel' | 'simples' | 'tempoVisual';
+type Chave =
+  | 'escuro'
+  | 'contraste'
+  | 'movimento'
+  | 'legivel'
+  | 'simples'
+  | 'tempoVisual'
+  | 'linguagemCurta'
+  | 'escolhaAgora';
 const AJUSTES: { chave: Chave; titulo: string; texto: string }[] = [
   { chave: 'escuro', titulo: 'Tema escuro', texto: 'Fundo escuro, bom para pouca luz.' },
   {
@@ -21,6 +29,16 @@ const AJUSTES: { chave: Chave; titulo: string; texto: string }[] = [
     chave: 'tempoVisual',
     titulo: 'Mostrar tempo de forma visual',
     texto: 'Palavras, datas e formas no lugar de só números. No modo foco, o número fica oculto.',
+  },
+  {
+    chave: 'linguagemCurta',
+    titulo: 'Linguagem curta',
+    texto: 'Frases mais curtas nas telas Meu dia, Atividades, Agenda e Foco.',
+  },
+  {
+    chave: 'escolhaAgora',
+    titulo: 'Mostrar "Escolha o que fazer agora"',
+    texto: 'No Meu dia, um cartão mostra uma etapa por vez para você escolher.',
   },
 ];
 

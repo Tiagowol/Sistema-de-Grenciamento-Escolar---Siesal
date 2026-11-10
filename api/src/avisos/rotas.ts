@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { itensDeAjuda } from '../ajuda/rotas.js';
 import { registrarAuditoria } from '../auditoria/auditoria.js';
 import type { SessaoAtiva } from '../auth/autenticacao.js';
 import { podeLerAvisoEscolar, podeLerCaixa, podePublicarAviso } from '../auth/politica.js';
@@ -29,7 +30,7 @@ const texto = z
 const corpoAviso = z.strictObject({ texto, turma_id: uuid.optional() });
 
 export type ItemCaixa = {
-  tipo: 'pedido_aberto' | 'resposta' | 'aviso';
+  tipo: 'pedido_aberto' | 'resposta' | 'aviso' | 'ajuda_aberta' | 'ajuda_minha';
   id: string;
   visto: boolean;
   dia: string; // AAAA-MM-DD; a tela mostra dia/mês
@@ -172,6 +173,8 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
          ORDER BY s.criado_em DESC LIMIT 50`;
       for (const l of avisos) itens.push({ ...l, tipo: 'aviso' } as ItemCaixa);
     }
+    // Pedidos de ajuda (L17): o aluno vê os próprios; professor e Pedagógico, os que esperam resposta deles
+    for (const l of await itensDeAjuda(tx, sessao)) itens.push(l as ItemCaixa);
     // Não vistos primeiro; dentro de cada grupo, o mais recente primeiro
     return itens.sort(
       (x, y) => Number(x.visto) - Number(y.visto) || (x.dia < y.dia ? 1 : x.dia > y.dia ? -1 : 0),
@@ -187,8 +190,10 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
   // Abrir a caixa marca os itens como vistos. Só grava (e audita) quando algum item muda de estado.
   rota('post', '/caixa/vistos', podeLerCaixa, {}, async ({ tx, sessao }) => {
     const novos = (await itensDaCaixa(tx, sessao)).filter((i) => !i.visto);
-    const pedidos = novos.filter((i) => i.tipo !== 'aviso').map((i) => i.id);
+    const ajuda = (i: ItemCaixa) => i.tipo === 'ajuda_aberta' || i.tipo === 'ajuda_minha';
+    const pedidos = novos.filter((i) => i.tipo !== 'aviso' && !ajuda(i)).map((i) => i.id);
     const avisos = novos.filter((i) => i.tipo === 'aviso').map((i) => i.id);
+    const ajudas = novos.filter(ajuda).map((i) => i.id);
     if (pedidos.length) {
       await tx.$executeRaw`
         INSERT INTO aviso_visto (instituicao_id, usuario_id, pedido_id)
@@ -201,10 +206,17 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
         SELECT ${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, x FROM unnest(${avisos}::uuid[]) AS x
         ON CONFLICT DO NOTHING`;
     }
+    if (ajudas.length) {
+      await tx.$executeRaw`
+        INSERT INTO aviso_visto (instituicao_id, usuario_id, ajuda_id)
+        SELECT ${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, x FROM unnest(${ajudas}::uuid[]) AS x
+        ON CONFLICT DO NOTHING`;
+    }
     if (novos.length) {
       await auditar(tx, sessao, 'caixa.aberta', `usuario:${sessao.usuarioId}`, {
         pedidos: pedidos.length,
         avisos: avisos.length,
+        ajudas: ajudas.length,
       });
     }
     return { marcados: novos.length };

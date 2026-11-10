@@ -565,3 +565,49 @@ body:not(.dark) .sino :focus-visible {
   display: grid;
   gap: 6px;
 }
+
+/* L17: pedir ajuda, atender no sino e "Escolha o que fazer agora". Alvos de 44 px; sem rolagem horizontal */
+.pedir-ajuda,
+.escolha-agora,
+.atender-ajuda {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pedir-ajuda .btn,
+.pedir-ajuda select,
+.pedir-ajuda textarea,
+.escolha-agora .btn,
+.atender-ajuda .btn,
+.atender-ajuda textarea {
+  min-height: 44px;
+}
+.pedir-ajuda select,
+.pedir-ajuda textarea,
+.atender-ajuda textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.pedir-ajuda .blocos {
+  margin-top: 10px;
+}
+.pedir-ajuda .btn-bloco {
+  flex-wrap: wrap;
+  text-align: left;
+  white-space: normal;
+}
+.escolha-etapa {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+.escolha-texto {
+  font-size: 1.05rem;
+}
+.atender-ajuda {
+  margin-top: 8px;
+}
+.btn-ajuda {
+  min-height: 44px;
+}

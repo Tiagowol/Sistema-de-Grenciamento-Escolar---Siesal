@@ -1,5 +1,6 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { registrarAjuda } from './ajuda/rotas.js';
 import {
   type Autenticacao,
   criarAutenticacao,
@@ -150,6 +151,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarTurmas(app, { banco: opcoes.banco, exigirSessao });
   registrarNotas(app, { banco: opcoes.banco, exigirSessao });
   registrarAvisos(app, { banco: opcoes.banco, exigirSessao });
+  registrarAjuda(app, { banco: opcoes.banco, exigirSessao });
 
   app.get('/auth/eu', async (requisicao, resposta) => {
     const sessao = await exigirSessao(requisicao, resposta);

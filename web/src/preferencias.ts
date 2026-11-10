@@ -7,6 +7,8 @@ export type Preferencias = {
   simples: boolean;
   fonte: number; // 90 a 150 (%)
   tempoVisual: boolean; // true = tempo com palavra, data e forma (padrão: ligado)
+  linguagemCurta: boolean; // true = frases curtas nas telas do aluno (padrão: desligado)
+  escolhaAgora: boolean; // true = cartão "Escolha o que fazer agora" no Meu dia (padrão: ligado)
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -17,6 +19,8 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   simples: false,
   fonte: 100,
   tempoVisual: true,
+  linguagemCurta: false,
+  escolhaAgora: true,
 };
 
 const CHAVE = 'siesal-preferencias-v1';
@@ -29,6 +33,8 @@ export function carregarPreferencias(
     const fonte = Number(bruto?.fonte);
     return {
       tempoVisual: bruto?.tempoVisual !== false,
+      linguagemCurta: bruto?.linguagemCurta === true,
+      escolhaAgora: bruto?.escolhaAgora !== false,
       escuro: bruto?.escuro === true,
       contraste: bruto?.contraste === true,
       movimento: bruto?.movimento === true,

@@ -166,7 +166,49 @@ export type ItemAviso = ItemBase & {
   texto: string;
   autor_nome: string;
 };
-export type ItemCaixa = ItemPedidoAberto | ItemResposta | ItemAviso;
+// Pedido de ajuda (L17): "ajuda_aberta" chega ao professor ou ao Pedagógico; "ajuda_minha" é do próprio aluno
+export type MotivoAjuda = 'nao_entendi' | 'nao_sei_comecar' | 'preciso_tempo' | 'outro';
+type CamposAjuda = {
+  destino: 'professor' | 'pedagogico';
+  motivo: MotivoAjuda;
+  texto: string;
+  disciplina_nome: string | null;
+  tarefa_titulo: string | null;
+  etapa_texto: string | null;
+};
+export type ItemAjudaAberta = ItemBase &
+  CamposAjuda & { tipo: 'ajuda_aberta'; aluno_nome: string; turma_nome: string | null };
+export type ItemAjudaMinha = ItemBase &
+  CamposAjuda & {
+    tipo: 'ajuda_minha';
+    estado: 'aberto' | 'atendido';
+    resposta: string;
+    professor_nome: string | null;
+    atendido_por_nome: string | null;
+  };
+export type ItemCaixa =
+  | ItemPedidoAberto
+  | ItemResposta
+  | ItemAviso
+  | ItemAjudaAberta
+  | ItemAjudaMinha;
+export type DestinoProfessor = {
+  professor_id: string;
+  professor_nome: string;
+  turma_id: string;
+  turma_nome: string;
+  disciplina_id: string;
+  disciplina_nome: string;
+};
+export type NovoPedidoAjuda = {
+  motivo: MotivoAjuda;
+  texto?: string;
+  tarefa_id?: string;
+  microetapa_id?: string;
+} & (
+  | { destino: 'professor'; professor_id: string; turma_id: string; disciplina_id: string }
+  | { destino: 'pedagogico' }
+);
 export type Caixa = { itens: ItemCaixa[]; nao_vistos: number };
 export type AvisoPublicado = {
   id: string;
@@ -281,6 +323,14 @@ export const api = {
     chamar<void>('POST', `/pedidos-revisao/${pedidoId}/manter`, { motivo }),
   caixa: () => chamar<Caixa>('GET', '/caixa'),
   marcarVistos: () => chamar<{ marcados: number }>('POST', '/caixa/vistos'),
+  destinosAjuda: () =>
+    chamar<{ professores: DestinoProfessor[]; equipe_pedagogica: boolean }>(
+      'GET',
+      '/ajuda/destinos',
+    ),
+  pedirAjuda: (d: NovoPedidoAjuda) => chamar<{ id: string }>('POST', '/ajuda', d),
+  atenderAjuda: (id: string, resposta?: string) =>
+    chamar<void>('POST', `/ajuda/${id}/atender`, resposta ? { resposta } : {}),
   avisosPublicados: () => chamar<{ avisos: AvisoPublicado[] }>('GET', '/avisos-escolares'),
   turmasParaAviso: () => chamar<{ turmas: TurmaParaAviso[] }>('GET', '/avisos-escolares/turmas'),
   publicarAviso: (d: { texto: string; turma_id?: string }) =>

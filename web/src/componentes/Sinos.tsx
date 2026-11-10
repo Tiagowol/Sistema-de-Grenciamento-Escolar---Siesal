@@ -4,6 +4,7 @@ import { paraTexto, somarDias } from '../datas';
 import { Icone, type NomeIcone } from '../icones';
 import { Carregando } from './Basicos';
 import { EstadoDoPedido, fraseDoEstado, nota1, ROTULO_PERFIL } from './NotasComuns';
+import { AtenderAjuda, FRASE_MOTIVO } from './PedirAjuda';
 import type { Pagina } from './Shell';
 import { TempoVisual } from './TempoVisual';
 
@@ -153,6 +154,53 @@ function ItemDaCaixa({
         >
           Ver notas oficiais
         </button>
+      </li>
+    );
+  }
+  if (item.tipo === 'ajuda_aberta' || item.tipo === 'ajuda_minha') {
+    // Pedido de ajuda (L17): atividade e etapa só aparecem se o aluno escolheu ligar o pedido a elas
+    const sobre = (
+      <>
+        <p>O que aconteceu: {FRASE_MOTIVO[item.motivo]}</p>
+        {item.tarefa_titulo ? <p>Atividade: {item.tarefa_titulo}</p> : null}
+        {item.etapa_texto ? <p>Etapa: {item.etapa_texto}</p> : null}
+        {item.texto ? <blockquote>{item.texto}</blockquote> : null}
+      </>
+    );
+    if (item.tipo === 'ajuda_aberta')
+      return (
+        <li className="sino-item">
+          <h3>Pedido de ajuda {novo}</h3>
+          <p>
+            {item.aluno_nome}
+            {item.turma_nome ? ` · ${item.turma_nome}` : ''}
+            {item.disciplina_nome ? ` · ${item.disciplina_nome}` : ''}
+          </p>
+          {item.destino === 'pedagogico' ? <p>Para a equipe pedagógica</p> : null}
+          {sobre}
+          {data}
+          <AtenderAjuda id={item.id} />
+        </li>
+      );
+    return (
+      <li className="sino-item">
+        <h3>Seu pedido de ajuda {novo}</h3>
+        <p>
+          Para:{' '}
+          {item.destino === 'pedagogico'
+            ? 'equipe pedagógica'
+            : `${item.professor_nome ?? 'professor'}${item.disciplina_nome ? ` (${item.disciplina_nome})` : ''}`}
+        </p>
+        {item.estado === 'aberto' ? (
+          <p>Esperando resposta.</p>
+        ) : (
+          <>
+            <p>Atendido por {item.atendido_por_nome ?? 'a escola'}.</p>
+            {item.resposta ? <p>Resposta: {item.resposta}</p> : null}
+          </>
+        )}
+        {sobre}
+        {data}
       </li>
     );
   }

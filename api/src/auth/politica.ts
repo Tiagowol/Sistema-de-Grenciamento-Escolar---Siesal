@@ -43,3 +43,10 @@ export const podePublicarAviso = (perfil: string): boolean =>
   perfil === 'admin' || perfil === 'pedagogico';
 export const podeLerAvisoEscolar = (perfil: string): boolean =>
   perfil === 'aluno' || perfil === 'responsavel';
+
+// Pedido de ajuda (L17). Espelham a matriz v6: o aluno pede; professor (vínculo) e Pedagógico atendem.
+export const podePedirAjuda = (perfil: string): boolean => perfil === 'aluno';
+export const podeAtenderAjuda = (perfil: string): boolean =>
+  perfil === 'professor' || perfil === 'pedagogico';
+export const podeLerAjuda = (perfil: string): boolean =>
+  ['aluno', 'professor', 'pedagogico'].includes(perfil);

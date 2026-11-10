@@ -18,6 +18,7 @@ import {
   somarDias,
 } from '../datas';
 import { Icone, type NomeIcone } from '../icones';
+import { texto } from '../linguagem-curta';
 
 const NOMES: Record<Evento['tipo'], string> = {
   aula: 'Aula',
@@ -90,11 +91,7 @@ export function Agenda() {
 
   return (
     <>
-      <Titulo
-        olho="Seu tempo"
-        titulo="Agenda visual e planejamento"
-        sub="Veja compromissos e blocos de estudo em uma linha do tempo."
-      />
+      <Titulo olho="Seu tempo" titulo={texto('agendaTitulo')} sub={texto('agendaSub')} />
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       <div className="grid cols-3">
         <Kpi

@@ -32,6 +32,17 @@ export function App() {
   const [pagina, setPagina] = useState<Pagina>('inicio');
   const [naoLidas, setNaoLidas] = useState(0);
   const [prefs, setPrefs] = useState<Preferencias>(() => carregarPreferencias());
+  // Atividade escolhida no cartão "Escolha o que fazer agora" (L17): o Foco abre com ela marcada
+  const [focoTarefa, setFocoTarefa] = useState('');
+  const comecar = (id: string) => {
+    setFocoTarefa(id);
+    setPagina('foco');
+  };
+  // Pelo menu, o Foco abre sem atividade marcada
+  const ir = (p: Pagina) => {
+    setFocoTarefa('');
+    setPagina(p);
+  };
 
   const atualizarEu = useCallback(async () => {
     try {
@@ -98,20 +109,20 @@ export function App() {
     ) : null;
 
   return (
-    <Shell eu={eu} pagina={pagina} aoIr={setPagina} aoSair={sair} naoLidas={naoLidas}>
+    <Shell eu={eu} pagina={pagina} aoIr={ir} aoSair={sair} naoLidas={naoLidas}>
       {etapa ??
         (pagina === 'ajuda' ? (
           <Ajuda perfil={eu.usuario.perfil} />
         ) : pagina === 'acessibilidade' ? (
           <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />
         ) : ehAluno && pagina === 'meudia' ? (
-          <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
+          <MeuDia nome={eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : ehAluno && pagina === 'atividades' ? (
           <Atividades />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'foco' ? (
-          <Foco />
+          <Foco key={focoTarefa} tarefaInicial={focoTarefa} />
         ) : ehAluno && pagina === 'notas' ? (
           <Notas />
         ) : eu.nivel === 'completo' &&
@@ -133,7 +144,7 @@ export function App() {
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (
           <Turmas />
         ) : ehAluno ? (
-          <MeuDia nome={eu.usuario.nome} aoIr={setPagina} />
+          <MeuDia nome={eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : (
           <Inicio eu={eu} aoIr={setPagina} />
         ))}

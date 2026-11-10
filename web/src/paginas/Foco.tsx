@@ -8,16 +8,17 @@ import { tempoVisualLigado } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { relogio } from '../datas';
 import { Icone } from '../icones';
+import { texto } from '../linguagem-curta';
 
 // Modo foco: um bloco por vez. O tempo vem do servidor, então continua certo se a página recarregar.
 // Sem som e sem pontuação. Com o tempo visual ligado (padrão), uma forma diminui e os números ficam ocultos.
-export function Foco() {
+export function Foco({ tarefaInicial = '' }: { tarefaInicial?: string } = {}) {
   const tarefas = useCarregar(api.tarefas);
   const atual = useCarregar(api.sessaoAtual);
   const [bloco, setBloco] = useState<Bloco>(BLOCOS[0] as Bloco);
   const minutos = bloco.minutos;
   const [visual] = useState(tempoVisualLigado);
-  const [tarefaId, setTarefaId] = useState('');
+  const [tarefaId, setTarefaId] = useState(tarefaInicial);
   // Números: ocultos por padrão com o tempo visual ligado; o aluno liga e desliga
   const [numeros, setNumeros] = useState(() => {
     const guardado = localStorage.getItem('siesal-foco-numeros');
@@ -67,11 +68,7 @@ export function Foco() {
 
   return (
     <>
-      <Titulo
-        olho="Estudo sem excesso de estímulos"
-        titulo="Modo foco"
-        sub="Escolha uma atividade e um bloco curto. Pausas e recomeços fazem parte."
-      />
+      <Titulo olho={texto('focoOlho')} titulo="Modo foco" sub={texto('focoSub')} />
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       <div className="grid cols-2">
         <div className="card" style={{ textAlign: 'center' }}>

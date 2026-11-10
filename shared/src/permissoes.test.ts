@@ -58,6 +58,7 @@ const RECURSOS_ESCOLARES = [
   'avisos',
   'caixa',
   'avisos_escolares',
+  'pedidos_ajuda',
   'pedidos_informacao',
   'preferencias_acessibilidade',
 ];
@@ -167,6 +168,22 @@ describe('regras fixas da matriz', () => {
     }
     // O professor só vê, na caixa, o que é das turmas dele
     expect(permitido('professor', 'caixa', 'ler')).toBe('vinculo');
+  });
+
+  it('versão 6: só o aluno pede ajuda; professor (vínculo) e Pedagógico atendem; responsável e Admin não leem', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(6);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'pedidos_ajuda', 'pedir'), `pedir ${perfil}`).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'pedidos_ajuda', 'atender') !== null, `atender ${perfil}`).toBe(
+        perfil === 'professor' || perfil === 'pedagogico',
+      );
+      expect(permitido(perfil, 'pedidos_ajuda', 'ler') !== null, `ler ${perfil}`).toBe(
+        ['aluno', 'professor', 'pedagogico'].includes(perfil),
+      );
+    }
+    expect(permitido('professor', 'pedidos_ajuda', 'atender')).toBe('vinculo');
   });
 
   it('as preferências de acessibilidade são só do próprio aluno', () => {
