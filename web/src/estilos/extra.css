@@ -790,3 +790,15 @@ body.dark .btn-primary {
   flex: 1 1 220px;
   overflow-wrap: anywhere;
 }
+
+/* F-045: tela estreita (celular com zoom do navegador, perto de 300 px): Menu, sinos e Sair na mesma linha */
+@media (max-width: 340px) {
+  .topbar {
+    padding-left: 8px;
+    padding-right: 8px;
+    column-gap: 6px;
+  }
+  .sinos {
+    gap: 6px;
+  }
+}
