@@ -59,6 +59,7 @@ const RECURSOS_ESCOLARES = [
   'caixa',
   'avisos_escolares',
   'pedidos_ajuda',
+  'calendario',
   'pedidos_informacao',
   'preferencias_acessibilidade',
 ];
@@ -200,6 +201,17 @@ describe('regras fixas da matriz', () => {
       expect(permitido(perfil, 'instituicoes', 'criar_suspender')).toBe(so);
       expect(permitido(perfil, 'login_google_demo', 'administrar')).toBe(so);
       expect(permitido(perfil, 'acesso_excepcional', 'usar')).toBe(so);
+    }
+  });
+});
+
+describe('matriz v7 (L17a: calendário)', () => {
+  it('só o aluno administra o calendário, e só o próprio; o master não tem acesso', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(7);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'calendario', 'administrar'), perfil).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
     }
   });
 });

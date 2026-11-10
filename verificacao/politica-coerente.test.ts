@@ -13,6 +13,7 @@ import {
   podePedirRevisao,
   podePublicarAviso,
   podeResponderPedido,
+  podeUsarCalendario,
   podeUsarNucleo,
   podeVerHistoricoNotas,
 } from '../api/src/auth/politica.js';
@@ -83,5 +84,13 @@ describe('política do pedido de ajuda (L17) x matriz de permissões (v6)', () =
     expect(podePedirAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'pedir') !== null);
     expect(podeAtenderAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'atender') !== null);
     expect(podeLerAjuda(perfil)).toBe(permitido(perfil, 'pedidos_ajuda', 'ler') !== null);
+  });
+});
+
+describe('política do calendário (L17a) x matriz de permissões (v7)', () => {
+  it.each(PERFIS)('perfil %s: usar o calendário bate com a matriz', (perfil) => {
+    expect(podeUsarCalendario(perfil)).toBe(
+      permitido(perfil, 'calendario', 'administrar') !== null,
+    );
   });
 });

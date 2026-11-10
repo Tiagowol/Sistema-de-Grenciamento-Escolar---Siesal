@@ -7,6 +7,7 @@ import { Ajuda } from './paginas/Ajuda';
 import { Atividades } from './paginas/Atividades';
 import { Avisos } from './paginas/Avisos';
 import { AvisosEscola } from './paginas/AvisosEscola';
+import { Calendario } from './paginas/Calendario';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
 import { Foco } from './paginas/Foco';
 import { Inicio } from './paginas/Inicio';
@@ -121,6 +122,8 @@ export function App() {
           <Atividades />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
+        ) : ehAluno && pagina === 'calendario' ? (
+          <Calendario />
         ) : ehAluno && pagina === 'foco' ? (
           <Foco key={focoTarefa} tarefaInicial={focoTarefa} />
         ) : ehAluno && pagina === 'notas' ? (

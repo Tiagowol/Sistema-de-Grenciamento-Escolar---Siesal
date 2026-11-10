@@ -17,6 +17,7 @@ export type Pagina =
   | 'meudia'
   | 'atividades'
   | 'agenda'
+  | 'calendario'
   | 'foco'
   | 'notas'
   | 'avisos';
@@ -52,6 +53,13 @@ const ITENS: Item[] = [
     icone: 'calendar',
     so: ALUNO,
     palavras: ['calendario', 'compromisso', 'horario', 'semana'],
+  },
+  {
+    id: 'calendario',
+    rotulo: 'Calendário',
+    icone: 'calendar',
+    so: ALUNO,
+    palavras: ['mes', 'ano', 'semana', 'dia', 'prova', 'lembrete', 'data', 'compromisso'],
   },
   {
     id: 'foco',

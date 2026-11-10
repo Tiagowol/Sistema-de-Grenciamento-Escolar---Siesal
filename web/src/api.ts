@@ -54,8 +54,9 @@ export type Tarefa = {
 export type Evento = {
   id: string;
   titulo: string;
-  tipo: 'aula' | 'estudo' | 'pessoal' | 'prova';
-  origem: 'manual' | 'plano';
+  tipo: 'aula' | 'estudo' | 'pessoal' | 'prova' | 'trabalho' | 'lembrete' | 'compromisso';
+  origem: 'manual' | 'plano' | 'google_agenda' | 'google_sala_de_aula' | 'calendario_escolar';
+  id_externo?: string | null;
   dia: string;
   hora_inicio: string | null;
   minutos: number | null;
@@ -366,6 +367,17 @@ export const api = {
     hora_inicio?: string | null;
     minutos?: number | null;
   }) => chamar<{ evento: Evento }>('POST', '/eventos', d),
+  editarEvento: (
+    id: string,
+    d: {
+      titulo: string;
+      tipo: Evento['tipo'];
+      dia: string;
+      hora_inicio?: string | null;
+      minutos?: number | null;
+    },
+  ) => chamar<{ evento: Evento }>('PATCH', `/eventos/${id}`, d),
+  ocultarEvento: (id: string) => chamar<void>('POST', `/eventos/${id}/ocultar`),
   removerEvento: (id: string) => chamar<void>('DELETE', `/eventos/${id}`),
   sessaoAtual: () => chamar<{ sessao: SessaoFoco | null }>('GET', '/sessoes/atual'),
   iniciarSessao: (d: { tarefa_id?: string | null; minutos_planejados: number }) =>

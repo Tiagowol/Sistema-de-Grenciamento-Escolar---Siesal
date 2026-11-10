@@ -17,15 +17,11 @@ import {
   semanaDe,
   somarDias,
 } from '../datas';
+import { NOMES_TIPO } from '../eventos';
 import { Icone, type NomeIcone } from '../icones';
 import { texto } from '../linguagem-curta';
 
-const NOMES: Record<Evento['tipo'], string> = {
-  aula: 'Aula',
-  estudo: 'Estudo',
-  pessoal: 'Pessoal',
-  prova: 'Prova',
-};
+const NOMES = NOMES_TIPO;
 
 // Parte do dia com nome e ícone; a hora exata é só um detalhe
 const PARTES: Record<ParteDoDia, { nome: string; icone: NomeIcone }> = {

@@ -272,50 +272,110 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     },
   );
 
-  // ---------- Agenda (L8) ----------
+  // ---------- Agenda (L8) e Calendário (L17a): a mesma tabela `evento`, duas formas de ver ----------
+  const TIPOS_EVENTO = [
+    'aula',
+    'estudo',
+    'pessoal',
+    'prova',
+    'trabalho',
+    'lembrete',
+    'compromisso',
+  ] as const;
+  const horaOpcional = z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .nullable()
+    .optional();
+  const minutosOpcional = z.number().int().min(5).max(600).nullable().optional();
+  const corpoEvento = z.strictObject({
+    titulo: texto(120),
+    tipo: z.enum(TIPOS_EVENTO).optional(),
+    dia,
+    hora_inicio: horaOpcional,
+    minutos: minutosOpcional,
+  });
+  const MAXIMO_DIAS_CONSULTA = 400;
+
+  // Cada criação, edição, ocultação e desativação grava uma versão (append-only) e um registro de auditoria
+  const gravarVersao = async (
+    tx: ClienteTransacao,
+    sessao: SessaoAtiva,
+    eventoId: string,
+    acao: 'criado' | 'editado' | 'ocultado' | 'desativado',
+  ) => {
+    await tx.$executeRaw`
+      INSERT INTO evento_versao (instituicao_id, evento_id, versao, acao, titulo, tipo, dia, hora_inicio, minutos)
+      SELECT e.instituicao_id, e.id,
+             coalesce((SELECT max(versao) FROM evento_versao v
+                        WHERE v.instituicao_id = e.instituicao_id AND v.evento_id = e.id), 0) + 1,
+             ${acao}, e.titulo, e.tipo, e.dia, e.hora_inicio, e.minutos
+        FROM evento e WHERE e.id = ${eventoId}::uuid`;
+    await registrarAuditoria(tx, {
+      instituicaoId: sessao.instituicaoId,
+      ator: `usuario:${sessao.usuarioId}`,
+      acao: `evento.${acao}`,
+      alvo: `evento:${eventoId}`,
+    });
+  };
+
   rota(
     'get',
     '/eventos',
     { consulta: z.strictObject({ de: dia, ate: dia }) },
-    async ({ tx, sessao, consulta }) => ({
-      eventos: await tx.$queryRaw<Linha[]>`
-      SELECT id, tarefa_id, titulo, tipo, origem, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos
+    async ({ tx, sessao, consulta, resposta }) => {
+      const dias = (Date.parse(consulta.ate) - Date.parse(consulta.de)) / 86_400_000;
+      if (dias < 0 || dias > MAXIMO_DIAS_CONSULTA)
+        return resposta.code(400).send({ erro: 'Dados inválidos.' });
+      return {
+        eventos: await tx.$queryRaw<Linha[]>`
+      SELECT id, tarefa_id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos
         FROM evento
-       WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL
+       WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL AND oculto_em IS NULL
          AND dia BETWEEN ${consulta.de}::date AND ${consulta.ate}::date
        ORDER BY dia, hora_inicio NULLS LAST, criado_em`,
-    }),
+      };
+    },
   );
 
-  rota(
-    'post',
-    '/eventos',
-    {
-      corpo: z.strictObject({
-        titulo: texto(120),
-        tipo: z.enum(['aula', 'estudo', 'pessoal', 'prova']).optional(),
-        dia,
-        hora_inicio: z
-          .string()
-          .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-          .nullable()
-          .optional(),
-        minutos: z.number().int().min(5).max(600).nullable().optional(),
-      }),
-    },
-    async ({ tx, sessao, corpo, resposta }) => {
-      const [e] = await tx.$queryRaw<Linha[]>`
+  rota('post', '/eventos', { corpo: corpoEvento }, async ({ tx, sessao, corpo, resposta }) => {
+    const [e] = await tx.$queryRaw<Linha[]>`
         INSERT INTO evento (instituicao_id, usuario_id, titulo, tipo, dia, hora_inicio, minutos)
         VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.tipo ?? 'pessoal'}, ${corpo.dia}::date, ${corpo.hora_inicio ?? null}::time, ${corpo.minutos ?? null})
-        RETURNING id, titulo, tipo, origem, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
-      return resposta.code(201).send({ evento: e });
-    },
-  );
+        RETURNING id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
+    await gravarVersao(tx, sessao, (e as Linha).id as string, 'criado');
+    return resposta.code(201).send({ evento: e });
+  });
 
+  // Edita só evento do próprio aluno e de origem manual. Evento importado ou do plano não se edita.
+  rota('patch', '/eventos/:id', { params: idParam, corpo: corpoEvento }, async (c) => {
+    const [e] = await c.tx.$queryRaw<Linha[]>`
+        UPDATE evento SET titulo = ${c.corpo.titulo}, tipo = ${c.corpo.tipo ?? 'pessoal'}, dia = ${c.corpo.dia}::date,
+               hora_inicio = ${c.corpo.hora_inicio ?? null}::time, minutos = ${c.corpo.minutos ?? null}, atualizado_em = now()
+         WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid
+           AND desativado_em IS NULL AND oculto_em IS NULL AND origem = 'manual'
+        RETURNING id, titulo, tipo, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
+    if (!e) return naoAchou(c);
+    await gravarVersao(c.tx, c.sessao, c.params.id, 'editado');
+    return { evento: e };
+  });
+
+  // Oculta evento do aluno (importado ou não): some das telas, mas a linha e as versões ficam
+  rota('post', '/eventos/:id/ocultar', { params: idParam }, async (c) => {
+    const n = await c.tx
+      .$executeRaw`UPDATE evento SET oculto_em = now(), atualizado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL AND oculto_em IS NULL`;
+    if (n === 0) return naoAchou(c);
+    await gravarVersao(c.tx, c.sessao, c.params.id, 'ocultado');
+    return undefined;
+  });
+
+  // Desativar: só evento manual ou do plano (importado só se oculta)
   rota('delete', '/eventos/:id', { params: idParam }, async (c) => {
     const n = await c.tx
-      .$executeRaw`UPDATE evento SET desativado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL`;
-    return n === 0 ? naoAchou(c) : undefined;
+      .$executeRaw`UPDATE evento SET desativado_em = now(), atualizado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL AND origem IN ('manual', 'plano')`;
+    if (n === 0) return naoAchou(c);
+    await gravarVersao(c.tx, c.sessao, c.params.id, 'desativado');
+    return undefined;
   });
 
   // ---------- Sessões de estudo e modo foco (L7) ----------

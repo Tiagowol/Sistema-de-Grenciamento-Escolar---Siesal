@@ -17,7 +17,7 @@ Sistema Inteligente de Estudos, Agenda e Aprendizagem. Sistema escolar inclusivo
 - Lotes de 1 a 3 itens. Escopo congelado por lote: pedido novo vai para o próximo lote, salvo defeito ou segurança.
 - Ciclo: solicitação, estado anterior, proposta, aprovação, execução, validação, entrega, merge, deploy. Merge e deploy exigem autorizações separadas.
 - Mesmo procedimento e mesma estrutura em todo lote (pedido do autor: "manter a recursividade"). Isso inclui manter o mesmo padrão visual e a mesma responsividade.
-- Numeração: lotes seguem L13 a L21. Variações usam letras: L13a, L13b, L13c etc. Um lote por vez; cada um precisa de aprovação própria.
+- Numeração: lotes seguem L13 a L20. Variações usam letras: L13a, L13b, L13c etc. Um lote por vez; cada um precisa de aprovação própria.
 - Ambiguidade que muda o resultado: uma pergunta fechada, com a opção recomendada primeiro. Nunca adivinhe.
 - Discorde com motivo e alternativa em 1 ou 2 linhas. A decisão final é do autor.
 - Prioridade: segurança e defeito, depois o que bloqueia a entrega, depois melhoria.

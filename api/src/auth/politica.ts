@@ -50,3 +50,6 @@ export const podeAtenderAjuda = (perfil: string): boolean =>
   perfil === 'professor' || perfil === 'pedagogico';
 export const podeLerAjuda = (perfil: string): boolean =>
   ['aluno', 'professor', 'pedagogico'].includes(perfil);
+
+// Calendário do aluno (L17a). Espelha a matriz v7: só o aluno, nos próprios eventos.
+export const podeUsarCalendario = (perfil: string): boolean => perfil === 'aluno';

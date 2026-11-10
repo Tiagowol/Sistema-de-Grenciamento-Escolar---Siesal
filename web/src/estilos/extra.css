@@ -611,3 +611,110 @@ body:not(.dark) .sino :focus-visible {
 .btn-ajuda {
   min-height: 44px;
 }
+
+/* Calendário do aluno (L17a): grade do mês, lista do dia, semana e ano. Alvos de toque de 44 px. */
+.cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cal-cab {
+  text-align: center;
+  text-transform: uppercase;
+}
+.cal-celula {
+  min-height: 44px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.cal-celula.fora {
+  opacity: 0.65;
+}
+.cal-celula.hoje {
+  border-width: 3px;
+}
+.cal-celula.ativo {
+  outline: 3px solid currentColor;
+  outline-offset: 1px;
+}
+.cal-pontos {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+}
+.cal-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cal-evento {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 8px 12px;
+  padding: 8px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+.cal-parte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.cal-acoes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cal-acoes .btn {
+  min-height: 44px;
+}
+.cal-selo {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0 8px;
+  margin-left: 6px;
+}
+.cal-semana {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cal-ano {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 8px;
+}
+.cal-mes {
+  width: 100%;
+  min-height: 56px;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+@media (max-width: 480px) {
+  .cal-evento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.cal-visoes {
+  border: 0;
+  padding: 0;
+  margin: 8px 0 0;
+}
