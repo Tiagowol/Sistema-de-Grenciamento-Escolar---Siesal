@@ -3,7 +3,7 @@
 O registro completo e anterior fica no Projeto "TW1-SaaS-SIESAL" (claude.ai). Este arquivo guarda, no repositório, as aprovações feitas a partir de 09/11/2026. Mudança de plano, escopo, ordem ou decisão só vale depois de registrada aqui e no Projeto.
 
 ## Nota de numeração (09/11/2026)
-O roteiro trouxe A-027 e A-028 como numeração provisória. No repositório, A-027 já é a regra do motivo da revisão (L15/L16), A-029 são os comandos de manutenção e A-030 é a ordem dos lotes 16a a 16e. O próximo número livre é A-031. Por isso as duas decisões abaixo ficam como **A-031** e **A-032**. O texto do roteiro (docs/ROTEIRO-L17A-A-L20.md) ainda cita "A-028" na seção do L17c; leia como **A-032**. O autor deve conferir se o Projeto no claude.ai usa os mesmos números.
+O roteiro trouxe A-027 e A-028 como numeração provisória. No repositório, A-027 já é a regra do motivo da revisão (L15/L16), A-029 são os comandos de manutenção e A-030 é a ordem dos lotes 16a a 16e. O próximo número livre é A-031. Por isso as duas decisões abaixo ficam como **A-031** e **A-032**. Em 10/11/2026 o texto do roteiro (docs/ROTEIRO-L17A-A-L20.md) foi corrigido para A-031 e A-032 (A-035). O autor deve conferir se o Projeto no claude.ai usa os mesmos números.
 
 ## A-031 — Roteiro L17a a L20 (09/11/2026)
 Aprovado pelo proprietário (seção 1 do roteiro):
@@ -18,7 +18,7 @@ Aprovado pelo proprietário (seção 1 do roteiro):
 ## A-032 — Menor de idade no L17c (09/11/2026)
 - Trocar e-mail de aluno menor: exige aprovação do Responsável vinculado ou do Admin.
 - Encerrar conta de aluno menor: confirmação do Responsável e, na falta dele, do Admin.
-(No roteiro, citada como "A-028".)
+(No roteiro, era citada como "A-028"; corrigido em 10/11/2026.)
 
 ## A-033 — Commit e push dos L17a, L17b e L17c (09/11/2026)
 O autor pediu, em chat, que o Code crie um ramo por lote (lote-17a-calendario, lote-17b-personalizacao, lote-17c-conta-suporte), faça commit de cada um e suba todos ao GitHub no fim. Vale só para commit e push desses ramos. **Merge, deploy e aplicação das migrações 0011, 0012 e 0013 no banco do site continuam com autorização separada** (backup antes e retorno escrito em docs/RETORNO-*.md). As migrações foram provadas só em banco temporário, nos testes de integração.
@@ -42,3 +42,12 @@ No L17c, "menor de idade" = perfil aluno (o cadastro não tem data de nascimento
 4. A trilha do Master (`operator_auditoria`) já foi criada no L18, separada da escolar. As contagens agregadas continuam no L20.
 5. Matriz de permissões: continua na versão 9 (a permissão do Master já existia).
 6. Correções de defeito fora do item do lote, feitas por regra ("salvo defeito ou segurança"): F-044 (alvos de toque) e F-045 (tamanho do texto no celular).
+
+## A-035 — Correção do roteiro, commit, push do L18 e ramo do L17a (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026, com 5 itens:
+1. Corrigir em `docs/ROTEIRO-L17A-A-L20.md` as referências "A-027" para A-031 e "A-028" para A-032. **Feito.**
+2. "AUTORIZO o commit", no ramo `lote-18-masters-fechamento`, de 4 arquivos listados: `docs/ROTEIRO-L17A-A-L20.md`, `docs/REGISTRO-DE-APROVACOES.md`, `CLAUDE.md` e `docs/PLANO-L17A-CALENDARIO.md`. Estado encontrado: `CLAUDE.md` e o plano do L17a não tinham alteração pendente (já estavam no commit `6442f77`, de 09/11/2026). O commit levou só os 2 arquivos alterados: o roteiro e este registro.
+3. "AUTORIZO o push" do ramo `lote-18-masters-fechamento` para o `origin`. Nada no `main`. Sem merge e sem deploy.
+4. Criar o ramo `lote-17a-calendario` a partir do ponto atual do L18. **Não executado.** Estado encontrado: o ramo `lote-17a-calendario` já existe desde 09/11/2026, no commit `6442f77`, e já está no GitHub (A-033). Recriá-lo no ponto do L18 trocaria o que ele aponta e exigiria envio forçado. O ramo do L18 já contém o L17a, o L17b, o L17c, a correção F-045 e o roteiro.
+5. Começar o L17a pelo plano e avisar antes da migração 0011. **Não executado.** Estado encontrado: o L17a está Implementado desde 09/11/2026 e a migração 0011 foi aplicada naquele dia, com backup antes (`backups/siesal-20261109-223319.dump`) e retorno em `docs/RETORNO-0011.md`.
+- **Não coberto:** merge, deploy fora do computador, envio forçado, ligar o acesso público e criar senha dos Masters.

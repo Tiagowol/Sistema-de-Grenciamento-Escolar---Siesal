@@ -1,6 +1,6 @@
 # ROTEIRO OFICIAL — L17a AO L20 (FIM DA PARTE 1) E PARTE 2 — SIESAL 4.0 (09/11/2026, 21:55)
 
-PARA O CODE: salve este arquivo como `docs/ROTEIRO-L17A-A-L20.md` no repositório, no primeiro commit autorizado, e registre as aprovações da seção 1 em `docs/REGISTRO-DE-APROVACOES.md` (numeração provisória A-027 e A-028; confira o próximo número livre). Este roteiro substitui, no que conflitar, o que o CLAUDE.md e o docs/PROXIMOS-PASSOS.md dizem sobre lotes.
+PARA O CODE: salve este arquivo como `docs/ROTEIRO-L17A-A-L20.md` no repositório, no primeiro commit autorizado, e registre as aprovações da seção 1 em `docs/REGISTRO-DE-APROVACOES.md` (registradas como A-031 e A-032). Este roteiro substitui, no que conflitar, o que o CLAUDE.md e o docs/PROXIMOS-PASSOS.md dizem sobre lotes.
 
 ## 1. Decisões aprovadas pelo proprietário (09/11/2026)
 1. A numeração dos lotes **termina no L20**. Corrigir o CLAUDE.md, que diz "até o L21".
@@ -32,8 +32,8 @@ PARA O CODE: salve este arquivo como `docs/ROTEIRO-L17A-A-L20.md` no repositóri
 - Terminou quando: preferência gravada e aplicada após novo login em outro navegador; contraste validado por teste automático; "voltar ao padrão" funciona; axe sem violações.
 
 ### L17c — Conta e suporte (G) — APROVADO
-1. **Trocar senha** (só com a senha atual) e **trocar e-mail** (só com confirmação). Aluno menor de idade: a troca de e-mail exige aprovação do Responsável vinculado ou do Admin (decisão do proprietário, A-028).
-2. **Encerrar conta**: desativa e **anonimiza** os dados pessoais (LGPD). Auditoria e notas oficiais não se apagam (append-only, hash preservado): ficam sem ligação com a pessoa. Aluno menor: confirmação do Responsável e, na falta dele, do Admin (A-028). Fluxo em duas etapas, linguagem literal, aviso claro do que acontece.
+1. **Trocar senha** (só com a senha atual) e **trocar e-mail** (só com confirmação). Aluno menor de idade: a troca de e-mail exige aprovação do Responsável vinculado ou do Admin (decisão do proprietário, A-032).
+2. **Encerrar conta**: desativa e **anonimiza** os dados pessoais (LGPD). Auditoria e notas oficiais não se apagam (append-only, hash preservado): ficam sem ligação com a pessoa. Aluno menor: confirmação do Responsável e, na falta dele, do Admin (A-032). Fluxo em duas etapas, linguagem literal, aviso claro do que acontece.
 3. **Solicitar suporte**: formulário curto (assunto por lista + texto) que vira mensagem para o Pedagógico/Admin na base do L16. Sem anexo, sem link, com auditoria.
 - Terminou quando: fluxos testados nos 5 perfis; conta encerrada não entra e não aparece em listas; auditoria e notas íntegras após anonimização; axe sem violações.
 
