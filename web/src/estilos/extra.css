@@ -791,14 +791,46 @@ body.dark .btn-primary {
   overflow-wrap: anywhere;
 }
 
-/* F-045: tela estreita (celular com zoom do navegador, perto de 300 px): Menu, sinos e Sair na mesma linha */
-@media (max-width: 340px) {
+/* F-045: no celular, a linha 1 do topo é uma grade (Menu | sinos | Sair). Grade não quebra linha, em nenhuma largura nem navegador */
+@media (max-width: 780px) {
   .topbar {
-    padding-left: 8px;
-    padding-right: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
     column-gap: 6px;
+    padding-left: clamp(8px, 4vw, 15px);
+    padding-right: clamp(8px, 4vw, 15px);
+  }
+  .topbar .mob-menu {
+    grid-column: 1;
+    grid-row: 1;
   }
   .sinos {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: center;
+    min-width: 0;
     gap: 6px;
+  }
+  .topbar .top-actions .btn {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  /* Linha 2: nome e perfil, na largura toda */
+  .rolebox {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  /* Se a letra for muito larga, os sinos encolhem em vez de empurrar o Sair */
+  .sino {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .sino-botao {
+    min-width: 44px;
+    max-width: 100%;
+    padding-left: clamp(3px, 2vw, 8px);
+    padding-right: clamp(3px, 2vw, 8px);
+    overflow-wrap: anywhere;
   }
 }
