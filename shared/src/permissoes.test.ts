@@ -61,6 +61,9 @@ const RECURSOS_ESCOLARES = [
   'pedidos_ajuda',
   'calendario',
   'tipos_atividade',
+  'conta',
+  'conta_menor',
+  'pedidos_suporte',
   'pedidos_informacao',
   'preferencias_acessibilidade',
 ];
@@ -225,5 +228,32 @@ describe('matriz v8 (L17b: tipos de atividade do aluno)', () => {
         perfil === 'aluno' ? 'proprio' : null,
       );
     }
+  });
+});
+
+describe('matriz v9 (L17c: conta e suporte)', () => {
+  it('todo perfil escolar cuida da própria conta e pede suporte; o master não tem acesso', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(9);
+    for (const perfil of PERFIS) {
+      const escolar = perfil !== 'master';
+      expect(permitido(perfil, 'conta', 'administrar'), `conta ${perfil}`).toBe(
+        escolar ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'pedidos_suporte', 'pedir'), `pedir ${perfil}`).toBe(
+        escolar ? 'proprio' : null,
+      );
+    }
+  });
+
+  it('só o Responsável (vínculo) e o Admin decidem pelo aluno menor; só Admin e Pedagógico atendem o suporte', () => {
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'conta_menor', 'decidir') !== null, `decidir ${perfil}`).toBe(
+        perfil === 'responsavel' || perfil === 'admin',
+      );
+      expect(permitido(perfil, 'pedidos_suporte', 'atender') !== null, `atender ${perfil}`).toBe(
+        perfil === 'admin' || perfil === 'pedagogico',
+      );
+    }
+    expect(permitido('responsavel', 'conta_menor', 'decidir')).toBe('vinculo');
   });
 });

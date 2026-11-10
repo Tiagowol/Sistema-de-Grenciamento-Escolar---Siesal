@@ -232,3 +232,30 @@ export function AtenderAjuda({ id }: { id: string }) {
     </form>
   );
 }
+
+// Marcar um pedido de suporte como atendido (Admin e Pedagógico)
+export function AtenderSuporte({ id }: { id: string }) {
+  const [feito, setFeito] = useState(false);
+  const [erro, setErro] = useState('');
+  if (feito) return <p role="status">Pedido marcado como atendido.</p>;
+  return (
+    <div className="atender-ajuda">
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        onClick={async () => {
+          setErro('');
+          try {
+            await api.atenderSuporte(id);
+            setFeito(true);
+          } catch (x) {
+            setErro(x instanceof ErroApi ? x.message : 'Não foi possível concluir. Tente de novo.');
+          }
+        }}
+      >
+        Marcar como atendido
+      </button>
+    </div>
+  );
+}

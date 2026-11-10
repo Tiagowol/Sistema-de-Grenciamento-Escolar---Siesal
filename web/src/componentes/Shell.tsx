@@ -19,6 +19,7 @@ export type Pagina =
   | 'agenda'
   | 'calendario'
   | 'personalizar'
+  | 'conta'
   | 'foco'
   | 'notas'
   | 'avisos';
@@ -144,6 +145,12 @@ const ITENS: Item[] = [
     rotulo: 'Acessibilidade',
     icone: 'access',
     palavras: ['configuracao', 'configuracoes', 'ajustes', 'preferencias', 'opcoes'],
+  },
+  {
+    id: 'conta',
+    rotulo: 'Minha conta',
+    icone: 'lock',
+    palavras: ['senha', 'email', 'e-mail', 'encerrar', 'suporte', 'conta', 'perfil'],
   },
   {
     id: 'ajuda',

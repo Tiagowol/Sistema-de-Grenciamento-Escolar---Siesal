@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   PERFIS_CADASTRAVEIS,
+  podeAdministrarConta,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
   podeAtenderAjuda,
+  podeAtenderSuporte,
+  podeDecidirContaDeMenor,
   podeLancarNota,
   podeLerAjuda,
   podeLerAvisoEscolar,
@@ -11,6 +14,7 @@ import {
   podeLerNotas,
   podePedirAjuda,
   podePedirRevisao,
+  podePedirSuporte,
   podePublicarAviso,
   podeResponderPedido,
   podeUsarCalendario,
@@ -100,6 +104,19 @@ describe('política dos tipos de atividade (L17b) x matriz de permissões (v8)',
   it.each(PERFIS)('perfil %s: administrar tipos bate com a matriz', (perfil) => {
     expect(podeUsarTiposAtividade(perfil)).toBe(
       permitido(perfil, 'tipos_atividade', 'administrar') !== null,
+    );
+  });
+});
+
+describe('política da conta e do suporte (L17c) x matriz de permissões (v9)', () => {
+  it.each(PERFIS)('perfil %s: conta, decisão pelo menor e suporte batem com a matriz', (perfil) => {
+    expect(podeAdministrarConta(perfil)).toBe(permitido(perfil, 'conta', 'administrar') !== null);
+    expect(podeDecidirContaDeMenor(perfil)).toBe(
+      permitido(perfil, 'conta_menor', 'decidir') !== null,
+    );
+    expect(podePedirSuporte(perfil)).toBe(permitido(perfil, 'pedidos_suporte', 'pedir') !== null);
+    expect(podeAtenderSuporte(perfil)).toBe(
+      permitido(perfil, 'pedidos_suporte', 'atender') !== null,
     );
   });
 });

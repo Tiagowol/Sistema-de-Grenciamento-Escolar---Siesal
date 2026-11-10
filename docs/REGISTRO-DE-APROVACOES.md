@@ -25,3 +25,6 @@ O autor pediu, em chat, que o Code crie um ramo por lote (lote-17a-calendario, l
 
 ## Ajuste de escopo do L17a (09/11/2026)
 O item "aluno vê os eventos da turma vinculada" não existe ainda: não há tabela de eventos da turma. Fica para o L19 (calendário escolar, origem calendario_escolar). No L17a o teste de permissão prova que o aluno vê só os próprios eventos. Motivo: evitar criar uma tabela que o L19 vai definir.
+
+## Nota do L17c (09/11/2026)
+No L17c, "menor de idade" = perfil aluno (o cadastro não tem data de nascimento). Sem e-mail real, a confirmação de adultos é uma segunda etapa na tela. Detalhes e limites em docs/PLANO-L17C-CONTA-E-SUPORTE.md. O autor deve confirmar essas duas escolhas.

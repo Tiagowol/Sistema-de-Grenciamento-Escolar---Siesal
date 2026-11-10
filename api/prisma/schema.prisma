@@ -30,6 +30,7 @@ model Usuario {
   situacao       String      @default("ativo")
   criado_em      DateTime    @default(now()) @db.Timestamptz(6)
   desativado_em  DateTime?   @db.Timestamptz(6)
+  encerrada_em   DateTime?   @db.Timestamptz(6)
   instituicao    Instituicao @relation(fields: [instituicao_id], references: [id])
   credencial     Credencial?
   sessoes        Sessao[]

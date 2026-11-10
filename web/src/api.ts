@@ -203,7 +203,33 @@ export type ItemAjudaMinha = ItemBase &
     professor_nome: string | null;
     atendido_por_nome: string | null;
   };
+export type ItemSuporteAberto = ItemBase & {
+  tipo: 'suporte_aberto';
+  assunto: string;
+  assunto_rotulo: string;
+  texto: string;
+  autor_nome: string;
+  autor_perfil: Perfil;
+};
+export type ContaDados = {
+  conta: { nome: string; email: string; perfil: Perfil; menor: boolean };
+  pedidos: {
+    id: string;
+    tipo: 'email' | 'encerramento';
+    email_novo: string | null;
+    exige_aprovacao: boolean;
+    dia: string;
+  }[];
+  decisoes: {
+    id: string;
+    tipo: 'email' | 'encerramento';
+    email_novo: string | null;
+    aluno_nome: string;
+    dia: string;
+  }[];
+};
 export type ItemCaixa =
+  | ItemSuporteAberto
   | ItemPedidoAberto
   | ItemResposta
   | ItemAviso
@@ -346,6 +372,18 @@ export const api = {
       '/ajuda/destinos',
     ),
   pedirAjuda: (d: NovoPedidoAjuda) => chamar<{ id: string }>('POST', '/ajuda', d),
+  conta: () => chamar<ContaDados>('GET', '/conta'),
+  pedirTrocaEmail: (d: { email_novo: string; senha_atual: string }) =>
+    chamar<{ pedido: { id: string } }>('POST', '/conta/email', d),
+  pedirEncerramento: (d: { senha_atual: string }) =>
+    chamar<{ pedido: { id: string } }>('POST', '/conta/encerrar', d),
+  confirmarPedidoConta: (id: string) => chamar<void>('POST', `/conta/pedidos/${id}/confirmar`),
+  cancelarPedidoConta: (id: string) => chamar<void>('POST', `/conta/pedidos/${id}/cancelar`),
+  decidirPedidoConta: (id: string, aprovar: boolean) =>
+    chamar<void>('POST', `/conta/pedidos/${id}/decidir`, { aprovar }),
+  pedirSuporte: (d: { assunto: string; texto: string }) =>
+    chamar<{ pedido: { id: string } }>('POST', '/suporte', d),
+  atenderSuporte: (id: string) => chamar<void>('POST', `/suporte/${id}/atender`),
   atenderAjuda: (id: string, resposta?: string) =>
     chamar<void>('POST', `/ajuda/${id}/atender`, resposta ? { resposta } : {}),
   avisosPublicados: () => chamar<{ avisos: AvisoPublicado[] }>('GET', '/avisos-escolares'),

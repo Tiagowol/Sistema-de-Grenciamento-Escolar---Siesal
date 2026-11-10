@@ -9,6 +9,7 @@ import { Avisos } from './paginas/Avisos';
 import { AvisosEscola } from './paginas/AvisosEscola';
 import { Calendario } from './paginas/Calendario';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
+import { Conta } from './paginas/Conta';
 import { Foco } from './paginas/Foco';
 import { Inicio } from './paginas/Inicio';
 import { Login } from './paginas/Login';
@@ -139,7 +140,9 @@ export function App() {
   return (
     <Shell eu={eu} pagina={pagina} aoIr={ir} aoSair={sair} naoLidas={naoLidas}>
       {etapa ??
-        (pagina === 'ajuda' ? (
+        (pagina === 'conta' && eu.nivel === 'completo' ? (
+          <Conta aoSair={sair} />
+        ) : pagina === 'ajuda' ? (
           <Ajuda perfil={eu.usuario.perfil} />
         ) : pagina === 'acessibilidade' ? (
           <Acessibilidade valor={prefs} aoMudar={mudarPrefs} />

@@ -56,3 +56,13 @@ export const podeUsarCalendario = (perfil: string): boolean => perfil === 'aluno
 
 // Tipos de atividade do aluno e preferências por usuário (L17b). Espelham a matriz v8: só o aluno, só os próprios.
 export const podeUsarTiposAtividade = (perfil: string): boolean => perfil === 'aluno';
+
+// Conta e suporte (L17c). Espelham a matriz v9: todo perfil escolar cuida da própria conta e pede suporte;
+// o Responsável (vínculo) e o Admin decidem pelo aluno menor; o Admin e o Pedagógico atendem o suporte.
+const PERFIS_ESCOLARES = ['admin', 'professor', 'aluno', 'pedagogico', 'responsavel'];
+export const podeAdministrarConta = (perfil: string): boolean => PERFIS_ESCOLARES.includes(perfil);
+export const podeDecidirContaDeMenor = (perfil: string): boolean =>
+  perfil === 'responsavel' || perfil === 'admin';
+export const podePedirSuporte = (perfil: string): boolean => PERFIS_ESCOLARES.includes(perfil);
+export const podeAtenderSuporte = (perfil: string): boolean =>
+  perfil === 'admin' || perfil === 'pedagogico';

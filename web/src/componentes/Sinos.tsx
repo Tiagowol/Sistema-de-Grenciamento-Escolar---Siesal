@@ -4,7 +4,7 @@ import { paraTexto, somarDias } from '../datas';
 import { Icone, type NomeIcone } from '../icones';
 import { Carregando } from './Basicos';
 import { EstadoDoPedido, fraseDoEstado, nota1, ROTULO_PERFIL } from './NotasComuns';
-import { AtenderAjuda, FRASE_MOTIVO } from './PedirAjuda';
+import { AtenderAjuda, AtenderSuporte, FRASE_MOTIVO } from './PedirAjuda';
 import type { Pagina } from './Shell';
 import { TempoVisual } from './TempoVisual';
 
@@ -154,6 +154,21 @@ function ItemDaCaixa({
         >
           Ver notas oficiais
         </button>
+      </li>
+    );
+  }
+  if (item.tipo === 'suporte_aberto') {
+    // Pedido de suporte (L17c): chega ao Admin e ao Pedagógico
+    return (
+      <li className="sino-item">
+        <h3>Pedido de suporte {novo}</h3>
+        <p>
+          {ROTULO_PERFIL[item.autor_perfil]}: {item.autor_nome}
+        </p>
+        <p>Assunto: {item.assunto_rotulo}</p>
+        <blockquote>{item.texto}</blockquote>
+        {data}
+        <AtenderSuporte id={item.id} />
       </li>
     );
   }

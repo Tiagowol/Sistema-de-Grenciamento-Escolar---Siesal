@@ -475,7 +475,11 @@ export function criarAutenticacao(dep: Dependencias) {
       return { tipo: 'proibido' };
     }
     return withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
-      const linhas = await tx.usuario.findMany({ orderBy: [{ perfil: 'asc' }, { nome: 'asc' }] });
+      // Conta encerrada (L17c) não aparece na lista
+      const linhas = await tx.usuario.findMany({
+        where: { encerrada_em: null },
+        orderBy: [{ perfil: 'asc' }, { nome: 'asc' }],
+      });
       const provisorias = await tx.credencial.findMany({
         where: { senha_provisoria: true },
         select: { usuario_id: true },
