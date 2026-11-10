@@ -60,4 +60,5 @@ O item 1 precisa de uma coluna nova em `preferencia_usuario` (provável migraç�
 ## Fechamento em 10/11/2026, noite (A-038)
 - Rodada final do zero (contêiner `node:26`, cópia com fim de linha LF): lint com 0 erros e 1 aviso antigo; tipos sem erro; 805 testes unitários e 211 de integração passando. Proxy conferido: 200 local e 200 no 18081.
 - Registradas: F-048 (sinos sobrepostos no modo texto do celular, já corrigida) e F-049 (lint com CRLF na cópia de trabalho).
-- Falta: aplicar a 0015 no banco do site (backup e aviso antes), refazer o site, checagem humana e retorno do NAPNE (12/11/2026).
+- Migração 0015 aplicada no banco do site em 10/11/2026, depois do backup `backups/siesal-20261110-203915.dump` (primeira tentativa recusada pela trava de hash: F-050). Site refeito: 200 local, 200 no proxy, 200 no link externo; `/api/conta/interface` sem sessão responde 401.
+- Falta: checagem humana (leitor de tela, teclado, contraste, celular real) e retorno do NAPNE (12/11/2026).

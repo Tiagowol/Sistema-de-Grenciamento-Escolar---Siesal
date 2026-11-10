@@ -233,3 +233,9 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Correção: os 2 documentos misturados voltaram para LF. O lint foi rodado de novo numa cópia com fim de linha LF (igual ao conteúdo que entra no commit): 0 erros e 1 aviso antigo (`api/src/conta/rotas.ts:386`, do L17c). Tipos sem erro; 805 testes unitários e 211 de integração passando. Nenhum arquivo do commit tem CRLF (o git converte ao gravar).
 - Como voltar atrás: não se aplica (nenhum código mudou).
 - Sugestão (não feita, precisa de aprovação): ampliar o `.gitattributes` para `* text=auto eol=lf`, para a pasta de trabalho ficar igual ao git e o lint local não depender da cópia.
+
+## F-050 — 10/11/2026 — L17d: migração recusada ("0007_turmas.sql foi alterada depois de aplicada")
+- O que falhou: a primeira tentativa de aplicar a 0015 no banco do site (depois do backup `backups/siesal-20261110-203915.dump`) parou antes de aplicar qualquer coisa. O banco não mudou.
+- Causa: a mesma da F-047 e da F-049. Com `core.autocrlf=true`, a troca de ramo deixou as migrações 0007 a 0014 com CRLF na pasta. O `migrate` calcula o hash do arquivo e compara com o hash gravado em `_migracoes` (feito com LF); CRLF muda o hash. A trava funcionou como deveria.
+- Correção: as 8 migrações voltaram para LF na pasta (no git já eram LF; nenhum conteúdo mudou). Segunda tentativa: `aplicada 0015_interface.sql`. Para não repetir na troca de ramo do L19: linha `*.sql text eol=lf` no `.gitattributes`.
+- Como voltar atrás: da migração, `docs/RETORNO-0015.md`. Do `.gitattributes`, apagar a linha (não recomendado: a falha volta).

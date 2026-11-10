@@ -1,2 +1,4 @@
 # Scripts de shell rodam em Linux (contêiner ou WSL): sempre com fim de linha LF (F-047)
 *.sh text eol=lf
+# Migrações: o hash é calculado sobre o arquivo; CRLF na pasta parece "migração alterada" (F-050)
+*.sql text eol=lf
