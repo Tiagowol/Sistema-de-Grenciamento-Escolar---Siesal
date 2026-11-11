@@ -218,6 +218,9 @@
     "espacos_individuais": {
       "ler": { "master": "plataforma" }
     },
+    "convites_individuais": {
+      "administrar": { "master": "plataforma" }
+    },
     "auditoria": {
       "ler": { "master": "plataforma", "admin": "instituicao" }
     },

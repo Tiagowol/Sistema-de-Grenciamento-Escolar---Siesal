@@ -98,6 +98,67 @@ describe('entrada com duas opções', () => {
   });
 });
 
+describe('criar conta com convite', () => {
+  it('o botão Criar conta só existe em "Sem instituição"; o formulário pede convite, nome, e-mail e senha', async () => {
+    const { container } = render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
+    const u = userEvent.setup();
+    expect(screen.queryByRole('button', { name: 'Criar conta' })).toBeNull();
+    await u.click(screen.getByRole('radio', { name: 'Sem instituição' }));
+    await u.click(screen.getByRole('button', { name: 'Criar conta' }));
+    expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeTruthy();
+    for (const r of ['Código do convite', 'Seu nome', 'E-mail', 'Senha'])
+      expect(screen.getByLabelText(r), r).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    await u.click(screen.getByRole('button', { name: 'Já tenho conta' }));
+    expect(screen.getByRole('heading', { name: 'Entrar' })).toBeTruthy();
+  });
+
+  it('envia só os 4 campos, entra com a resposta e mostra o erro literal quando recusa', async () => {
+    const respostas = [
+      new Response(
+        JSON.stringify({
+          erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
+        }),
+        { status: 400 },
+      ),
+      new Response(
+        JSON.stringify({ nivel: 'completo', usuario: { id: 'u', nome: 'Ana', perfil: 'aluno' } }),
+        { status: 201 },
+      ),
+    ];
+    const fetchMock = vi.fn(async () => respostas.shift() as Response);
+    vi.stubGlobal('fetch', fetchMock);
+    const aoEntrar = vi.fn();
+    render(<Login instituicaoPadrao={null} aoEntrar={aoEntrar} />);
+    const u = userEvent.setup();
+    await u.click(screen.getByRole('radio', { name: 'Sem instituição' }));
+    await u.click(screen.getByRole('button', { name: 'Criar conta' }));
+    await u.type(screen.getByLabelText('Código do convite'), 'abcd-efgh-jklm-npqr');
+    await u.type(screen.getByLabelText('Seu nome'), 'Ana');
+    await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
+    await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
+    await u.click(
+      screen
+        .getAllByRole('button', { name: 'Criar conta' })
+        .find((b) => (b as HTMLButtonElement).type === 'submit') as HTMLElement,
+    );
+    expect(await screen.findByText(/Não foi possível criar a conta/)).toBeTruthy();
+    await u.click(
+      screen
+        .getAllByRole('button', { name: 'Criar conta' })
+        .find((b) => (b as HTMLButtonElement).type === 'submit') as HTMLElement,
+    );
+    await waitFor(() => expect(aoEntrar).toHaveBeenCalled());
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({
+      codigo: 'abcd-efgh-jklm-npqr',
+      nome: 'Ana',
+      email: 'ana@x.exemplo',
+      senha: 'uma senha bem longa 1',
+    });
+  });
+});
+
 describe('menu do espaço individual', () => {
   const montar = (espaco: Eu['espaco']) => {
     vi.stubGlobal(

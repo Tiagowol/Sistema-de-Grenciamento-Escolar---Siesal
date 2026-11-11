@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { mascarar } from '../auditoria/auditoria.js';
 import { cifrar, decifrar } from '../auth/cifra.js';
+import { gerarCodigoDeConvite, hashDoCodigo } from '../auth/convite-individual.js';
 import { hashSenha, validarSenha, verificarSenha, verificarSenhaFalsa } from '../auth/senha.js';
 import { base32Codificar, gerarSegredoTotp, uriOtpauth, verificarTotp } from '../auth/totp.js';
 import type { ClienteTransacao } from '../banco/withTenant.js';
@@ -420,6 +421,40 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
+  // Convite de espaço individual (20c-1): o código aparece uma vez, aqui na resposta; no banco fica só o hash
+  async function gerarConviteIndividual(
+    sessao: SessaoOperacao,
+  ): Promise<{ codigo: string; expira_em: Date }> {
+    const codigo = gerarCodigoDeConvite();
+    return comoOperacao(dep.banco, async (tx) => {
+      const [c] = await tx.$queryRaw<{ id: string; expira_em: Date }[]>`
+        INSERT INTO convite_individual (codigo_hash, criado_por)
+        VALUES (${hashDoCodigo(codigo)}, ${`master:${sessao.usuario}`}) RETURNING id, expira_em`;
+      await auditar(
+        tx,
+        `master:${sessao.usuario}`,
+        'convite_individual.criado',
+        `convite:${c?.id}`,
+      );
+      return { codigo, expira_em: (c as { expira_em: Date }).expira_em };
+    });
+  }
+  // Só números: nunca o código nem quem usou
+  async function resumoDosConvites(): Promise<{
+    pendentes: number;
+    usados: number;
+    vencidos: number;
+  }> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [r] = await tx.$queryRaw<{ pendentes: number; usados: number; vencidos: number }[]>`
+        SELECT count(*) FILTER (WHERE usado_em IS NULL AND expira_em > now())::int AS pendentes,
+               count(*) FILTER (WHERE usado_em IS NOT NULL)::int AS usados,
+               count(*) FILTER (WHERE usado_em IS NULL AND expira_em <= now())::int AS vencidos
+          FROM convite_individual`;
+      return r ?? { pendentes: 0, usados: 0, vencidos: 0 };
+    });
+  }
+
   async function mudarModulo(
     sessao: SessaoOperacao,
     id: string,
@@ -467,6 +502,8 @@ export function criarOperacao(dep: DependenciasOperacao) {
     confirmarTotp,
     listarInstituicoes,
     contarEspacosIndividuais,
+    gerarConviteIndividual,
+    resumoDosConvites,
     criarInstituicao,
     mudarSituacao,
     painel,

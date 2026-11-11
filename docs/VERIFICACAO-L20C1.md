@@ -1,14 +1,14 @@
 # VERIFICAÇÃO DO 20c-1 — Espaço individual e entrada (11/11/2026)
 
-Estado do lote: **Implementado em parte** (itens 1 e 2). O item 3 (cadastro por convite) está parado até a resposta da D4. A 0020 e a API nova **não** foram aplicadas no site.
+Estado do lote: **Implementado** (itens 1, 2 e 3). A 0020 e a API nova **não** foram aplicadas no site.
 
 ## 1. O que foi conferido por máquina
 | Verificação | Resultado |
 | --- | --- |
 | Lint (biome) | 0 erros, 1 aviso antigo |
 | Tipos (api, web, shared) | sem erro |
-| Testes unitários | 1018 passando (inclui axe na tela de entrada) |
-| Testes de integração (banco temporário, com a 0020) | 276 passando, 18 novos |
+| Testes unitários | 1032 passando (inclui axe na tela de entrada e no formulário de criar conta) |
+| Testes de integração (banco temporário, com a 0020) | 282 passando, 24 novos |
 | Erro não tratado do vitest | o mesmo da F-053, já existia |
 
 ## 2. Critérios de "terminou quando" (`PLANO-L20C.md`, 20c-1)
@@ -22,13 +22,25 @@ Estado do lote: **Implementado em parte** (itens 1 e 2). O item 3 (cadastro por 
 | E-mail único entre contas individuais | teste: segunda conta com o mesmo e-mail (mesmo em maiúsculas) é recusada pelo banco; trocar o e-mail e inativar a conta atualizam o índice |
 | Encerrar a conta encerra o espaço | teste: conta inativa sai do índice, não entra mais e a contagem do Master diminui |
 
+## 2b. Item 3 — cadastro por convite (D4 = convite)
+| Critério | Como foi conferido |
+| --- | --- |
+| Só o Master gera convite; o código aparece uma vez; o banco guarda só o hash | teste de integração (401 sem sessão; o código não aparece na tabela) |
+| Com o convite, a pessoa cria a própria conta, já entra e cai no espaço individual | teste de integração e de tela |
+| Uso único, 7 dias; convite inventado, vencido ou usado dão a mesma resposta | teste de integração |
+| E-mail repetido ou dado inválido não gasta o convite | teste de integração |
+| Senha: a mesma regra das demais contas (12 caracteres ou mais) | teste de integração |
+| Auditoria sem dado pessoal | teste de integração (a ação "conta.criada_por_convite" não traz o e-mail) |
+| O Master vê só números dos convites | teste de integração |
+| Limite por IP na criação de conta | usa o limitador das rotas de senha (não há teste novo dedicado) |
+
 ## 3. Correção de defeito no caminho (F-054)
 A conversão de disciplinas da 0019 não rodou no site (RLS). Passou a ser feita pela API; teste de integração com texto antigo e limite de 20. **Isto só vale no site depois de aplicar a 0020 e a API.** Texto completo em `docs/REGISTRO-DE-FALHAS.md`.
 
 ## 4. O que NÃO foi feito
-1. Item 3: cadastro por convite e botão "Criar conta" (D4 pendente).
+1. Idade e responsável: o convite cria conta para qualquer pessoa. Verificação de idade, CPF e autorização do responsável são do 20c-2.
 2. Aplicar a 0020 e a API no site; ver a tela de entrada e o menu do espaço individual no navegador; medir em 360, 768 e 1280 px.
-3. Criar um espaço individual pela própria pessoa. Hoje só por script ou teste.
+3. Ver o formulário de criar conta e o painel de convites no navegador.
 4. Leitor de tela, teclado completo, NAPNE e parecer jurídico.
 
 ## 5. Como voltar atrás
@@ -36,6 +48,6 @@ A conversão de disciplinas da 0019 não rodou no site (RLS). Passou a ser feita
 - Banco: a 0020 não está no site. Depois de aplicada, `docs/RETORNO-0020.md`.
 
 ## Feito, Falta, Sugestões
-**Feito:** itens 1 e 2 do 20c-1 no código; 18 testes de integração e 6 de tela novos; correção da conversão de disciplinas; registros A-053, A-054 e F-054.
-**Falta:** D4 e o item 3; aplicar a 0020 e a API (backup, aviso, F-052); conferir as telas; checagem humana.
+**Feito:** itens 1, 2 e 3 do 20c-1 no código; 24 testes de integração e 8 de tela novos; correção da conversão de disciplinas; registros A-053, A-054 e F-054.
+**Falta:** aplicar a 0020 e a API (backup, aviso, F-052); conferir as telas; checagem humana.
 **Sugestões:** aplicar a 0020 logo, porque corrige a F-054 no site.

@@ -196,3 +196,11 @@ Decididos pelo Code dentro do escopo aprovado na A-053, para o autor conferir. S
 6. **Criar espaço individual:** nesta etapa só por script ou teste (administrador do banco). A criação pela pessoa depende do item 3 (cadastro por convite), parado até a D4.
 7. Matriz **v15**: recurso `espacos_individuais` (ler: só o Master, escopo "plataforma", só a quantidade).
 - **Não coberto:** item 3 do 20c-1 (convite) e o botão "Criar conta" da tela de entrada, até a D4; aplicar a 0020 e a API no site; merge.
+
+## A-055 — D4: cadastro individual por convite (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Sim, por convite" (à pergunta "D4: o cadastro individual é por convite do Master?"). Libera o item 3 do 20c-1.
+- Implementado: o Master gera um código de uso único (16 letras e números, 7 dias, guardado só como hash); quem tem o código cria a própria conta (nome, e-mail e senha), já entra no espaço individual. Botão "Criar conta" só no modo "Sem instituição".
+- Decisões de execução: a criação do espaço, do aluno e da senha é uma função do banco (uma transação só; o convite só é gasto se tudo der certo); o dono da função só pode criar instituição do tipo individual; mensagem igual para convite inválido, vencido, usado ou e-mail repetido.
+- Por enquanto o convite não pergunta idade. Menor de 18 anos, CPF e autorização do responsável são do 20c-2 (e precisam de decisões D2b, D7 e D8). Na Parte 1 só há dados fictícios.
+- Matriz v15 ganhou `convites_individuais` (administrar: só o Master).
+- **Não coberto:** aplicar a 0020 e a API no site; merge.

@@ -164,6 +164,18 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     };
   });
 
+  // 20c-1: convite de uso único para o aluno sem instituição criar a própria conta
+  app.post('/operacao/convites-individuais', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return resposta.code(201).send(await ops.gerarConviteIndividual(sessao));
+  });
+  app.get('/operacao/convites-individuais', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return ops.resumoDosConvites();
+  });
+
   app.get('/operacao/auditoria', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;

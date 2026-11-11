@@ -355,6 +355,8 @@ function CartaoInstituicao({
 function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
   const [lista, setLista] = useState<InstituicaoPainel[]>([]);
   const [individuais, setIndividuais] = useState(0);
+  const [convites, setConvites] = useState({ pendentes: 0, usados: 0, vencidos: 0 });
+  const [conviteNovo, setConviteNovo] = useState('');
   const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
@@ -365,6 +367,7 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
       const [p, t] = await Promise.all([apiOperacao.painel(), apiOperacao.trilha()]);
       setLista(p.instituicoes);
       setIndividuais(p.espacos_individuais ?? 0);
+      setConvites(await apiOperacao.resumoConvites());
       setTrilha(t);
     } catch (x) {
       if (x instanceof ErroApi && x.status === 401) return aoSair();
@@ -459,6 +462,28 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
           O Master vê só esta quantidade. Nome, e-mail, CPF e conteúdo de cada pessoa não aparecem
           aqui.
         </p>
+        <h3 className="mt-sm">Convites</h3>
+        <p className="small">
+          Convites esperando uso: <strong>{convites.pendentes}</strong>. Já usados:{' '}
+          <strong>{convites.usados}</strong>. Vencidos: <strong>{convites.vencidos}</strong>.
+        </p>
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() =>
+            agir(async () => {
+              const c = await apiOperacao.gerarConvite();
+              setConviteNovo(c.codigo);
+            }, 'Convite gerado. Copie o código agora: ele não aparece de novo.')
+          }
+        >
+          Gerar convite
+        </button>
+        {conviteNovo ? (
+          <p role="status" className="mt-sm">
+            Código do convite (vale 7 dias, uma conta só): <strong>{conviteNovo}</strong>
+          </p>
+        ) : null}
       </section>
       <section className="card mt" aria-labelledby="ops-trilha-titulo">
         <div className="card-head">

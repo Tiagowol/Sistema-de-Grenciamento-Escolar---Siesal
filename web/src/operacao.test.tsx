@@ -83,7 +83,8 @@ describe('tela /operacao', () => {
   it('entrar exige o código de 6 números e envia usuário, senha e código', async () => {
     const chamadas = simular({
       'POST /operacao/login': { corpo: { nivel: 'completo', usuario: 'master_um' } },
-      'GET /operacao/painel': { corpo: { instituicoes } },
+      'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+      'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
       'GET /operacao/auditoria': { corpo: TRILHA },
     });
     render(<Operacao />);
@@ -134,7 +135,8 @@ describe('tela /operacao', () => {
   it('painel lista e cria; mostra situação, números por perfil e a trilha; axe sem violações', async () => {
     const chamadas = simular({
       'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
-      'GET /operacao/painel': { corpo: { instituicoes } },
+      'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+      'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
       'GET /operacao/auditoria': { corpo: TRILHA },
       'POST /operacao/instituicoes': { status: 201, corpo: { instituicao: instituicoes[0] } },
     });
@@ -160,7 +162,8 @@ describe('tela /operacao', () => {
   it('L20: muda a situação; encerrar pede o nome escrito; liga e desliga módulo', async () => {
     const chamadas = simular({
       'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
-      'GET /operacao/painel': { corpo: { instituicoes } },
+      'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+      'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
       'GET /operacao/auditoria': { corpo: TRILHA },
       'POST /operacao/instituicoes/i1/situacao': { status: 204 },
       'POST /operacao/instituicoes/i2/modulos': { status: 204 },
@@ -206,7 +209,8 @@ describe('tela /operacao', () => {
   it('sair volta para o login', async () => {
     simular({
       'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
-      'GET /operacao/painel': { corpo: { instituicoes } },
+      'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+      'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
       'GET /operacao/auditoria': { corpo: TRILHA },
       'POST /operacao/logout': { status: 204 },
     });

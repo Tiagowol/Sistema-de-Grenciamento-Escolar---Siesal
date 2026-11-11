@@ -9,6 +9,7 @@ import {
   type SessaoAtiva,
 } from './auth/autenticacao.js';
 import { derivarChave } from './auth/cifra.js';
+import { criarContaIndividual } from './auth/convite-individual.js';
 import { LimitadorJanela } from './auth/limitador.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
 import { verificarSenhaFalsa } from './auth/senha.js';
@@ -57,6 +58,22 @@ const corpoLogin = z.union([
   z.strictObject({ instituicao_id: z.uuid(), ...camposLogin }),
   z.strictObject({ sem_instituicao: z.literal(true), ...camposLogin }),
 ]);
+// Criar a própria conta com o convite do Master (20c-1). Só nome, e-mail e senha; nenhum dado a mais.
+const corpoNovaConta = z.strictObject({
+  codigo: z.string().min(8).max(40),
+  nome: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .refine((t) => !/(https?:|www[.]|:\/\/|@)/i.test(t)),
+  email: z
+    .string()
+    .trim()
+    .max(254)
+    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
+  senha: z.string().min(1).max(128),
+});
 const corpoTrocaSenha = z.strictObject({
   senha_atual: z.string().min(1).max(128),
   senha_nova: z.string().min(1).max(200),
@@ -176,6 +193,30 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       return resposta.code(401).send({ erro: 'segundo_fator_necessario' });
     if (r.tipo === 'falha') return resposta.code(401).send({ erro: MENSAGEM_FALHA });
     return resposta
+      .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
+      .send({ nivel: r.nivel, usuario: r.usuario });
+  });
+
+  app.post('/auth/criar-conta-individual', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const corpo = corpoNovaConta.safeParse(requisicao.body);
+    if (!corpo.success)
+      return resposta.code(400).send({ erro: 'Confira o nome, o e-mail e o código do convite.' });
+    const c = await criarContaIndividual(banco, corpo.data);
+    if (c.tipo === 'senha_fraca') return resposta.code(400).send({ erro: c.motivo });
+    if (c.tipo === 'recusada')
+      return resposta.code(400).send({
+        erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
+      });
+    // Já entra: a conta foi criada agora, com a senha que a pessoa escolheu
+    const r = await auth.login({
+      instituicaoId: c.instituicaoId,
+      email: corpo.data.email,
+      senha: corpo.data.senha,
+    });
+    if (r.tipo !== 'ok') return resposta.code(201).send({ criada: true });
+    return resposta
+      .code(201)
       .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
       .send({ nivel: r.nivel, usuario: r.usuario });
   });

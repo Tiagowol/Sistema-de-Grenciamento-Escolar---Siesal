@@ -439,3 +439,128 @@ describe('F-054: conversão das disciplinas antigas feita pela API', () => {
     expect(semLigacao.rows[0].n).toBe(5);
   });
 });
+
+describe('cadastro por convite (D4)', () => {
+  const novoConvite = async () => {
+    const r = await app.inject({
+      method: 'POST',
+      url: '/operacao/convites-individuais',
+      headers: { cookie: master },
+    });
+    expect(r.statusCode, r.body).toBe(201);
+    return r.json().codigo as string;
+  };
+  const criar = (codigo: string, extra: Record<string, unknown> = {}) =>
+    app.inject({
+      method: 'POST',
+      url: '/auth/criar-conta-individual',
+      payload: {
+        codigo,
+        nome: 'Aluna Convidada',
+        email: `conv-${randomUUID().slice(0, 8)}@ei.exemplo`,
+        senha: SENHA,
+        ...extra,
+      },
+    });
+
+  it('só o Master gera convite; o código tem 16 letras e números e o banco guarda só o hash', async () => {
+    const sem = await app.inject({ method: 'POST', url: '/operacao/convites-individuais' });
+    expect(sem.statusCode).toBe(401);
+    const codigo = await novoConvite();
+    expect(codigo).toMatch(/^[A-HJ-NP-Z2-9]{4}(-[A-HJ-NP-Z2-9]{4}){3}$/);
+    const q = await amb.admin.query('SELECT codigo_hash, criado_por FROM convite_individual');
+    const guardado = JSON.stringify(q.rows);
+    expect(guardado).not.toContain(codigo);
+    expect(guardado).not.toContain(codigo.replaceAll('-', ''));
+    expect(q.rows.every((l: { codigo_hash: string }) => /^[0-9a-f]{64}$/.test(l.codigo_hash))).toBe(
+      true,
+    );
+  });
+
+  it('com o convite, a pessoa cria a própria conta, já entra no espaço individual e o convite não vale de novo', async () => {
+    const codigo = await novoConvite();
+    const email = `nova-${randomUUID().slice(0, 8)}@ei.exemplo`;
+    const r = await criar(codigo.toLowerCase().replaceAll('-', ' '), { email });
+    expect(r.statusCode, r.body).toBe(201);
+    expect(r.json()).toMatchObject({
+      nivel: 'completo',
+      usuario: { perfil: 'aluno', nome: 'Aluna Convidada' },
+    });
+    const cookie = cookieDe(r);
+    const eu = await app.inject({ method: 'GET', url: '/auth/eu', headers: { cookie } });
+    expect(eu.json().espaco).toBe('individual');
+    // entra de novo por "Sem instituição" e o espaço tem nome genérico
+    expect((await entrarSemInstituicao(email)).statusCode).toBe(200);
+    const q = await amb.admin.query(
+      'SELECT i.nome, i.tipo FROM instituicao i JOIN usuario u ON u.instituicao_id = i.id WHERE u.email = $1',
+      [email],
+    );
+    expect(q.rows[0]).toEqual({ nome: 'Espaço individual', tipo: 'individual' });
+    // auditoria sem dado pessoal
+    const aud = await amb.admin.query(
+      "SELECT acao, alvo FROM auditoria_evento WHERE acao = 'conta.criada_por_convite' ORDER BY id DESC LIMIT 1",
+    );
+    expect(aud.rows[0].acao).toBe('conta.criada_por_convite');
+    expect(JSON.stringify(aud.rows)).not.toContain(email);
+    // uso único
+    const outra = await criar(codigo);
+    expect(outra.statusCode).toBe(400);
+  });
+
+  it('convite inventado, vencido ou já usado dão a mesma resposta; e-mail repetido não gasta o convite', async () => {
+    const inventado = await criar('AAAA-BBBB-CCCC-DDDD');
+    const codigo = await novoConvite();
+    await amb.admin.query(
+      "UPDATE convite_individual SET expira_em = now() - interval '1 minute' WHERE codigo_hash = encode(sha256($1::bytea), 'hex')",
+      [codigo.replaceAll('-', '')],
+    );
+    const vencido = await criar(codigo);
+    expect(inventado.statusCode).toBe(400);
+    expect(vencido.statusCode).toBe(400);
+    expect(vencido.json()).toEqual(inventado.json());
+    // e-mail que já existe em outro espaço individual: recusa e o convite continua valendo
+    const valido = await novoConvite();
+    const repetido = await criar(valido, { email: emails.i1 });
+    expect(repetido.statusCode).toBe(400);
+    expect(repetido.json()).toEqual(inventado.json());
+    expect((await criar(valido)).statusCode).toBe(201);
+  });
+
+  it('dados inválidos e senha fraca são recusados antes de gastar o convite', async () => {
+    const codigo = await novoConvite();
+    for (const extra of [
+      { nome: 'A' },
+      { email: 'sem-arroba' },
+      { nome: 'ver http://x.com' },
+      { extra: 1 },
+    ])
+      expect((await criar(codigo, extra)).statusCode).toBe(400);
+    const fraca = await criar(codigo, { senha: 'curta' });
+    expect(fraca.statusCode).toBe(400);
+    expect(fraca.json().erro).not.toContain('convite');
+    expect((await criar(codigo)).statusCode).toBe(201); // o convite não foi gasto
+  });
+
+  it('o Master vê só números dos convites e a conta nova entra na contagem de espaços', async () => {
+    const r = await app.inject({
+      method: 'GET',
+      url: '/operacao/convites-individuais',
+      headers: { cookie: master },
+    });
+    expect(r.statusCode).toBe(200);
+    const corpo = r.json();
+    expect(Object.keys(corpo).sort()).toEqual(['pendentes', 'usados', 'vencidos']);
+    expect(corpo.usados).toBeGreaterThanOrEqual(2);
+    expect(corpo.vencidos).toBeGreaterThanOrEqual(1);
+    const painel = await app.inject({
+      method: 'GET',
+      url: '/operacao/painel',
+      headers: { cookie: master },
+    });
+    expect(painel.json().espacos_individuais).toBeGreaterThanOrEqual(3);
+  });
+
+  it('o aplicativo não lê a tabela de convites', async () => {
+    await expect(amb.bancoApp.$queryRaw`SELECT * FROM convite_individual`).rejects.toThrow();
+  });
+});

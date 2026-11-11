@@ -224,6 +224,9 @@ describe('regras fixas da matriz', () => {
       expect(permitido(perfil, 'espacos_individuais', 'ler')).toBe(
         perfil === 'master' ? 'plataforma' : null,
       );
+      expect(permitido(perfil, 'convites_individuais', 'administrar')).toBe(
+        perfil === 'master' ? 'plataforma' : null,
+      );
     }
   });
 

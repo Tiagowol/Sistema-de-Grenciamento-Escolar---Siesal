@@ -419,6 +419,8 @@ export const api = {
       | { instituicao_id: string; email: string; senha: string; codigo?: string }
       | { sem_instituicao: true; email: string; senha: string; codigo?: string },
   ) => chamar<Eu>('POST', '/auth/login', d),
+  criarContaIndividual: (d: { codigo: string; nome: string; email: string; senha: string }) =>
+    chamar<Eu | { criada: true }>('POST', '/auth/criar-conta-individual', d),
   logout: () => chamar<void>('POST', '/auth/logout'),
   trocarSenha: (d: { senha_atual: string; senha_nova: string }) =>
     chamar<{ nivel: Nivel }>('POST', '/auth/senha/trocar', d),
@@ -648,6 +650,13 @@ export const apiOperacao = {
     chamar<{ instituicao: InstituicaoLista }>('POST', '/operacao/instituicoes', { nome }),
   suspender: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/suspender`),
   reativar: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/reativar`),
+  gerarConvite: () =>
+    chamar<{ codigo: string; expira_em: string }>('POST', '/operacao/convites-individuais'),
+  resumoConvites: () =>
+    chamar<{ pendentes: number; usados: number; vencidos: number }>(
+      'GET',
+      '/operacao/convites-individuais',
+    ),
   painel: () =>
     chamar<{ instituicoes: InstituicaoPainel[]; espacos_individuais: number }>(
       'GET',

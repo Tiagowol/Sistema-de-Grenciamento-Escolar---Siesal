@@ -73,3 +73,45 @@ CREATE TRIGGER usuario_espaco_individual AFTER INSERT OR UPDATE ON usuario
 -- e a RLS forçada escondia as linhas). A conversão passa a ser feita pela API, por aluno, dentro do withTenant.
 -- Esta coluna marca quem já foi convertido, para não recriar uma disciplina que o aluno tirou da lista.
 ALTER TABLE preferencia_usuario ADD COLUMN disciplinas_convertidas_em timestamptz;
+
+-- ---------- Cadastro por convite (D4 = convite, A-055) ----------
+-- O Master gera um código de uso único (guardado só como hash, validade de 7 dias). Quem tem o código cria a própria
+-- conta com nome, e-mail e senha; a função abaixo cria o espaço individual, o aluno e a credencial numa transação só.
+CREATE TABLE convite_individual (
+  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo_hash    text        NOT NULL UNIQUE,
+  criado_por     text        NOT NULL,
+  criado_em      timestamptz NOT NULL DEFAULT now(),
+  expira_em      timestamptz NOT NULL DEFAULT now() + interval '7 days',
+  usado_em       timestamptz,
+  instituicao_id uuid        REFERENCES instituicao (id)
+);
+ALTER TABLE convite_individual ENABLE ROW LEVEL SECURITY;
+ALTER TABLE convite_individual FORCE ROW LEVEL SECURITY;
+CREATE POLICY convite_individual_operacao ON convite_individual TO siesal_ops USING (true) WITH CHECK (true);
+CREATE POLICY convite_individual_dono ON convite_individual TO siesal_owner USING (true) WITH CHECK (true);
+GRANT SELECT, INSERT ON convite_individual TO siesal_ops;
+
+-- O dono (que roda a função abaixo) só pode criar instituição do tipo individual
+CREATE POLICY instituicao_criar_individual ON instituicao FOR INSERT TO siesal_owner WITH CHECK (tipo = 'individual');
+
+CREATE FUNCTION espaco_individual_criar(p_codigo_hash text, p_nome text, p_email text, p_senha_hash text) RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE v_convite uuid; v_inst uuid := gen_random_uuid(); v_usuario uuid := gen_random_uuid();
+BEGIN
+  SELECT id INTO v_convite FROM convite_individual
+   WHERE codigo_hash = p_codigo_hash AND usado_em IS NULL AND expira_em > now() FOR UPDATE;
+  IF v_convite IS NULL THEN
+    RAISE EXCEPTION 'convite invalido ou vencido';
+  END IF;
+  -- Contexto do novo espaço, só dentro desta transação (a RLS das tabelas escolares exige)
+  PERFORM set_config('app.instituicao_id', v_inst::text, true);
+  INSERT INTO instituicao (id, nome, tipo, situacao) VALUES (v_inst, 'Espaço individual', 'individual', 'ativa');
+  INSERT INTO usuario (id, instituicao_id, perfil, nome, email) VALUES (v_usuario, v_inst, 'aluno', btrim(p_nome), btrim(p_email));
+  INSERT INTO credencial (instituicao_id, usuario_id, senha_hash) VALUES (v_inst, v_usuario, p_senha_hash);
+  UPDATE convite_individual SET usado_em = now(), instituicao_id = v_inst WHERE id = v_convite;
+  PERFORM set_config('app.instituicao_id', '', true);
+  RETURN v_inst;
+END $$;
+REVOKE ALL ON FUNCTION espaco_individual_criar(text, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION espaco_individual_criar(text, text, text, text) TO siesal_app;

@@ -16,6 +16,32 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   const [pedirCodigo, setPedirCodigo] = useState(false);
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
+  // Criar conta com o convite do Master (só no modo "Sem instituição")
+  const [criando, setCriando] = useState(false);
+  const [convite, setConvite] = useState('');
+  const [nome, setNome] = useState('');
+
+  async function criarConta(e: FormEvent) {
+    e.preventDefault();
+    setErro('');
+    if (!convite.trim() || !nome.trim() || !email.trim() || !senha)
+      return setErro('Preencha o convite, o nome, o e-mail e a senha.');
+    setEnviando(true);
+    try {
+      const r = await api.criarContaIndividual({
+        codigo: convite.trim(),
+        nome: nome.trim(),
+        email: email.trim(),
+        senha,
+      });
+      if ('usuario' in r) aoEntrar(r);
+      else setCriando(false);
+    } catch (x) {
+      setErro(x instanceof ErroApi ? x.message : 'Não foi possível criar a conta. Tente de novo.');
+    } finally {
+      setEnviando(false);
+    }
+  }
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -60,10 +86,10 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
           <small>Educação e inclusão</small>
         </div>
       </div>
-      <form className="card" onSubmit={enviar} noValidate>
+      <form className="card" onSubmit={criando ? criarConta : enviar} noValidate>
         <div className="card-head">
           <h1 className="page-title" style={{ fontSize: 24 }}>
-            Entrar
+            {criando ? 'Criar conta' : 'Entrar'}
           </h1>
         </div>
         <div className="stack">
@@ -75,7 +101,10 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
                 type="radio"
                 name="login-modo"
                 checked={modo === 'instituicao'}
-                onChange={() => setModo('instituicao')}
+                onChange={() => {
+                  setModo('instituicao');
+                  setCriando(false);
+                }}
               />{' '}
               Vinculado a uma instituição
             </label>
@@ -90,6 +119,36 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
             </label>
           </fieldset>
           {/* L15, item extra: o campo aparece sempre; com instituição padrão ele já vem preenchido */}
+          {criando && modo === 'individual' ? (
+            <>
+              <p className="muted small">
+                Use o convite que o Master do SIESAL deu a você. Cada convite vale para uma conta e
+                por 7 dias.
+              </p>
+              <Campo rotulo="Código do convite" dica="Exemplo: ABCD-EFGH-JKLM-NPQR">
+                {({ id, descricao }) => (
+                  <input
+                    id={id}
+                    aria-describedby={descricao}
+                    value={convite}
+                    autoComplete="off"
+                    onChange={(e) => setConvite(e.target.value)}
+                  />
+                )}
+              </Campo>
+              <Campo rotulo="Seu nome">
+                {({ id }) => (
+                  <input
+                    id={id}
+                    value={nome}
+                    maxLength={80}
+                    autoComplete="name"
+                    onChange={(e) => setNome(e.target.value)}
+                  />
+                )}
+              </Campo>
+            </>
+          ) : null}
           {modo === 'instituicao' ? (
             <Campo
               rotulo="Código da instituição"
@@ -130,12 +189,12 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
                 type="password"
                 value={senha}
                 required
-                autoComplete="current-password"
+                autoComplete={criando ? 'new-password' : 'current-password'}
                 onChange={(e) => setSenha(e.target.value)}
               />
             )}
           </Campo>
-          {pedirCodigo ? (
+          {pedirCodigo && !criando ? (
             <Campo
               rotulo="Código do aplicativo de autenticação"
               dica="6 números. Ou use um código de recuperação."
@@ -153,8 +212,20 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
             </Campo>
           ) : null}
           <button type="submit" className="btn btn-primary" disabled={enviando}>
-            {enviando ? 'Entrando…' : 'Entrar'}
+            {criando ? (enviando ? 'Criando…' : 'Criar conta') : enviando ? 'Entrando…' : 'Entrar'}
           </button>
+          {modo === 'individual' ? (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setCriando(!criando);
+                setErro('');
+              }}
+            >
+              {criando ? 'Já tenho conta' : 'Criar conta'}
+            </button>
+          ) : null}
         </div>
       </form>
     </main>

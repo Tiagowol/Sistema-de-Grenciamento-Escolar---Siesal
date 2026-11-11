@@ -1,6 +1,6 @@
 # Retorno da migração 0020 (20c-1)
 
-A 0020 acrescenta: a coluna `tipo` em `instituicao` (padrão "escola"), a tabela `espaco_individual` (índice de e-mails), 5 funções, 1 gatilho em `usuario` e a coluna `disciplinas_convertidas_em` em `preferencia_usuario`. **Não altera nem apaga** dado existente: todas as instituições atuais viram "escola".
+A 0020 acrescenta: a coluna `tipo` em `instituicao` (padrão "escola"), a tabela `espaco_individual` (índice de e-mails), a tabela `convite_individual`, 6 funções, 1 gatilho em `usuario` e a coluna `disciplinas_convertidas_em` em `preferencia_usuario`. **Não altera nem apaga** dado existente: todas as instituições atuais viram "escola".
 
 ## Antes de aplicar
 1. Backup (bash, terminal WSL): `bash scripts/backup.sh`
@@ -12,6 +12,9 @@ A 0020 acrescenta: a coluna `tipo` em `instituicao` (padrão "escola"), a tabela
 
 **Caminho em SQL** (só se nenhum espaço individual foi criado; senão, ele some junto com o índice):
 ```sql
+DROP FUNCTION espaco_individual_criar(text, text, text, text);
+DROP POLICY instituicao_criar_individual ON instituicao;
+DROP TABLE convite_individual;
 DROP TRIGGER usuario_espaco_individual ON usuario;
 DROP FUNCTION usuario_espaco_individual();
 DROP FUNCTION espaco_individual_achar(text);
