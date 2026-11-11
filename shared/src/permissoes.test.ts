@@ -227,6 +227,11 @@ describe('regras fixas da matriz', () => {
       expect(permitido(perfil, 'convites_individuais', 'administrar')).toBe(
         perfil === 'master' ? 'plataforma' : null,
       );
+      // v16 (20c-3): convite de instituição também é só do Master
+      expect(MATRIZ.versao).toBeGreaterThanOrEqual(16);
+      expect(permitido(perfil, 'convites_instituicao', 'administrar')).toBe(
+        perfil === 'master' ? 'plataforma' : null,
+      );
     }
   });
 

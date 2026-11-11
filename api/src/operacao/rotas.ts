@@ -170,6 +170,11 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     if (!sessao) return resposta;
     return resposta.code(201).send(await ops.gerarConviteIndividual(sessao));
   });
+  app.post('/operacao/convites-instituicao', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return resposta.code(201).send(await ops.gerarConviteIndividual(sessao, 'instituicao'));
+  });
   app.get('/operacao/convites-individuais', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;

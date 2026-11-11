@@ -256,3 +256,79 @@ describe('links de cadastro e QR code', () => {
     expect(container.querySelector('path')?.getAttribute('d')).not.toBe(antes);
   });
 });
+
+describe('cadastro de instituição por link', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('/cadastro/instituicao#CODIGO abre o formulário do Admin novo, sem violação do axe', async () => {
+    window.history.replaceState(null, '', '/cadastro/instituicao#ABCD-EFGH-JKLM-NPQR');
+    const { container } = render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
+    expect(screen.getByRole('heading', { name: 'Cadastrar instituição' })).toBeTruthy();
+    expect((screen.getByLabelText('Código do convite') as HTMLInputElement).value).toBe(
+      'ABCD-EFGH-JKLM-NPQR',
+    );
+    for (const r of ['Nome da instituição', 'Seu nome', 'E-mail', 'Senha'])
+      expect(screen.getByLabelText(r), r).toBeTruthy();
+    expect(window.location.hash).toBe('');
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('envia os 5 campos e entra com a resposta (segundo fator pendente)', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            nivel: 'configurar_totp',
+            usuario: { id: 'u', nome: 'Ana', perfil: 'admin' },
+          }),
+          { status: 201 },
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    window.history.replaceState(null, '', '/cadastro/instituicao#ABCD-EFGH-JKLM-NPQR');
+    const aoEntrar = vi.fn();
+    render(<Login instituicaoPadrao={null} aoEntrar={aoEntrar} />);
+    const u = userEvent.setup();
+    await u.type(screen.getByLabelText('Nome da instituição'), 'Escola Fictícia');
+    await u.type(screen.getByLabelText('Seu nome'), 'Ana');
+    await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
+    await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
+    await u.click(screen.getByRole('button', { name: 'Criar instituição' }));
+    await waitFor(() => expect(aoEntrar).toHaveBeenCalled());
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain('/auth/criar-instituicao');
+    expect(JSON.parse(String(init.body))).toEqual({
+      codigo: 'ABCD-EFGH-JKLM-NPQR',
+      instituicao: 'Escola Fictícia',
+      nome: 'Ana',
+      email: 'ana@x.exemplo',
+      senha: 'uma senha bem longa 1',
+    });
+  });
+
+  it('mostra o erro literal quando o convite é recusado', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              erro: 'Não foi possível criar a instituição. Confira os dados ou peça outro convite.',
+            }),
+            { status: 400 },
+          ),
+      ),
+    );
+    window.history.replaceState(null, '', '/cadastro/instituicao#ABCD-EFGH-JKLM-NPQR');
+    render(<Login instituicaoPadrao={null} aoEntrar={() => undefined} />);
+    const u = userEvent.setup();
+    await u.type(screen.getByLabelText('Nome da instituição'), 'Escola');
+    await u.type(screen.getByLabelText('Seu nome'), 'Ana');
+    await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
+    await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
+    await u.click(screen.getByRole('button', { name: 'Criar instituição' }));
+    expect(await screen.findByText(/Não foi possível criar a instituição/)).toBeTruthy();
+  });
+});

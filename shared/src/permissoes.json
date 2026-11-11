@@ -1,5 +1,5 @@
 {
-  "versao": 15,
+  "versao": 16,
   "descricao": "Matriz de permissões da Parte 1 (rascunho v1 de MATRIZ-DE-PERMISSOES.md). Negar por padrão: o que não está aqui é negado. Escopos: proprio, vinculo, instituicao, plataforma.",
   "recursos": {
     "instituicoes": {
@@ -219,6 +219,9 @@
       "ler": { "master": "plataforma" }
     },
     "convites_individuais": {
+      "administrar": { "master": "plataforma" }
+    },
+    "convites_instituicao": {
       "administrar": { "master": "plataforma" }
     },
     "auditoria": {

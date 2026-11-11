@@ -9,7 +9,7 @@ import {
   type SessaoAtiva,
 } from './auth/autenticacao.js';
 import { derivarChave } from './auth/cifra.js';
-import { criarContaIndividual } from './auth/convite-individual.js';
+import { criarContaIndividual, criarInstituicaoPorConvite } from './auth/convite-individual.js';
 import { LimitadorJanela } from './auth/limitador.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
 import { verificarSenhaFalsa } from './auth/senha.js';
@@ -61,6 +61,28 @@ const corpoLogin = z.union([
 // Criar a própria conta com o convite do Master (20c-1). Só nome, e-mail e senha; nenhum dado a mais.
 const corpoNovaConta = z.strictObject({
   codigo: z.string().min(8).max(40),
+  nome: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .refine((t) => !/(https?:|www[.]|:\/\/|@)/i.test(t)),
+  email: z
+    .string()
+    .trim()
+    .max(254)
+    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
+  senha: z.string().min(1).max(128),
+});
+// Criar a instituição e a conta de Admin com o convite do Master (20c-3)
+const corpoNovaInstituicao = z.strictObject({
+  codigo: z.string().min(8).max(40),
+  instituicao: z
+    .string()
+    .trim()
+    .min(2)
+    .max(120)
+    .refine((t) => !/(https?:|www[.]|:\/\/|@)/i.test(t)),
   nome: z
     .string()
     .trim()
@@ -209,6 +231,32 @@ export function criarApp(opcoes: OpcoesApp = {}) {
         erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
       });
     // Já entra: a conta foi criada agora, com a senha que a pessoa escolheu
+    const r = await auth.login({
+      instituicaoId: c.instituicaoId,
+      email: corpo.data.email,
+      senha: corpo.data.senha,
+    });
+    if (r.tipo !== 'ok') return resposta.code(201).send({ criada: true });
+    return resposta
+      .code(201)
+      .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
+      .send({ nivel: r.nivel, usuario: r.usuario });
+  });
+
+  app.post('/auth/criar-instituicao', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const corpo = corpoNovaInstituicao.safeParse(requisicao.body);
+    if (!corpo.success)
+      return resposta.code(400).send({
+        erro: 'Confira o nome da instituição, o seu nome, o e-mail e o código do convite.',
+      });
+    const c = await criarInstituicaoPorConvite(banco, corpo.data);
+    if (c.tipo === 'senha_fraca') return resposta.code(400).send({ erro: c.motivo });
+    if (c.tipo === 'recusada')
+      return resposta.code(400).send({
+        erro: 'Não foi possível criar a instituição. Confira os dados ou peça outro convite.',
+      });
+    // O Admin já entra, só para ativar o segundo fator (obrigatório)
     const r = await auth.login({
       instituicaoId: c.instituicaoId,
       email: corpo.data.email,

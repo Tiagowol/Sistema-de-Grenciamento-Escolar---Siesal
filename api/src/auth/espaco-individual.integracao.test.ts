@@ -549,7 +549,7 @@ describe('cadastro por convite (D4)', () => {
     });
     expect(r.statusCode).toBe(200);
     const corpo = r.json();
-    expect(Object.keys(corpo).sort()).toEqual(['pendentes', 'usados', 'vencidos']);
+    expect(Object.keys(corpo).sort()).toEqual(['instituicao', 'pendentes', 'usados', 'vencidos']);
     expect(corpo.usados).toBeGreaterThanOrEqual(2);
     expect(corpo.vencidos).toBeGreaterThanOrEqual(1);
     const painel = await app.inject({
@@ -562,5 +562,157 @@ describe('cadastro por convite (D4)', () => {
 
   it('o aplicativo não lê a tabela de convites', async () => {
     await expect(amb.bancoApp.$queryRaw`SELECT * FROM convite_individual`).rejects.toThrow();
+  });
+});
+
+describe('convite de instituição (20c-3)', () => {
+  const convite = async (rota = '/operacao/convites-instituicao') => {
+    const r = await app.inject({ method: 'POST', url: rota, headers: { cookie: master } });
+    expect(r.statusCode, r.body).toBe(201);
+    return r.json().codigo as string;
+  };
+  const criar = (codigo: string, extra: Record<string, unknown> = {}) =>
+    app.inject({
+      method: 'POST',
+      url: '/auth/criar-instituicao',
+      payload: {
+        codigo,
+        instituicao: `Escola Fictícia ${randomUUID().slice(0, 6)}`,
+        nome: 'Admin Convidado',
+        email: `adm-${randomUUID().slice(0, 8)}@inst.exemplo`,
+        senha: SENHA,
+        ...extra,
+      },
+    });
+
+  it('só o Master gera o convite de instituição', async () => {
+    const sem = await app.inject({ method: 'POST', url: '/operacao/convites-instituicao' });
+    expect(sem.statusCode).toBe(401);
+    expect(await convite()).toMatch(/^[A-HJ-NP-Z2-9]{4}(-[A-HJ-NP-Z2-9]{4}){3}$/);
+  });
+
+  it('com o convite, cria a instituição em implantação e o Admin entra só para ativar o segundo fator', async () => {
+    const codigo = await convite();
+    const email = `adm-${randomUUID().slice(0, 8)}@inst.exemplo`;
+    const r = await criar(codigo, { email, instituicao: 'Escola do Convite' });
+    expect(r.statusCode, r.body).toBe(201);
+    expect(r.json()).toMatchObject({ nivel: 'configurar_totp', usuario: { perfil: 'admin' } });
+    const q = await amb.admin.query(
+      'SELECT i.nome, i.tipo, i.situacao, u.perfil FROM instituicao i JOIN usuario u ON u.instituicao_id = i.id WHERE u.email = $1',
+      [email],
+    );
+    expect(q.rows[0]).toEqual({
+      nome: 'Escola do Convite',
+      tipo: 'escola',
+      situacao: 'em_implantacao',
+      perfil: 'admin',
+    });
+    // o Admin ainda não usa o sistema: só o segundo fator
+    const eu = await app.inject({
+      method: 'GET',
+      url: '/auth/eu',
+      headers: { cookie: cookieDe(r) },
+    });
+    expect(eu.json()).toMatchObject({ nivel: 'configurar_totp', espaco: 'escola' });
+    const usuarios = await app.inject({
+      method: 'GET',
+      url: '/usuarios',
+      headers: { cookie: cookieDe(r) },
+    });
+    expect(usuarios.statusCode).toBe(403);
+    // o Master vê a escola no painel (em implantação) e muda a situação
+    const painel = await app.inject({
+      method: 'GET',
+      url: '/operacao/painel',
+      headers: { cookie: master },
+    });
+    const achada = painel
+      .json()
+      .instituicoes.find((i: { nome: string }) => i.nome === 'Escola do Convite');
+    expect(achada).toMatchObject({ situacao: 'em_implantacao' });
+    const ativa = await app.inject({
+      method: 'POST',
+      url: `/operacao/instituicoes/${achada.id}/situacao`,
+      payload: { situacao: 'ativa' },
+      headers: { cookie: master },
+    });
+    expect(ativa.statusCode).toBe(204);
+    // auditoria
+    const aud = await amb.admin.query(
+      "SELECT acao FROM auditoria_evento WHERE acao = 'instituicao.criada_por_convite' ORDER BY id DESC LIMIT 1",
+    );
+    expect(aud.rows[0].acao).toBe('instituicao.criada_por_convite');
+    // uso único
+    expect((await criar(codigo)).statusCode).toBe(400);
+  });
+
+  it('cada convite só serve para o seu tipo', async () => {
+    const deAluno = await convite('/operacao/convites-individuais');
+    const deInstituicao = await convite();
+    const recusadaInst = await criar(deAluno);
+    expect(recusadaInst.statusCode).toBe(400);
+    const recusadaAluno = await app.inject({
+      method: 'POST',
+      url: '/auth/criar-conta-individual',
+      payload: {
+        codigo: deInstituicao,
+        nome: 'Aluno X',
+        email: `x-${randomUUID().slice(0, 8)}@ei.exemplo`,
+        senha: SENHA,
+      },
+    });
+    expect(recusadaAluno.statusCode).toBe(400);
+    expect(typeof recusadaAluno.json().erro).toBe('string');
+    // nenhum dos dois foi gasto
+    expect((await criar(deInstituicao)).statusCode).toBe(201);
+    const aluno = await app.inject({
+      method: 'POST',
+      url: '/auth/criar-conta-individual',
+      payload: {
+        codigo: deAluno,
+        nome: 'Aluno Y',
+        email: `y-${randomUUID().slice(0, 8)}@ei.exemplo`,
+        senha: SENHA,
+      },
+    });
+    expect(aluno.statusCode, aluno.body).toBe(201);
+  });
+
+  it('inventado e vencido dão a mesma recusa; dados inválidos e senha fraca não gastam o convite', async () => {
+    const inventado = await criar('AAAA-BBBB-CCCC-DDDD');
+    expect(inventado.statusCode).toBe(400);
+    const codigo = await convite();
+    for (const extra of [
+      { instituicao: 'A' },
+      { nome: 'ver http://x.com' },
+      { email: 'sem-arroba' },
+      { extra: 1 },
+    ])
+      expect((await criar(codigo, extra)).statusCode).toBe(400);
+    const fraca = await criar(codigo, { senha: 'curta' });
+    expect(fraca.statusCode).toBe(400);
+    expect(fraca.json().erro).not.toContain('convite');
+    await amb.admin.query(
+      "UPDATE convite_individual SET expira_em = now() - interval '1 minute' WHERE codigo_hash = encode(sha256($1::bytea), 'hex')",
+      [codigo.replaceAll('-', '')],
+    );
+    expect((await criar(codigo)).json()).toEqual(inventado.json());
+  });
+
+  it('o resumo do Master separa os convites de instituição e traz só números', async () => {
+    const r = await app.inject({
+      method: 'GET',
+      url: '/operacao/convites-individuais',
+      headers: { cookie: master },
+    });
+    expect(Object.keys(r.json().instituicao).sort()).toEqual(['pendentes', 'usados', 'vencidos']);
+    expect(r.json().instituicao.usados).toBeGreaterThanOrEqual(1);
+  });
+
+  it('o aplicativo não cria instituição por conta própria (só pela função do convite)', async () => {
+    await expect(
+      amb.bancoApp
+        .$executeRaw`INSERT INTO instituicao (nome, tipo, situacao) VALUES ('X', 'escola', 'em_implantacao')`,
+    ).rejects.toThrow();
   });
 });

@@ -4,6 +4,7 @@ import { api, ErroApi, type Eu } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { lerCodigoDoLink } from '../linkCadastro';
+import { CadastroInstituicao } from './CadastroInstituicao';
 
 type Props = { instituicaoPadrao: string | null; aoEntrar: (eu: Eu) => void };
 
@@ -11,6 +12,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   // 20c-1: uma pergunta, duas opções. "Sem instituição" pede só e-mail e senha.
   // Link de cadastro do aluno (/cadastro/aluno#CODIGO) já abre "Sem instituição" > Criar conta com o código preenchido
   const [dosLink] = useState(() => lerCodigoDoLink('/cadastro/aluno'));
+  // Link de cadastro de instituição (/cadastro/instituicao#CODIGO): outra tela, só para o Admin novo
+  const [dosLinkInstituicao] = useState(() => lerCodigoDoLink('/cadastro/instituicao'));
   const [modo, setModo] = useState<'instituicao' | 'individual'>(
     dosLink ? 'individual' : 'instituicao',
   );
@@ -75,6 +78,9 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
       setEnviando(false);
     }
   }
+
+  if (dosLinkInstituicao !== null)
+    return <CadastroInstituicao codigoInicial={dosLinkInstituicao} aoEntrar={aoEntrar} />;
 
   return (
     <main

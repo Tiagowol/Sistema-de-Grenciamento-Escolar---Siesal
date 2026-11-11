@@ -57,3 +57,47 @@ export async function criarContaIndividual(
   });
   return { tipo: 'ok', instituicaoId, usuarioId };
 }
+
+export type EntradaInstituicao = {
+  codigo: string;
+  instituicao: string;
+  nome: string;
+  email: string;
+  senha: string;
+};
+export type ResultadoInstituicao =
+  | { tipo: 'ok'; instituicaoId: string; usuarioId: string }
+  | { tipo: 'senha_fraca'; motivo: string }
+  | { tipo: 'recusada' };
+
+// Convite de instituição (20c-3): cria a instituição "em implantação" e o Admin com a senha escolhida, numa transação.
+// O segundo fator (TOTP) continua obrigatório no primeiro login. Convite inválido, vencido ou usado dá a mesma resposta.
+export async function criarInstituicaoPorConvite(
+  banco: Pick<PrismaClient, '$queryRaw' | '$transaction'>,
+  e: EntradaInstituicao,
+): Promise<ResultadoInstituicao> {
+  const motivo = validarSenha(e.senha);
+  if (motivo) return { tipo: 'senha_fraca', motivo };
+  const senhaHash = await hashSenha(e.senha);
+  let instituicaoId: string;
+  try {
+    const [r] = await banco.$queryRaw<{ id: string }[]>`
+      SELECT instituicao_criar_por_convite(${hashDoCodigo(e.codigo)}, ${e.instituicao.trim()}, ${e.nome.trim()}, ${e.email.trim()}, ${senhaHash}) AS id`;
+    if (!r?.id) return { tipo: 'recusada' };
+    instituicaoId = r.id;
+  } catch {
+    return { tipo: 'recusada' };
+  }
+  const usuarioId = await withTenant(banco as PrismaClient, { instituicaoId }, async (tx) => {
+    const [u] = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM usuario LIMIT 1`;
+    const id = (u as { id: string }).id;
+    await registrarAuditoria(tx as ClienteTransacao, {
+      instituicaoId,
+      ator: `usuario:${id}`,
+      acao: 'instituicao.criada_por_convite',
+      alvo: `instituicao:${instituicaoId}`,
+    });
+    return id;
+  });
+  return { tipo: 'ok', instituicaoId, usuarioId };
+}

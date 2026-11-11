@@ -15,5 +15,5 @@ export function lerCodigoDoLink(caminhoEsperado: string): string | null {
 }
 
 // Monta o link completo para o Master enviar (usa o endereço em que ele está logado)
-export const linkDeCadastro = (tipo: 'aluno' | 'master', codigo: string): string =>
+export const linkDeCadastro = (tipo: 'aluno' | 'master' | 'instituicao', codigo: string): string =>
   `${window.location.origin}/cadastro/${tipo}#${encodeURIComponent(codigo)}`;

@@ -424,34 +424,33 @@ export function criarOperacao(dep: DependenciasOperacao) {
   // Convite de espaço individual (20c-1): o código aparece uma vez, aqui na resposta; no banco fica só o hash
   async function gerarConviteIndividual(
     sessao: SessaoOperacao,
+    tipo: 'individual' | 'instituicao' = 'individual',
   ): Promise<{ codigo: string; expira_em: Date }> {
     const codigo = gerarCodigoDeConvite();
     return comoOperacao(dep.banco, async (tx) => {
       const [c] = await tx.$queryRaw<{ id: string; expira_em: Date }[]>`
-        INSERT INTO convite_individual (codigo_hash, criado_por)
-        VALUES (${hashDoCodigo(codigo)}, ${`master:${sessao.usuario}`}) RETURNING id, expira_em`;
-      await auditar(
-        tx,
-        `master:${sessao.usuario}`,
-        'convite_individual.criado',
-        `convite:${c?.id}`,
-      );
+        INSERT INTO convite_individual (codigo_hash, criado_por, tipo)
+        VALUES (${hashDoCodigo(codigo)}, ${`master:${sessao.usuario}`}, ${tipo}) RETURNING id, expira_em`;
+      await auditar(tx, `master:${sessao.usuario}`, `convite_${tipo}.criado`, `convite:${c?.id}`);
       return { codigo, expira_em: (c as { expira_em: Date }).expira_em };
     });
   }
   // Só números: nunca o código nem quem usou
-  async function resumoDosConvites(): Promise<{
-    pendentes: number;
-    usados: number;
-    vencidos: number;
-  }> {
+  type ResumoConvites = { pendentes: number; usados: number; vencidos: number };
+  async function resumoDosConvites(): Promise<ResumoConvites & { instituicao: ResumoConvites }> {
     return comoOperacao(dep.banco, async (tx) => {
-      const [r] = await tx.$queryRaw<{ pendentes: number; usados: number; vencidos: number }[]>`
-        SELECT count(*) FILTER (WHERE usado_em IS NULL AND expira_em > now())::int AS pendentes,
+      const linhas = await tx.$queryRaw<(ResumoConvites & { tipo: string })[]>`
+        SELECT tipo,
+               count(*) FILTER (WHERE usado_em IS NULL AND expira_em > now())::int AS pendentes,
                count(*) FILTER (WHERE usado_em IS NOT NULL)::int AS usados,
                count(*) FILTER (WHERE usado_em IS NULL AND expira_em <= now())::int AS vencidos
-          FROM convite_individual`;
-      return r ?? { pendentes: 0, usados: 0, vencidos: 0 };
+          FROM convite_individual GROUP BY tipo`;
+      const zero = { pendentes: 0, usados: 0, vencidos: 0 };
+      const de = (t: string): ResumoConvites => {
+        const l = linhas.find((x) => x.tipo === t);
+        return l ? { pendentes: l.pendentes, usados: l.usados, vencidos: l.vencidos } : zero;
+      };
+      return { ...de('individual'), instituicao: de('instituicao') };
     });
   }
 

@@ -368,8 +368,14 @@ function CartaoInstituicao({
 function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
   const [lista, setLista] = useState<InstituicaoPainel[]>([]);
   const [individuais, setIndividuais] = useState(0);
-  const [convites, setConvites] = useState({ pendentes: 0, usados: 0, vencidos: 0 });
+  const [convites, setConvites] = useState<{
+    pendentes: number;
+    usados: number;
+    vencidos: number;
+    instituicao?: { pendentes: number; usados: number; vencidos: number };
+  }>({ pendentes: 0, usados: 0, vencidos: 0 });
   const [conviteNovo, setConviteNovo] = useState('');
+  const [conviteInstituicao, setConviteInstituicao] = useState('');
   const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
@@ -507,6 +513,55 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
               onClick={() =>
                 void navigator.clipboard
                   ?.writeText(linkDeCadastro('aluno', conviteNovo))
+                  .then(() => setFeito('Link copiado.'))
+                  .catch(() => setErro('Não foi possível copiar. Selecione o link e copie.'))
+              }
+            >
+              Copiar o link
+            </button>
+          </div>
+        ) : null}
+      </section>
+      <section className="card mt" aria-labelledby="ops-convite-inst-titulo">
+        <div className="card-head">
+          <h2 id="ops-convite-inst-titulo">Convite de instituição</h2>
+        </div>
+        <p className="small">
+          Quem recebe o convite cria a instituição (em implantação) e a própria conta de Admin, e
+          ativa o segundo fator. Depois você muda a situação para "Ativa". Esperando uso:{' '}
+          <strong>{convites.instituicao?.pendentes ?? 0}</strong>. Usados:{' '}
+          <strong>{convites.instituicao?.usados ?? 0}</strong>. Vencidos:{' '}
+          <strong>{convites.instituicao?.vencidos ?? 0}</strong>.
+        </p>
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() =>
+            agir(async () => {
+              const c = await apiOperacao.gerarConviteInstituicao();
+              setConviteInstituicao(c.codigo);
+            }, 'Convite de instituição gerado. Copie agora: ele não aparece de novo.')
+          }
+        >
+          Gerar convite de instituição
+        </button>
+        {conviteInstituicao ? (
+          <div role="status" className="mt-sm">
+            <p>
+              Código (vale 7 dias, uma instituição só): <strong>{conviteInstituicao}</strong>
+            </p>
+            <p>
+              Link para enviar:{' '}
+              <code style={{ wordBreak: 'break-all' }}>
+                {linkDeCadastro('instituicao', conviteInstituicao)}
+              </code>
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() =>
+                void navigator.clipboard
+                  ?.writeText(linkDeCadastro('instituicao', conviteInstituicao))
                   .then(() => setFeito('Link copiado.'))
                   .catch(() => setErro('Não foi possível copiar. Selecione o link e copie.'))
               }
