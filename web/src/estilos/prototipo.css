@@ -21,6 +21,16 @@
   --shadow: 0 6px 28px rgba(15, 35, 63, 0.045);
   --scale: 1;
   --line: 1.5;
+  /* L20a: menu, painel de boas-vindas e marca acompanham a cor de destaque (ver derivadasDaCor) */
+  --menu-a: var(--navy);
+  --menu-b: #0d1d33;
+  --hero-a: #0e3863;
+  --hero-b: #146389;
+  --hero-c: #0c787a;
+  --brand-a: #2db6cd;
+  --brand-b: #397deb;
+  --menu-active: #1f426b;
+  --menu-accent: #54d6d2;
   color-scheme: light;
 }
 * {
@@ -112,7 +122,7 @@ small,
   grid-template-columns: 256px minmax(0, 1fr);
 }
 .sidebar {
-  background: linear-gradient(155deg, var(--navy), #0d1d33 75%);
+  background: linear-gradient(155deg, var(--menu-a), var(--menu-b) 75%);
   color: #e4ebf7;
   position: sticky;
   top: 0;
@@ -133,7 +143,7 @@ small,
   width: 43px;
   height: 43px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #2db6cd, #397deb);
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
   display: grid;
   place-items: center;
   box-shadow: 0 5px 15px #081b3580;
@@ -187,9 +197,9 @@ small,
   color: #fff;
 }
 .nav button.active {
-  background: #1f426b;
+  background: var(--menu-active);
   color: #fff;
-  box-shadow: inset 3px 0 0 #54d6d2;
+  box-shadow: inset 3px 0 0 var(--menu-accent);
 }
 .nav button svg,
 .top-button svg,
@@ -301,8 +311,8 @@ small,
   border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #dbe9fd;
-  color: #1a4b90;
+  background: var(--primary-soft);
+  color: var(--primary);
   font-size: 0.83rem;
   font-weight: 850;
 }
@@ -364,8 +374,9 @@ small,
   background: var(--primary);
   color: white;
 }
+/* L20a: o realce do botão acompanha a cor de destaque */
 .btn-primary:hover {
-  background: #0e4a95;
+  background: color-mix(in srgb, var(--primary) 80%, #000);
 }
 .btn-outline {
   background: var(--panel);
@@ -492,7 +503,7 @@ small,
   background: var(--purple-soft);
 }
 .hero {
-  background: linear-gradient(125deg, #0e3863, #146389 72%, #0c787a);
+  background: linear-gradient(125deg, var(--hero-a), var(--hero-b) 72%, var(--hero-c));
   color: white;
   border: 0;
   padding: 27px 30px;
@@ -646,7 +657,7 @@ small,
   color: var(--muted);
 }
 .day.today {
-  border-color: #4e86c9;
+  border-color: var(--primary);
   background: var(--primary-soft);
 }
 .day.active {
@@ -778,8 +789,8 @@ small,
 }
 .notice.info {
   background: var(--primary-soft);
-  border-color: #c8dafa;
-  color: #1e4884;
+  border-color: var(--primary);
+  color: var(--text);
 }
 .article {
   padding: 15px;
@@ -1122,9 +1133,6 @@ small,
 .access-text p {
   margin: 10px 0;
 }
-.hide-on-simple {
-  display: block;
-}
 body.dark {
   --text: #e3ecf8;
   --muted: #b0c0d4;
@@ -1142,14 +1150,14 @@ body.dark {
   --red-soft: #4a3037;
   --purple: #cdb3ff;
   --purple-soft: #382d57;
+  --hero-a: #173b66;
+  --hero-b: #155965;
+  --hero-c: #155965;
   --shadow: none;
   color-scheme: dark;
 }
 body.dark .topbar {
   background: #152940ef;
-}
-body.dark .hero {
-  background: linear-gradient(125deg, #173b66, #155965 85%);
 }
 body.dark .top-button {
   color: var(--text);

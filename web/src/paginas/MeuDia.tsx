@@ -1,4 +1,5 @@
 import { api, type ResumoTarefa } from '../api';
+import { BLOCOS } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Kpi, Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import { EscolhaAgora } from '../componentes/EscolhaAgora';
@@ -75,7 +76,8 @@ export function MeuDia({
           </button>
         }
       />
-      <div className="grid cols-4">
+      {/* Modo simples (L20a): os 4 números e a rotina saem; ficam o próximo passo e as atividades */}
+      <div className="grid cols-4 hide-on-simple">
         <Kpi
           numero={d.atrasadas.length}
           rotulo="Prazo passou"
@@ -173,7 +175,7 @@ export function MeuDia({
               <Vazio>Sem compromissos hoje.</Vazio>
             )}
           </div>
-          <div className="card">
+          <div className="card hide-on-simple">
             <div className="card-head">
               <div>
                 <h2>Rotina possível</h2>
@@ -189,7 +191,9 @@ export function MeuDia({
                 percentual={Math.min(100, Math.round((d.minutos_estudados_hoje / 50) * 100))}
                 rotulo="Estudo de hoje"
               />
-              <p className="small muted mt-sm">Um bloco de 10 minutos já é um começo válido.</p>
+              <p className="small muted mt-sm">
+                Um bloco de {BLOCOS[0]?.minutos ?? 10} minutos já é um começo válido.
+              </p>
             </div>
             <div className="chip-row mt-sm">
               <button type="button" className="btn btn-soft btn-sm" onClick={() => aoIr('foco')}>

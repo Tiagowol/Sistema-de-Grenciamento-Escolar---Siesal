@@ -759,6 +759,9 @@ body:not(.dark) .sino :focus-visible {
   border-radius: 4px;
   border: 1px solid currentColor;
 }
+body.dark .btn-primary:hover {
+  background: color-mix(in srgb, var(--primary) 85%, #fff);
+}
 body.dark .btn-primary {
   color: #0c1829;
 }
@@ -1094,4 +1097,47 @@ fieldset {
   gap: 8px;
   flex: 1 1 220px;
   min-width: 0;
+}
+
+/* L20a: tempo das atividades (botões de mais e menos, barra e minutos pequenos) */
+.tempo-bloco {
+  display: grid;
+  grid-template-columns: 4.5rem 44px minmax(0, 1fr) 44px 3.5rem;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.tempo-bloco-nome {
+  font-weight: 700;
+}
+.tempo-botao {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.tempo-barra {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.tempo-barra-cheia {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.tempo-minutos {
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .tempo-bloco {
+    grid-template-columns: 3.6rem 44px minmax(0, 1fr) 44px;
+  }
+  .tempo-minutos {
+    grid-column: 2 / -1;
+  }
 }

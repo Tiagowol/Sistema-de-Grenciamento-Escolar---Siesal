@@ -62,8 +62,8 @@ export function Acessibilidade({
           <div className="eyebrow">Preferências</div>
           <h1>Acessibilidade</h1>
           <p>
-            Botões do topo e VLibras ficam salvos na sua conta. Os outros ajustes ficam neste
-            aparelho.
+            Os ajustes ficam salvos na sua conta e acompanham você em outro aparelho. Se a conta não
+            responder, eles continuam valendo neste aparelho.
           </p>
         </div>
       </div>

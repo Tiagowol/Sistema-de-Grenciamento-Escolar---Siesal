@@ -246,3 +246,16 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Conferido antes de consertar: cópia da pasta `.git` guardada no rascunho da sessão; os 3 commits (`81379e5`, `0c2de3b`, `6a0bf10`) íntegros; o commit `81379e5` só muda o registro de aprovações (6 linhas).
 - Correção: o arquivo do ramo foi regravado com `81379e5`. `git fsck` sem nenhum erro; pasta de trabalho igual ao commit; nenhum arquivo do projeto zerado. Removida uma trava antiga e vazia (`.git/objects/maintenance.lock`, de 20:19, sem git rodando). Contêineres subiram sozinhos; banco com as migrações até a 0017; `/saude` com banco "ok"; site e `/status` respondendo 200, também pelo link externo.
 - Como voltar atrás: restaurar a cópia da pasta `.git` guardada antes do conserto. Não é necessário: nada foi perdido.
+
+## F-052 — 11/11/2026 — Reconstrução das imagens Docker falha por certificado (npm e prisma)
+- O que falhou: `docker compose --profile teste run --rm --build teste` parou em `pnpm exec prisma generate`; `npm i -g pnpm` num contêiner `node:26` também falhou. Erro: `unable to verify the first certificate` (UNABLE_TO_VERIFY_LEAF_SIGNATURE).
+- Causa: a rede do computador intercepta o HTTPS (certificado raiz que os contêineres não conhecem). Só afeta passos que baixam da internet; camadas já em cache não são afetadas. Não é defeito do projeto.
+- Contorno usado (nada foi desligado, nenhuma verificação de certificado foi enfraquecida): testes unitários e de integração rodaram com a imagem `siesal-teste` já pronta, montando o código novo por volume; o site foi reconstruído só onde o cache bastava (imagem do `web`).
+- **Não resolvida:** a imagem da API (`docker compose up -d --build api`) não pôde ser reconstruída. Por isso a 0018 e a API nova **não foram aplicadas no site** em http://localhost:18080.
+- Como voltar atrás: não se aplica (nada foi alterado no site).
+
+## F-053 — 11/11/2026 — Erro não tratado em `web/src/l19.test.tsx` (já existia)
+- O que falhou: o vitest termina com "1 Unhandled Error" (`caixa.itens` indefinido em `Sinos.tsx`, linha 283) depois do teste "o menu mostra o nome da escola no lugar de SIESAL". Os 958 testes passam.
+- Causa: ainda não investigada. Conferido em 11/11/2026 que acontece também no commit `c395289`, sem nenhuma mudança do L20a. Provável resposta simulada sem o campo `itens` no teste.
+- **Não resolvida.** Não afeta o uso do site. Fica para um lote de manutenção.
+- Como voltar atrás: não se aplica.

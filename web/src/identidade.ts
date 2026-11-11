@@ -20,7 +20,7 @@ export function corDaEscolaLegivel(cor: string, tema: 'claro' | 'escuro'): boole
 
 // Cor da escola para o tema atual. No alto contraste a escola não muda a cor: vale o tema escolhido pela pessoa.
 export function corDaEscola(i: Identidade | null, tema: Tema): string | null {
-  if (!i || tema === 'alto_contraste') return null;
+  if (!i || tema === 'alto_contraste' || tema === 'alto_contraste_escuro') return null;
   const cor = tema === 'claro' ? i.cor_claro : i.cor_escuro;
   return cor && corDaEscolaLegivel(cor, tema) ? cor : null;
 }

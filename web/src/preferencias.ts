@@ -1,6 +1,12 @@
 import type { Identidade, PreferenciasServidor } from './api';
+import {
+  definirMinutosDosBlocos,
+  MINUTOS_PADRAO_DOS_BLOCOS,
+  type MinutosDosBlocos,
+  minutosValidos,
+} from './blocos';
 import { corDaEscola } from './identidade';
-import { combinacaoLegivel, type Tema, valorDaCor } from './paleta';
+import { combinacaoLegivel, derivadasDaCor, type Tema, valorDaCor } from './paleta';
 
 // Preferências de acessibilidade (iguais às do protótipo). Guardadas no navegador; sem diagnóstico.
 export type Preferencias = {
@@ -16,6 +22,7 @@ export type Preferencias = {
   apelido: string | null; // nome de exibição (L17b); sem apelido, vale o primeiro nome
   cor: string | null; // cor de destaque (id da paleta); sem cor, vale a do tema
   telaInicial: 'meudia' | 'agenda' | 'calendario'; // tela que abre depois do login
+  blocos: MinutosDosBlocos; // minutos dos blocos curto, médio e longo (L20a)
 };
 
 export const PREFERENCIAS_PADRAO: Preferencias = {
@@ -31,9 +38,17 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   apelido: null,
   cor: null,
   telaInicial: 'meudia',
+  blocos: { ...MINUTOS_PADRAO_DOS_BLOCOS },
 };
 
 const CHAVE = 'siesal-preferencias-v1';
+
+// Minutos guardados que não seguem a regra voltam ao padrão
+function blocosGuardados(b: unknown): MinutosDosBlocos {
+  const m = b as Partial<MinutosDosBlocos> | null | undefined;
+  const lido = { curto: Number(m?.curto), medio: Number(m?.medio), longo: Number(m?.longo) };
+  return minutosValidos(lido) ? lido : { ...MINUTOS_PADRAO_DOS_BLOCOS };
+}
 
 export function carregarPreferencias(
   armazem: Pick<Storage, 'getItem'> = localStorage,
@@ -51,6 +66,7 @@ export function carregarPreferencias(
         bruto?.telaInicial === 'agenda' || bruto?.telaInicial === 'calendario'
           ? bruto.telaInicial
           : 'meudia',
+      blocos: blocosGuardados(bruto?.blocos),
       escuro: bruto?.escuro === true,
       contraste: bruto?.contraste === true,
       movimento: bruto?.movimento === true,
@@ -90,19 +106,43 @@ export function aplicarPreferencias(p: Preferencias, doc: Document = document): 
   c.toggle('no-motion', p.movimento);
   c.toggle('readable', p.legivel);
   c.toggle('simple', p.simples);
+  definirMinutosDosBlocos(p.blocos);
   doc.documentElement.style.setProperty('--scale', String(p.fonte / 100));
-  // Cor de destaque (L17b): só se passar no contraste do tema. Sem cor do aluno, vale a da escola (L19);
+  // Cor de destaque (L17b, L20a): só se passar no contraste do tema. Sem cor do aluno, vale a da escola (L19);
   // sem nenhuma das duas, volta a cor do tema. A escolha do aluno sempre vence.
+  // Além do botão, a cor muda o fundo suave, o menu, o painel de boas-vindas e a marca.
+  const tema = temaDe(p);
   const valor =
-    (corValida(p) ? valorDaCor(p.cor as string, temaDe(p)) : null) ??
-    corDaEscola(escolaAtual, temaDe(p));
-  if (valor) doc.body.style.setProperty('--primary', valor);
-  else doc.body.style.removeProperty('--primary');
+    (corValida(p) ? valorDaCor(p.cor as string, tema) : null) ?? corDaEscola(escolaAtual, tema);
+  for (const nome of VARIAVEIS_DA_COR) doc.body.style.removeProperty(nome);
+  if (valor)
+    for (const [nome, v] of Object.entries(derivadasDaCor(valor, tema)))
+      doc.body.style.setProperty(nome, v);
 }
 
-// Tema que as chaves "escuro" e "contraste" formam (alto contraste vence o escuro)
+const VARIAVEIS_DA_COR = [
+  '--primary',
+  '--primary-soft',
+  '--menu-a',
+  '--menu-b',
+  '--hero-a',
+  '--hero-b',
+  '--hero-c',
+  '--brand-a',
+  '--brand-b',
+  '--menu-active',
+  '--menu-accent',
+];
+
+// Tema que as chaves "escuro" e "contraste" formam (L20a: alto contraste claro e escuro são temas distintos)
 export const temaDe = (p: Pick<Preferencias, 'escuro' | 'contraste'>): Tema =>
-  p.contraste ? 'alto_contraste' : p.escuro ? 'escuro' : 'claro';
+  p.contraste
+    ? p.escuro
+      ? 'alto_contraste_escuro'
+      : 'alto_contraste'
+    : p.escuro
+      ? 'escuro'
+      : 'claro';
 
 // Cor de destaque que de fato vale: só se for legível no tema atual
 export const corValida = (p: Preferencias): string | null =>
@@ -111,8 +151,8 @@ export const corValida = (p: Preferencias): string | null =>
 // Conversões entre o que fica no aparelho e o que fica no banco (por usuário)
 export function doServidor(s: PreferenciasServidor): Preferencias {
   return {
-    escuro: s.tema === 'escuro',
-    contraste: s.tema === 'alto_contraste',
+    escuro: s.tema === 'escuro' || s.tema === 'alto_contraste_escuro',
+    contraste: s.tema === 'alto_contraste' || s.tema === 'alto_contraste_escuro',
     movimento: s.reduzir_movimento,
     legivel: s.leitura_facilitada,
     simples: s.modo_simples,
@@ -123,6 +163,11 @@ export function doServidor(s: PreferenciasServidor): Preferencias {
     apelido: s.apelido,
     cor: s.cor_destaque,
     telaInicial: s.tela_inicial,
+    blocos: blocosGuardados({
+      curto: s.minutos_curto,
+      medio: s.minutos_medio,
+      longo: s.minutos_longo,
+    }),
   };
 }
 export function paraServidor(p: Preferencias): PreferenciasServidor {
@@ -138,5 +183,8 @@ export function paraServidor(p: Preferencias): PreferenciasServidor {
     linguagem_curta: p.linguagemCurta,
     escolha_agora: p.escolhaAgora,
     tela_inicial: p.telaInicial,
+    minutos_curto: p.blocos.curto,
+    minutos_medio: p.blocos.medio,
+    minutos_longo: p.blocos.longo,
   };
 }

@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { registrarAuditoria } from '../auditoria/auditoria.js';
 import type { SessaoAtiva } from '../auth/autenticacao.js';
-import { podeUsarNucleo } from '../auth/politica.js';
+import { podeAdministrarPreferencias, podeUsarNucleo } from '../auth/politica.js';
 import {
   type ClienteTransacao,
   type withTenant as WithTenant,
@@ -44,7 +44,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   >(
     metodo: 'get' | 'post' | 'put' | 'patch' | 'delete',
     caminho: string,
-    esquemas: { params?: P; corpo?: B; consulta?: Q },
+    esquemas: { params?: P; corpo?: B; consulta?: Q; preferencias?: boolean },
     funcao: (c: {
       tx: ClienteTransacao;
       sessao: SessaoAtiva;
@@ -58,8 +58,12 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     app[metodo](caminho, async (req, res) => {
       const sessao = await opcoes.exigirSessao(req, res);
       if (!sessao) return res;
-      if (sessao.nivel !== 'completo' || !podeUsarNucleo(sessao.perfil)) {
-        return res.code(403).send({ erro: 'Este recurso é do aluno.' });
+      // Preferências (L20a) valem para os 5 perfis escolares; o resto do Núcleo é só do aluno
+      const permitido = esquemas.preferencias
+        ? podeAdministrarPreferencias(sessao.perfil)
+        : podeUsarNucleo(sessao.perfil);
+      if (sessao.nivel !== 'completo' || !permitido) {
+        return res.code(403).send({ erro: 'Este recurso não está disponível para o seu perfil.' });
       }
       // Só valida o que a rota declarou; o resto fica indefinido
       const ler = (esquema: z.ZodType | undefined, valor: unknown) =>
@@ -416,19 +420,28 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       .min(1)
       .max(max)
       .refine((t) => !/(https?:|www\.|:\/\/|@)/i.test(t), 'Não use links nem e-mail.');
-  const corpoPreferencias = z.strictObject({
-    apelido: semLink(40).nullable(),
-    cor_destaque: z.enum(IDS_DE_COR as [string, ...string[]]).nullable(),
-    tema: z.enum(TEMAS),
-    fonte: z.number().int().min(90).max(150),
-    reduzir_movimento: z.boolean(),
-    leitura_facilitada: z.boolean(),
-    modo_simples: z.boolean(),
-    tempo_visual: z.boolean(),
-    linguagem_curta: z.boolean(),
-    escolha_agora: z.boolean(),
-    tela_inicial: z.enum(['meudia', 'agenda', 'calendario']),
-  });
+  const minutosDoBloco = z.number().int().min(5).max(120).multipleOf(5);
+  const corpoPreferencias = z
+    .strictObject({
+      apelido: semLink(40).nullable(),
+      cor_destaque: z.enum(IDS_DE_COR as [string, ...string[]]).nullable(),
+      tema: z.enum(TEMAS),
+      fonte: z.number().int().min(90).max(150),
+      reduzir_movimento: z.boolean(),
+      leitura_facilitada: z.boolean(),
+      modo_simples: z.boolean(),
+      tempo_visual: z.boolean(),
+      linguagem_curta: z.boolean(),
+      escolha_agora: z.boolean(),
+      tela_inicial: z.enum(['meudia', 'agenda', 'calendario']),
+      // Minutos dos 3 blocos (L20a): de 5 a 120, de 5 em 5, curto < médio < longo
+      minutos_curto: minutosDoBloco,
+      minutos_medio: minutosDoBloco,
+      minutos_longo: minutosDoBloco,
+    })
+    .refine((p) => p.minutos_curto < p.minutos_medio && p.minutos_medio < p.minutos_longo, {
+      message: 'Curto precisa ser menor que médio, e médio menor que longo.',
+    });
   const PADRAO_PREFERENCIAS = {
     apelido: null,
     cor_destaque: null,
@@ -441,6 +454,9 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     linguagem_curta: false,
     escolha_agora: true,
     tela_inicial: 'meudia',
+    minutos_curto: 10,
+    minutos_medio: 25,
+    minutos_longo: 45,
   } as const;
 
   const gravarPreferencias = async (
@@ -451,17 +467,20 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   ) => {
     const [linha] = await tx.$queryRaw<Linha[]>`
       INSERT INTO preferencia_usuario (instituicao_id, usuario_id, apelido, cor_destaque, tema, fonte, reduzir_movimento,
-                                       leitura_facilitada, modo_simples, tempo_visual, linguagem_curta, escolha_agora, tela_inicial)
+                                       leitura_facilitada, modo_simples, tempo_visual, linguagem_curta, escolha_agora, tela_inicial,
+                                       minutos_curto, minutos_medio, minutos_longo)
       VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${p.apelido}, ${p.cor_destaque}, ${p.tema}, ${p.fonte},
               ${p.reduzir_movimento}, ${p.leitura_facilitada}, ${p.modo_simples}, ${p.tempo_visual}, ${p.linguagem_curta},
-              ${p.escolha_agora}, ${p.tela_inicial})
+              ${p.escolha_agora}, ${p.tela_inicial}, ${p.minutos_curto}, ${p.minutos_medio}, ${p.minutos_longo})
       ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET
         apelido = EXCLUDED.apelido, cor_destaque = EXCLUDED.cor_destaque, tema = EXCLUDED.tema, fonte = EXCLUDED.fonte,
         reduzir_movimento = EXCLUDED.reduzir_movimento, leitura_facilitada = EXCLUDED.leitura_facilitada,
         modo_simples = EXCLUDED.modo_simples, tempo_visual = EXCLUDED.tempo_visual, linguagem_curta = EXCLUDED.linguagem_curta,
-        escolha_agora = EXCLUDED.escolha_agora, tela_inicial = EXCLUDED.tela_inicial, atualizado_em = now()
+        escolha_agora = EXCLUDED.escolha_agora, tela_inicial = EXCLUDED.tela_inicial,
+        minutos_curto = EXCLUDED.minutos_curto, minutos_medio = EXCLUDED.minutos_medio, minutos_longo = EXCLUDED.minutos_longo,
+        atualizado_em = now()
       RETURNING apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
-                linguagem_curta, escolha_agora, tela_inicial`;
+                linguagem_curta, escolha_agora, tela_inicial, minutos_curto, minutos_medio, minutos_longo`;
     await registrarAuditoria(tx, {
       instituicaoId: sessao.instituicaoId,
       ator: `usuario:${sessao.usuarioId}`,
@@ -472,10 +491,10 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   };
 
   // null = o aluno nunca personalizou: o padrão acessível continua valendo
-  rota('get', '/preferencias', {}, async ({ tx, sessao }) => {
+  rota('get', '/preferencias', { preferencias: true }, async ({ tx, sessao }) => {
     const [p] = await tx.$queryRaw<Linha[]>`
       SELECT apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
-             linguagem_curta, escolha_agora, tela_inicial
+             linguagem_curta, escolha_agora, tela_inicial, minutos_curto, minutos_medio, minutos_longo
         FROM preferencia_usuario WHERE usuario_id = ${sessao.usuarioId}::uuid`;
     return { preferencias: p ?? null };
   });
@@ -483,7 +502,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   rota(
     'put',
     '/preferencias',
-    { corpo: corpoPreferencias },
+    { corpo: corpoPreferencias, preferencias: true },
     async ({ tx, sessao, corpo, resposta }) => {
       // O sistema não deixa gravar cor e tema difíceis de ler (contraste mínimo de 4,5 para 1)
       if (corpo.cor_destaque && !combinacaoLegivel(corpo.cor_destaque, corpo.tema))
@@ -495,7 +514,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   );
 
   // "Voltar ao padrão": grava os valores padrão (nada se apaga; a auditoria guarda o histórico)
-  rota('post', '/preferencias/padrao', {}, async ({ tx, sessao }) => ({
+  rota('post', '/preferencias/padrao', { preferencias: true }, async ({ tx, sessao }) => ({
     preferencias: await gravarPreferencias(
       tx,
       sessao,

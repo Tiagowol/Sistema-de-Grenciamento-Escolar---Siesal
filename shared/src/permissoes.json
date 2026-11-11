@@ -1,5 +1,5 @@
 {
-  "versao": 12,
+  "versao": 13,
   "descricao": "Matriz de permissões da Parte 1 (rascunho v1 de MATRIZ-DE-PERMISSOES.md). Negar por padrão: o que não está aqui é negado. Escopos: proprio, vinculo, instituicao, plataforma.",
   "recursos": {
     "instituicoes": {
@@ -161,7 +161,13 @@
       }
     },
     "preferencias_acessibilidade": {
-      "administrar": { "aluno": "proprio" }
+      "administrar": {
+        "admin": "proprio",
+        "professor": "proprio",
+        "aluno": "proprio",
+        "pedagogico": "proprio",
+        "responsavel": "proprio"
+      }
     },
     "calendario_escolar": {
       "administrar": { "admin": "instituicao" },

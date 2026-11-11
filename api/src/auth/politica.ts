@@ -71,6 +71,11 @@ export const podeAtenderSuporte = (perfil: string): boolean =>
 export const podeAdministrarInterface = (perfil: string): boolean =>
   PERFIS_ESCOLARES.includes(perfil);
 
+// Preferências de aparência e acessibilidade (L20a). Espelham a matriz v13: os 5 perfis escolares guardam as
+// próprias preferências na conta (antes, só o aluno).
+export const podeAdministrarPreferencias = (perfil: string): boolean =>
+  PERFIS_ESCOLARES.includes(perfil);
+
 // Admin institucional (L19). Espelham a matriz v11: o Admin cuida do calendário da escola, das regras de notas e
 // da identidade visual; os 5 perfis escolares leem (cada um no seu alcance); só o aluno oculta item para si.
 export const podeAdministrarEscola = (perfil: string): boolean => perfil === 'admin';

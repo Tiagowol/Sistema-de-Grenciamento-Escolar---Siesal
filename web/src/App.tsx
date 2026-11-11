@@ -83,20 +83,26 @@ export function App() {
     if (ehAluno) {
       setPagina((p) => (p === 'inicio' ? 'meudia' : p));
       void contarAvisos();
-      // Preferências por usuário (L17b): valem em qualquer computador. Sem linha no banco, vale o padrão.
-      api
-        .preferenciasServidor()
-        .then(({ preferencias }) => {
-          if (!preferencias) return;
-          const p = doServidor(preferencias);
-          setPrefs(p);
-          salvarPreferencias(p);
-          aplicarPreferencias(p);
-          setPagina((atual) => (atual === 'meudia' ? p.telaInicial : atual));
-        })
-        .catch(() => undefined);
     }
   }, [ehAluno, contarAvisos]);
+
+  // Preferências por usuário (L17b, L20a): valem em qualquer computador, para os 5 perfis escolares.
+  // Sem linha no banco, vale o padrão; se o banco falhar, vale o que está neste aparelho.
+  const temPrefsNaConta = eu?.nivel === 'completo';
+  useEffect(() => {
+    if (!temPrefsNaConta) return;
+    api
+      .preferenciasServidor()
+      .then(({ preferencias }) => {
+        if (!preferencias) return;
+        const p = doServidor(preferencias);
+        setPrefs(p);
+        salvarPreferencias(p);
+        aplicarPreferencias(p);
+        if (ehAluno) setPagina((atual) => (atual === 'meudia' ? p.telaInicial : atual));
+      })
+      .catch(() => undefined);
+  }, [temPrefsNaConta, ehAluno]);
 
   const completo = eu?.nivel === 'completo';
   useEffect(() => {
@@ -169,8 +175,9 @@ export function App() {
     setPrefs(p);
     salvarPreferencias(p);
     aplicarPreferencias(p);
-    // O aluno guarda também no banco; se falhar, a mudança vale neste aparelho
-    if (ehAluno) void api.salvarPreferenciasServidor(paraServidor(p)).catch(() => undefined);
+    // Guarda também na conta; se falhar, a mudança vale neste aparelho
+    if (temPrefsNaConta)
+      void api.salvarPreferenciasServidor(paraServidor(p)).catch(() => undefined);
   }
 
   // "Voltar ao padrão": local e no banco (grava os valores padrão e registra na auditoria)
@@ -179,7 +186,7 @@ export function App() {
     setPrefs(p);
     salvarPreferencias(p);
     aplicarPreferencias(p);
-    if (ehAluno) void api.preferenciasPadrao().catch(() => undefined);
+    if (temPrefsNaConta) void api.preferenciasPadrao().catch(() => undefined);
     // Rótulos e VLibras também voltam ao padrão; o aceite do aviso continua (é um fato, não uma preferência)
     mudarInterface({
       ...INTERFACE_PADRAO,
@@ -257,13 +264,7 @@ export function App() {
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'personalizar' ? (
-          <Personalizar
-            valor={prefs}
-            aoMudar={mudarPrefs}
-            aoPadrao={voltarAoPadrao}
-            interfaceAtual={interfaceAtual}
-            aoMudarInterface={mudarInterface}
-          />
+          <Personalizar valor={prefs} aoMudar={mudarPrefs} aoPadrao={voltarAoPadrao} />
         ) : ehAluno && pagina === 'calendario' ? (
           <Calendario />
         ) : ehAluno && pagina === 'foco' ? (

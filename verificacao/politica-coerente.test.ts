@@ -4,6 +4,7 @@ import {
   podeAdministrarConta,
   podeAdministrarEscola,
   podeAdministrarInterface,
+  podeAdministrarPreferencias,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
   podeAtenderAjuda,
@@ -129,6 +130,14 @@ describe('política das preferências de interface (L17d) x matriz de permissõe
   it.each(PERFIS)('perfil %s: rótulos e VLibras batem com a matriz', (perfil) => {
     expect(podeAdministrarInterface(perfil)).toBe(
       permitido(perfil, 'preferencias_interface', 'administrar') === 'proprio',
+    );
+  });
+});
+
+describe('política das preferências de acessibilidade (L20a) x matriz de permissões (v13)', () => {
+  it.each(PERFIS)('perfil %s: preferências na conta batem com a matriz', (perfil) => {
+    expect(podeAdministrarPreferencias(perfil)).toBe(
+      permitido(perfil, 'preferencias_acessibilidade', 'administrar') === 'proprio',
     );
   });
 });

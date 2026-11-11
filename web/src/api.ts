@@ -63,7 +63,7 @@ export type TipoAtividade = { id: string; nome: string; cor: string; icone: stri
 export type PreferenciasServidor = {
   apelido: string | null;
   cor_destaque: string | null;
-  tema: 'claro' | 'escuro' | 'alto_contraste';
+  tema: 'claro' | 'escuro' | 'alto_contraste' | 'alto_contraste_escuro';
   fonte: number;
   reduzir_movimento: boolean;
   leitura_facilitada: boolean;
@@ -72,6 +72,9 @@ export type PreferenciasServidor = {
   linguagem_curta: boolean;
   escolha_agora: boolean;
   tela_inicial: 'meudia' | 'agenda' | 'calendario';
+  minutos_curto: number;
+  minutos_medio: number;
+  minutos_longo: number;
 };
 export type Evento = {
   id: string;

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { criarApp } from '../app.js';
 import { verificarCadeia } from '../auditoria/auditoria.js';
 import { hashSenha } from '../auth/senha.js';
+import { base32Decodificar, codigoTotp, passoDe } from '../auth/totp.js';
 import { withTenant } from '../banco/withTenant.js';
 import { type Ambiente, criarAmbiente } from '../teste/ambiente.js';
 
@@ -52,6 +53,26 @@ async function criar(inst: string, perfil: string, apelido: string) {
   );
   emails[apelido] = { inst, email };
   await login(apelido);
+  // O Admin precisa configurar o segundo fator antes de usar o sistema
+  if (perfil === 'admin') await ativarTotp(apelido);
+}
+
+async function ativarTotp(quem: string) {
+  const headers = { cookie: cookies[quem] as string };
+  const ini = await app.inject({ method: 'POST', url: '/auth/totp/iniciar', payload: {}, headers });
+  const ok = await app.inject({
+    method: 'POST',
+    url: '/auth/totp/confirmar',
+    payload: {
+      codigo: codigoTotp(
+        base32Decodificar(ini.json().segredo),
+        passoDe(new Date('2026-11-10T12:00:00Z')),
+      ),
+    },
+    headers,
+  });
+  expect(ok.statusCode).toBe(200);
+  cookies[quem] = String(ok.headers['set-cookie']).split(';')[0] as string;
 }
 
 const PREFS = {
@@ -66,6 +87,9 @@ const PREFS = {
   linguagem_curta: true,
   escolha_agora: true,
   tela_inicial: 'calendario',
+  minutos_curto: 10,
+  minutos_medio: 25,
+  minutos_longo: 45,
 };
 
 beforeAll(async () => {
@@ -80,6 +104,9 @@ beforeAll(async () => {
   await criar(amb.instA, 'aluno', 'b');
   await criar(amb.instB, 'aluno', 'c');
   await criar(amb.instA, 'professor', 'prof');
+  await criar(amb.instA, 'admin', 'adm');
+  await criar(amb.instA, 'pedagogico', 'ped');
+  await criar(amb.instA, 'responsavel', 'resp');
 });
 afterAll(async () => {
   await app?.close();
@@ -87,14 +114,22 @@ afterAll(async () => {
 });
 
 describe('acesso', () => {
-  it('sem sessão 401; professor 403', async () => {
+  it('sem sessão 401; tipos de atividade continuam só do aluno (professor 403)', async () => {
     expect((await chamar('GET', '/preferencias')).statusCode).toBe(401);
-    for (const [m, u] of [
-      ['GET', '/preferencias'],
-      ['PUT', '/preferencias'],
-      ['GET', '/tipos-atividade'],
-    ] as const)
-      expect((await chamar(m, u, 'prof', m === 'PUT' ? PREFS : undefined)).statusCode, u).toBe(403);
+    expect((await chamar('GET', '/tipos-atividade', 'prof')).statusCode).toBe(403);
+  });
+
+  // L20a (matriz v13): os 5 perfis escolares guardam as próprias preferências na conta; cada um só vê a sua
+  it('os 5 perfis gravam e leem só as próprias preferências', async () => {
+    for (const quem of ['prof', 'adm', 'ped', 'resp']) {
+      expect((await chamar('GET', '/preferencias', quem)).json().preferencias, quem).toBeNull();
+      const r = await chamar('PUT', '/preferencias', quem, { ...PREFS, apelido: quem });
+      expect(r.statusCode, `${quem} ${r.body}`).toBe(200);
+      if (quem !== 'adm') await login(quem);
+      expect((await chamar('GET', '/preferencias', quem)).json().preferencias.apelido).toBe(quem);
+    }
+    // quem não gravou continua com o padrão (nenhum vazamento entre perfis da mesma instituição)
+    expect((await chamar('GET', '/preferencias', 'b')).json().preferencias).toBeNull();
   });
 });
 
@@ -131,14 +166,69 @@ describe('preferências por usuário', () => {
     );
   });
 
-  it('toda cor da paleta é aceita nos 3 temas (a paleta é legível)', async () => {
+  it('toda cor da paleta é aceita nos 4 temas (a paleta é legível)', async () => {
     for (const cor of ['azul', 'verde', 'roxo', 'rosa', 'laranja', 'cinza'])
-      for (const tema of ['claro', 'escuro', 'alto_contraste'])
+      for (const tema of ['claro', 'escuro', 'alto_contraste', 'alto_contraste_escuro'])
         expect(
           (await chamar('PUT', '/preferencias', 'b', { ...PREFS, cor_destaque: cor, tema }))
             .statusCode,
           `${cor} ${tema}`,
         ).toBe(200);
+  });
+
+  it('os minutos dos 3 blocos: de 5 em 5, de 5 a 120 e curto < médio < longo (L20a)', async () => {
+    const ok = await chamar('PUT', '/preferencias', 'b', {
+      ...PREFS,
+      minutos_curto: 15,
+      minutos_medio: 30,
+      minutos_longo: 60,
+    });
+    expect(ok.statusCode, ok.body).toBe(200);
+    expect(ok.json().preferencias).toMatchObject({
+      minutos_curto: 15,
+      minutos_medio: 30,
+      minutos_longo: 60,
+    });
+    for (const [c, m, l] of [
+      [12, 25, 45], // não é de 5 em 5
+      [5, 25, 125], // passa de 120
+      [0, 25, 45], // abaixo de 5
+      [30, 25, 45], // curto maior que médio
+      [10, 25, 25], // médio igual a longo
+    ])
+      expect(
+        (
+          await chamar('PUT', '/preferencias', 'b', {
+            ...PREFS,
+            minutos_curto: c,
+            minutos_medio: m,
+            minutos_longo: l,
+          })
+        ).statusCode,
+        `${c}/${m}/${l}`,
+      ).toBe(400);
+    // sem os campos de minutos, o corpo é recusado (o formato é fechado)
+    const { minutos_curto: _a, ...semMinutos } = PREFS;
+    expect((await chamar('PUT', '/preferencias', 'b', semMinutos)).statusCode).toBe(400);
+  });
+
+  it('o banco também recusa minutos fora da regra (CHECK da migração 0018)', async () => {
+    const q = await amb.admin.query(
+      'SELECT instituicao_id, usuario_id FROM preferencia_usuario LIMIT 1',
+    );
+    const { instituicao_id: i, usuario_id: u } = q.rows[0];
+    await expect(
+      amb.admin.query(
+        'UPDATE preferencia_usuario SET minutos_curto = 50, minutos_medio = 25 WHERE instituicao_id = $1 AND usuario_id = $2',
+        [i, u],
+      ),
+    ).rejects.toThrow();
+    await expect(
+      amb.admin.query(
+        "UPDATE preferencia_usuario SET tema = 'neon' WHERE instituicao_id = $1 AND usuario_id = $2",
+        [i, u],
+      ),
+    ).rejects.toThrow();
   });
 
   it('"voltar ao padrão" grava os valores padrão e audita', async () => {
@@ -151,6 +241,9 @@ describe('preferências por usuário', () => {
       tema: 'claro',
       fonte: 100,
       tela_inicial: 'meudia',
+      minutos_curto: 10,
+      minutos_medio: 25,
+      minutos_longo: 45,
     });
     const n = await amb.admin.query(
       "SELECT count(*)::int AS n FROM auditoria_evento WHERE acao = 'preferencias.padrao'",

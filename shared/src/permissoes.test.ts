@@ -195,10 +195,11 @@ describe('regras fixas da matriz', () => {
     expect(permitido('professor', 'pedidos_ajuda', 'atender')).toBe('vinculo');
   });
 
-  it('as preferências de acessibilidade são só do próprio aluno', () => {
+  it('as preferências de acessibilidade são do próprio usuário, nos 5 perfis escolares (v13, L20a)', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(13);
     for (const perfil of PERFIS) {
       expect(permitido(perfil, 'preferencias_acessibilidade', 'administrar')).toBe(
-        perfil === 'aluno' ? 'proprio' : null,
+        perfil === 'master' ? null : 'proprio',
       );
     }
   });

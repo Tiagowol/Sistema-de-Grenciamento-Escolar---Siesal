@@ -1,31 +1,31 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, ErroApi } from '../api';
-import { AjustesInterface } from '../componentes/AjustesInterface';
+import {
+  BLOCOS,
+  MINUTOS_MAXIMO,
+  MINUTOS_MINIMO,
+  MINUTOS_PADRAO_DOS_BLOCOS,
+  type MinutosDosBlocos,
+  PASSO_DOS_MINUTOS,
+} from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
 import { useCarregar } from '../componentes/useCarregar';
 import { Icone, type NomeIcone } from '../icones';
-import { INTERFACE_PADRAO, type Interface } from '../interface';
-import { CORES, combinacaoLegivel, ICONES_DE_TIPO, type Tema } from '../paleta';
+import { CORES, combinacaoLegivel, ICONES_DE_TIPO } from '../paleta';
 import { type Preferencias, temaDe } from '../preferencias';
 
-// Personalizar (L17b): aparência, apelido, tela inicial e tipos de atividade próprios.
+// Personalizar (L17b, L20a): apelido, cor de destaque, tela inicial, tempo das atividades e tipos próprios.
+// Tema, alto contraste, tamanho da letra e os ajustes de leitura ficam só em Acessibilidade (um controle, um lugar).
 // Toda cor passa pelo contraste mínimo: cor que fica difícil de ler no tema escolhido não pode ser marcada.
 type Props = {
   valor: Preferencias;
   aoMudar: (p: Preferencias) => void;
   aoPadrao: () => void;
-  interfaceAtual?: Interface; // L17d; sem valor, vale o padrão
-  aoMudarInterface?: (p: Interface) => void;
 };
 
-const TEMAS: { id: Tema; nome: string; texto: string }[] = [
-  { id: 'claro', nome: 'Claro', texto: 'Fundo claro.' },
-  { id: 'escuro', nome: 'Escuro', texto: 'Fundo escuro, bom para pouca luz.' },
-  { id: 'alto_contraste', nome: 'Alto contraste', texto: 'Cores mais fortes e bordas marcadas.' },
-];
 const TELAS: { id: Preferencias['telaInicial']; nome: string }[] = [
   { id: 'meudia', nome: 'Meu dia' },
   { id: 'agenda', nome: 'Agenda' },
@@ -44,39 +44,6 @@ const NOMES_ICONES: Record<(typeof ICONES_DE_TIPO)[number], string> = {
   message: 'Mensagem',
   calendar: 'Calendário',
 };
-
-function Chave({
-  titulo,
-  texto,
-  ligado,
-  aoMudar,
-}: {
-  titulo: string;
-  texto: string;
-  ligado: boolean;
-  aoMudar: (v: boolean) => void;
-}) {
-  const id = `pz-${titulo.replace(/\W+/g, '-').toLowerCase()}`;
-  return (
-    <div className="setting">
-      <div className="flex-between">
-        <label id={`${id}-r`} htmlFor={id}>
-          <b>{titulo}</b>
-        </label>
-        <button
-          id={id}
-          type="button"
-          role="switch"
-          className="switch"
-          aria-checked={ligado}
-          aria-labelledby={`${id}-r`}
-          onClick={() => aoMudar(!ligado)}
-        />
-      </div>
-      <p>{texto}</p>
-    </div>
-  );
-}
 
 function TiposDeAtividade() {
   const { dados, erro, recarregar } = useCarregar(api.tiposAtividade);
@@ -176,13 +143,7 @@ function TiposDeAtividade() {
   );
 }
 
-export function Personalizar({
-  valor,
-  aoMudar,
-  aoPadrao,
-  interfaceAtual = INTERFACE_PADRAO,
-  aoMudarInterface = () => undefined,
-}: Props) {
+export function Personalizar({ valor, aoMudar, aoPadrao }: Props) {
   const tema = temaDe(valor);
   const [msg, setMsg] = useState('');
   const mudar = (p: Partial<Preferencias>) => {
@@ -192,8 +153,6 @@ export function Personalizar({
     if (novo.cor && !combinacaoLegivel(novo.cor, temaDe(novo))) novo.cor = null;
     aoMudar(novo);
   };
-  const escolherTema = (t: Tema) =>
-    mudar({ escuro: t === 'escuro', contraste: t === 'alto_contraste' });
 
   return (
     <>
@@ -221,23 +180,6 @@ export function Personalizar({
           />
           <p>Um apelido que aparece nas suas telas. Vazio: usamos seu primeiro nome.</p>
         </div>
-
-        <fieldset className="setting">
-          <legend>
-            <b>Tema</b>
-          </legend>
-          {TEMAS.map((t) => (
-            <label key={t.id} className="opcao">
-              <input
-                type="radio"
-                name="pz-tema"
-                checked={tema === t.id}
-                onChange={() => escolherTema(t.id)}
-              />{' '}
-              {t.nome} <small className="muted">{t.texto}</small>
-            </label>
-          ))}
-        </fieldset>
 
         <fieldset className="setting">
           <legend>
@@ -269,40 +211,14 @@ export function Personalizar({
               </label>
             );
           })}
-          <p>Só aparecem como escolha as cores que ficam legíveis no tema.</p>
+          <p>
+            A cor muda o menu, os botões, os fundos suaves e o painel de boas-vindas. Só aparecem
+            como escolha as cores que ficam legíveis no tema atual. Tema claro ou escuro, alto
+            contraste e tamanho da letra ficam em Acessibilidade, no menu.
+          </p>
         </fieldset>
 
-        <div className="setting">
-          <label htmlFor="pz-fonte">
-            <b>Tamanho da letra: {valor.fonte}%</b>
-          </label>
-          <input
-            id="pz-fonte"
-            className="slider"
-            type="range"
-            min={90}
-            max={150}
-            step={10}
-            value={valor.fonte}
-            onChange={(e) => mudar({ fonte: Number(e.target.value) })}
-          />
-          <p>De 90% a 150%.</p>
-        </div>
-
-        <AjustesInterface valor={interfaceAtual} aoMudar={aoMudarInterface} />
-
-        <Chave
-          titulo="Reduzir movimento"
-          texto="Sem animações e transições."
-          ligado={valor.movimento}
-          aoMudar={(v) => mudar({ movimento: v })}
-        />
-        <Chave
-          titulo="Mostrar o tempo de forma visual"
-          texto="Palavras, datas e formas no lugar de só números."
-          ligado={valor.tempoVisual}
-          aoMudar={(v) => mudar({ tempoVisual: v })}
-        />
+        <TempoDasAtividades blocos={valor.blocos} aoMudar={(blocos) => mudar({ blocos })} />
 
         <div className="setting">
           <label htmlFor="pz-tela">
@@ -339,5 +255,92 @@ export function Personalizar({
       </div>
       <TiposDeAtividade />
     </>
+  );
+}
+
+// Tempo das atividades (L20a): os minutos dos 3 blocos. O aluno usa botões de mais e menos de 5 em 5;
+// não digita minutos. Cada bloco aparece com nome, forma (barra) e os minutos pequenos ao lado.
+function TempoDasAtividades({
+  blocos,
+  aoMudar,
+}: {
+  blocos: MinutosDosBlocos;
+  aoMudar: (m: MinutosDosBlocos) => void;
+}) {
+  const ordem = ['curto', 'medio', 'longo'] as const;
+  const nome = (id: (typeof ordem)[number]) => BLOCOS.find((b) => b.id === id)?.nome ?? id;
+  // Limite de cada botão: dentro de 5 a 120 e sempre curto < médio < longo
+  const piso = (id: (typeof ordem)[number]) =>
+    id === 'curto'
+      ? MINUTOS_MINIMO
+      : blocos[id === 'medio' ? 'curto' : 'medio'] + PASSO_DOS_MINUTOS;
+  const teto = (id: (typeof ordem)[number]) =>
+    id === 'longo'
+      ? MINUTOS_MAXIMO
+      : blocos[id === 'curto' ? 'medio' : 'longo'] - PASSO_DOS_MINUTOS;
+  const padrao = ordem.every((id) => blocos[id] === MINUTOS_PADRAO_DOS_BLOCOS[id]);
+  return (
+    <fieldset className="setting tempo-ajuste">
+      <legend>
+        <b>Tempo das atividades</b>
+      </legend>
+      <p>
+        Escolha quanto tempo vale cada bloco. Use os botões de menos e de mais. Os blocos valem em
+        Atividades, Agenda, Calendário e Foco.
+      </p>
+      {ordem.map((id) => {
+        const v = blocos[id];
+        const menos = v - PASSO_DOS_MINUTOS < piso(id);
+        const mais = v + PASSO_DOS_MINUTOS > teto(id);
+        return (
+          <div className="tempo-bloco" key={id}>
+            <span className="tempo-bloco-nome" id={`tb-${id}`}>
+              {nome(id)}
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline tempo-botao"
+              aria-label={`Diminuir o bloco ${nome(id).toLowerCase()} em 5 minutos`}
+              disabled={menos}
+              onClick={() => aoMudar({ ...blocos, [id]: v - PASSO_DOS_MINUTOS })}
+            >
+              −
+            </button>
+            <span
+              className="tempo-barra"
+              role="img"
+              aria-label={`Bloco ${nome(id).toLowerCase()}: ${v} minutos`}
+            >
+              <span
+                className="tempo-barra-cheia"
+                style={{ width: `${Math.round((v / MINUTOS_MAXIMO) * 100)}%` }}
+              />
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline tempo-botao"
+              aria-label={`Aumentar o bloco ${nome(id).toLowerCase()} em 5 minutos`}
+              disabled={mais}
+              onClick={() => aoMudar({ ...blocos, [id]: v + PASSO_DOS_MINUTOS })}
+            >
+              +
+            </button>
+            <small className="muted tempo-minutos">{v} min</small>
+          </div>
+        );
+      })}
+      <p className="small muted">
+        Curto fica sempre menor que Médio, e Médio menor que Longo. Cada bloco vai de{' '}
+        {MINUTOS_MINIMO} a {MINUTOS_MAXIMO} minutos.
+      </p>
+      <button
+        type="button"
+        className="btn btn-outline"
+        disabled={padrao}
+        onClick={() => aoMudar({ ...MINUTOS_PADRAO_DOS_BLOCOS })}
+      >
+        Voltar ao padrão dos blocos
+      </button>
+    </fieldset>
   );
 }

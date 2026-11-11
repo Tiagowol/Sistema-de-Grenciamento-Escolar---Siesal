@@ -33,9 +33,22 @@ afterEach(() => {
 
 const semContraste = { rules: { 'color-contrast': { enabled: false } } };
 
-function Pagina({ inicial = PREFERENCIAS_PADRAO, aoPadrao = () => undefined }) {
+function Pagina({
+  inicial = PREFERENCIAS_PADRAO,
+  aoPadrao = () => undefined,
+  espiao = (_: Preferencias) => undefined,
+}) {
   const [p, setP] = useState<Preferencias>(inicial);
-  return <Personalizar valor={p} aoMudar={setP} aoPadrao={aoPadrao} />;
+  return (
+    <Personalizar
+      valor={p}
+      aoMudar={(n) => {
+        espiao(n);
+        setP(n);
+      }}
+      aoPadrao={aoPadrao}
+    />
+  );
 }
 
 describe('preferências: conversão com o banco e cor de destaque', () => {
@@ -53,8 +66,16 @@ describe('preferências: conversão com o banco e cor de destaque', () => {
     expect(doServidor(s)).toEqual(p);
   });
 
-  it('alto contraste vence o escuro', () => {
-    expect(temaDe({ escuro: true, contraste: true })).toBe('alto_contraste');
+  it('alto contraste claro e alto contraste escuro são temas distintos (L20a)', () => {
+    expect(temaDe({ escuro: true, contraste: true })).toBe('alto_contraste_escuro');
+    expect(temaDe({ escuro: false, contraste: true })).toBe('alto_contraste');
+    const s = paraServidor({ ...PREFERENCIAS_PADRAO, escuro: true, contraste: true });
+    expect(s.tema).toBe('alto_contraste_escuro');
+    expect(doServidor(s)).toMatchObject({ escuro: true, contraste: true });
+    expect(doServidor({ ...s, tema: 'alto_contraste' })).toMatchObject({
+      escuro: false,
+      contraste: true,
+    });
     expect(temaDe({ escuro: true, contraste: false })).toBe('escuro');
     expect(temaDe({ escuro: false, contraste: false })).toBe('claro');
   });
@@ -78,15 +99,17 @@ describe('preferências: conversão com o banco e cor de destaque', () => {
 describe('tela Personalizar', () => {
   it('tem os controles e nenhuma violação do axe', async () => {
     const { container } = render(<Pagina />);
+    for (const nome of ['Como quer ser chamado', 'Tela que abre primeiro'])
+      expect(screen.getByLabelText(nome)).toBeTruthy();
+    // Cada controle fica em um lugar só (L20a): tema, contraste, letra e movimento são de Acessibilidade
     for (const nome of [
-      'Como quer ser chamado',
       'Tamanho da letra: 100%',
       'Reduzir movimento',
       'Mostrar o tempo de forma visual',
-      'Tela que abre primeiro',
     ])
-      expect(screen.getByLabelText(nome)).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /Alto contraste/ })).toBeTruthy();
+      expect(screen.queryByLabelText(nome)).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Alto contraste/ })).toBeNull();
+    expect(screen.getByRole('group', { name: 'Tempo das atividades' })).toBeTruthy();
     await screen.findByText('Você ainda não criou tipos.');
     expect((await axe.run(container, semContraste)).violations).toEqual([]);
   });
@@ -96,13 +119,37 @@ describe('tela Personalizar', () => {
     const u = userEvent.setup();
     await u.click(screen.getByRole('radio', { name: /Rosa/ }));
     expect((screen.getByRole('radio', { name: /Rosa/ }) as HTMLInputElement).checked).toBe(true);
-    await u.click(screen.getByRole('radio', { name: /Escuro/ }));
-    // Rosa tem versão legível no tema escuro: continua marcada
-    expect((screen.getByRole('radio', { name: /Rosa/ }) as HTMLInputElement).checked).toBe(true);
     await u.click(screen.getByRole('radio', { name: /Cor do tema/ }));
     expect((screen.getByRole('radio', { name: /Cor do tema/ }) as HTMLInputElement).checked).toBe(
       true,
     );
+  });
+
+  it('tempo das atividades: mais e menos de 5 em 5, sem digitar e sem cruzar os limites', async () => {
+    const aoMudar = vi.fn();
+    render(<Pagina espiao={aoMudar} />);
+    const u = userEvent.setup();
+    expect(screen.queryByRole('spinbutton')).toBeNull();
+    await u.click(screen.getByRole('button', { name: 'Aumentar o bloco curto em 5 minutos' }));
+    expect(aoMudar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ blocos: { curto: 15, medio: 25, longo: 45 } }),
+    );
+    await u.click(screen.getByRole('button', { name: 'Diminuir o bloco médio em 5 minutos' }));
+    expect(aoMudar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ blocos: { curto: 15, medio: 20, longo: 45 } }),
+    );
+    // Curto de 20 não pode passar de médio de 25: o botão de mais fica desligado
+    cleanup();
+    render(
+      <Pagina inicial={{ ...PREFERENCIAS_PADRAO, blocos: { curto: 20, medio: 25, longo: 45 } }} />,
+    );
+    expect(
+      (
+        screen.getByRole('button', {
+          name: 'Aumentar o bloco curto em 5 minutos',
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
   });
 
   it('apelido com link ou e-mail não é aceito', async () => {

@@ -129,3 +129,17 @@ Mensagens do autor em chat (sessão do Projeto no claude.ai, com acesso à pasta
 - Documentos: `docs/PLANO-L20A-A-L20D.md`, `docs/ADENDO-1-L20A-A-L20D.md` e `docs/ADENDO-2-L20A-A-L20D.md` (cópias no Projeto, em `claude/lote-20a-d/`).
 - **Não coberto:** a divisão e a ordem dos lotes ainda não receberam "aprovo"; nenhum lote pode começar; nenhum código, migração, merge ou deploy. Decisões D1, D4, D5, D7 e D8 pendentes, cada uma no seu lote. A integração com o SUAP continua na Parte 2.
 - Commit deste registro e dos 3 documentos direto em `siesal-4`: pedido pelo autor ("Local e git").
+
+## A-047 — Aprovo o L20a (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Aprovo o L20a", depois de `docs/PLANO-L20A.md` (achados C1 a C6 confirmados no navegador).
+- Escopo aprovado: os 3 itens do L20a (cor e tema; conferência de Personalizar e Acessibilidade; tempo das atividades personalizável), ramo `lote-20a-personalizar` a partir de `siesal-4`, migração 0018.
+- **Não coberto:** a divisão e a ordem dos lotes 20b a 20d (seguem sem "aprovo"); merge em `siesal-4`; deploy fora do computador; aplicar a 0018 no banco do site exige backup, `docs/RETORNO-0018.md` e aviso de 1 linha antes.
+- Commit e push no ramo do lote: previstos pela mensagem de abertura de 10/11/2026, 23:15, só depois deste "aprovo".
+
+## A-048 — Ajustes de execução do L20a em relação à proposta (11/11/2026)
+Decididos pelo Code dentro do escopo aprovado na A-047, para o autor conferir. Se discordar, volta-se atrás.
+1. **Matriz v13 (não v12):** os 5 perfis escolares passam a guardar preferências na conta (`preferencias_acessibilidade`, ação "administrar", escopo "proprio"; antes só o aluno). A proposta previa manter a v12; era impossível cumprir "preferências na conta para os 5 perfis" sem isto. Os lotes seguintes sobem uma versão: 20b v14, 20c v15, 20d v16.
+2. **Um controle, um lugar:** tema claro/escuro, alto contraste e tamanho da letra ficam só em **Acessibilidade** (única tela dos 4 perfis que não são aluno). Personalizar (só aluno) fica com apelido, cor de destaque, tela inicial, tempo das atividades e tipos, e diz onde está o resto. Antes, os mesmos controles existiam nas duas telas.
+3. **Migração 0018 sem conversão de tema:** o banco antigo só guardava "alto_contraste" (claro) para quem ligava escuro e contraste juntos; não dá para saber qual era a intenção. As linhas existentes ficam como estão; o tema novo `alto_contraste_escuro` vale só dali em diante.
+4. **C6 parcial:** foram para variáveis do tema o fundo suave, o menu, o item ativo do menu, o painel de boas-vindas, a marca, o realce do botão, o dia de hoje e o aviso de informação. Ficam fixas, de propósito ou por falta de lote, as demais cores escritas direto no CSS (estados de erro e sucesso, avisos, calendário, tipos de atividade). Contagem e lista na entrega.
+- **Não coberto:** aplicar a 0018 e a API nova no site (bloqueado pela F-052); merge em `siesal-4`.
