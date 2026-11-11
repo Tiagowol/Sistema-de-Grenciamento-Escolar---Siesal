@@ -1,4 +1,5 @@
-import type { PreferenciasServidor } from './api';
+import type { Identidade, PreferenciasServidor } from './api';
+import { corDaEscola } from './identidade';
 import { combinacaoLegivel, type Tema, valorDaCor } from './paleta';
 
 // Preferências de acessibilidade (iguais às do protótipo). Guardadas no navegador; sem diagnóstico.
@@ -75,6 +76,12 @@ export function salvarPreferencias(
   }
 }
 
+// Identidade da escola que vale nesta sessão (L19); o App define depois do login
+let escolaAtual: Identidade | null = null;
+export function definirEscola(i: Identidade | null): void {
+  escolaAtual = i;
+}
+
 // Liga e desliga as classes do CSS do protótipo e a escala da fonte
 export function aplicarPreferencias(p: Preferencias, doc: Document = document): void {
   const c = doc.body.classList;
@@ -84,8 +91,11 @@ export function aplicarPreferencias(p: Preferencias, doc: Document = document): 
   c.toggle('readable', p.legivel);
   c.toggle('simple', p.simples);
   doc.documentElement.style.setProperty('--scale', String(p.fonte / 100));
-  // Cor de destaque (L17b): só se passar no contraste do tema; senão volta a cor do tema
-  const valor = corValida(p) ? valorDaCor(p.cor as string, temaDe(p)) : null;
+  // Cor de destaque (L17b): só se passar no contraste do tema. Sem cor do aluno, vale a da escola (L19);
+  // sem nenhuma das duas, volta a cor do tema. A escolha do aluno sempre vence.
+  const valor =
+    (corValida(p) ? valorDaCor(p.cor as string, temaDe(p)) : null) ??
+    corDaEscola(escolaAtual, temaDe(p));
   if (valor) doc.body.style.setProperty('--primary', valor);
   else doc.body.style.removeProperty('--primary');
 }

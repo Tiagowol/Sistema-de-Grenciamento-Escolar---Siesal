@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { api, ErroApi, type NotaOficial, type Perfil } from '../api';
+import { api, ErroApi, type MediaDoAluno, type NotaOficial, type Perfil } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import {
@@ -14,6 +14,7 @@ import {
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
 import { formatar, paraTexto } from '../datas';
+import { ResumoRegra } from './RegrasNotas';
 
 const TEXTOS: Record<string, { olho: string; titulo: string; sub: string }> = {
   aluno: {
@@ -98,6 +99,11 @@ export function NotasOficiais({ perfil }: { perfil: Perfil }) {
                     Turma {n.turma_nome} · <TempoVisual prazo={n.dia} hoje={hoje} passado />
                   </div>
                   <ValorDaNota valor={n.valor} rotulo={`Nota de ${n.disciplina_nome}`} />
+                  {n.regra_numero ? (
+                    <div className="small muted">
+                      Lançada pela regra de notas, versão {n.regra_numero}
+                    </div>
+                  ) : null}
                   {n.versoes ? <Historico versoes={n.versoes} /> : null}
                   {aberto === n.id ? (
                     <form className="form-inline" onSubmit={(e) => void pedir(e, n)} noValidate>
@@ -151,6 +157,21 @@ export function NotasOficiais({ perfil }: { perfil: Perfil }) {
         )}
       </section>
 
+      {notas.dados?.regra ? (
+        <section className="card mt" aria-labelledby="h-regra">
+          <div className="card-head">
+            <h2 id="h-regra">Regra de notas da escola</h2>
+          </div>
+          <ResumoRegra regra={notas.dados.regra} />
+        </section>
+      ) : null}
+      {notas.dados?.medias?.length ? (
+        <MediasDoAluno
+          medias={notas.dados.medias}
+          mostrarAluno={perfil === 'responsavel'}
+          lista={lista}
+        />
+      ) : null}
       <section className="card mt" aria-labelledby="h-meus-pedidos">
         <div className="card-head">
           <h2 id="h-meus-pedidos">Meus pedidos de revisão</h2>
@@ -186,5 +207,53 @@ export function NotasOficiais({ perfil }: { perfil: Perfil }) {
         )}
       </section>
     </div>
+  );
+}
+
+// Média com 1 ou 2 casas (a regra "não arredondar" guarda 2 casas)
+const media = (n: number) =>
+  n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+
+// Médias por período e final, só do próprio aluno (ou do aluno do responsável). Nunca da turma (A-040).
+function MediasDoAluno({
+  medias,
+  mostrarAluno,
+  lista,
+}: {
+  medias: MediaDoAluno[];
+  mostrarAluno: boolean;
+  lista: NotaOficial[];
+}) {
+  const nomeDoAluno = (id: string) => lista.find((n) => n.aluno_id === id)?.aluno_nome ?? '';
+  return (
+    <section className="card mt" aria-labelledby="h-medias">
+      <div className="card-head">
+        <h2 id="h-medias">Médias pela regra de hoje</h2>
+      </div>
+      <p className="small muted">
+        A média de cada período usa as notas daquele período. A final usa os pesos da regra. Período
+        sem nota fica de fora.
+      </p>
+      <ul className="lista-adm">
+        {medias.map((m) => (
+          <li key={`${m.aluno_id}-${m.disciplina_id}`}>
+            <div className="lista-adm-texto">
+              <strong>{m.disciplina_nome}</strong>
+              {mostrarAluno ? <div className="small">Aluno: {nomeDoAluno(m.aluno_id)}</div> : null}
+              <ul className="lista-periodos">
+                {m.periodos.map((p) => (
+                  <li key={p.nome}>
+                    {p.nome} (peso {p.peso}): {p.media === null ? 'sem nota ainda' : media(p.media)}
+                  </li>
+                ))}
+              </ul>
+              <div>
+                Média final: <strong>{m.final === null ? 'sem nota ainda' : media(m.final)}</strong>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

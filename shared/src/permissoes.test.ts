@@ -67,6 +67,9 @@ const RECURSOS_ESCOLARES = [
   'pedidos_informacao',
   'preferencias_acessibilidade',
   'preferencias_interface',
+  'calendario_escolar',
+  'regras_nota',
+  'identidade_instituicao',
 ];
 
 describe('regras fixas da matriz', () => {
@@ -265,6 +268,34 @@ describe('matriz v10 (L17d: rótulos e VLibras)', () => {
     for (const perfil of PERFIS)
       expect(permitido(perfil, 'preferencias_interface', 'administrar'), perfil).toBe(
         perfil === 'master' ? null : 'proprio',
+      );
+  });
+});
+
+describe('matriz v11 (L19: Admin institucional)', () => {
+  it('só o Admin administra calendário da escola, regras de notas e identidade', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(11);
+    for (const recurso of ['calendario_escolar', 'regras_nota', 'identidade_instituicao'])
+      for (const perfil of PERFIS)
+        expect(permitido(perfil, recurso, 'administrar'), `${perfil} ${recurso}`).toBe(
+          perfil === 'admin' ? 'instituicao' : null,
+        );
+  });
+
+  it('os 5 perfis escolares leem; aluno e responsável só pelo vínculo no calendário; o master não lê', () => {
+    for (const recurso of ['calendario_escolar', 'regras_nota', 'identidade_instituicao'])
+      for (const perfil of PERFIS)
+        expect(permitido(perfil, recurso, 'ler') === null, `${perfil} ${recurso}`).toBe(
+          perfil === 'master',
+        );
+    for (const perfil of ['aluno', 'responsavel', 'professor'] as const)
+      expect(permitido(perfil, 'calendario_escolar', 'ler')).toBe('vinculo');
+  });
+
+  it('só o aluno oculta item da escola, e só para si', () => {
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'calendario_escolar', 'ocultar')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
       );
   });
 });

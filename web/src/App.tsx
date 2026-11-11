@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ErroApi, type Eu } from './api';
+import { api, ErroApi, type Eu, type Identidade, URL_LOGOTIPO } from './api';
 import { type Pagina, Shell } from './componentes/Shell';
 import { BotaoVLibras } from './componentes/VLibras';
 import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } from './interface';
@@ -10,9 +10,11 @@ import { Atividades } from './paginas/Atividades';
 import { Avisos } from './paginas/Avisos';
 import { AvisosEscola } from './paginas/AvisosEscola';
 import { Calendario } from './paginas/Calendario';
+import { CalendarioEscola } from './paginas/CalendarioEscola';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
 import { Conta } from './paginas/Conta';
 import { Foco } from './paginas/Foco';
+import { IdentidadeEscola } from './paginas/IdentidadeEscola';
 import { Inicio } from './paginas/Inicio';
 import { Login } from './paginas/Login';
 import { MeuDia } from './paginas/MeuDia';
@@ -20,12 +22,14 @@ import { Notas } from './paginas/Notas';
 import { NotasOficiais } from './paginas/NotasOficiais';
 import { NotasProfessor } from './paginas/NotasProfessor';
 import { Personalizar } from './paginas/Personalizar';
+import { RegrasNotas } from './paginas/RegrasNotas';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Turmas } from './paginas/Turmas';
 import { Usuarios } from './paginas/Usuarios';
 import {
   aplicarPreferencias,
   carregarPreferencias,
+  definirEscola,
   doServidor,
   PREFERENCIAS_PADRAO,
   type Preferencias,
@@ -103,6 +107,26 @@ export function App() {
       })
       .catch(() => undefined);
   }, [completo]);
+
+  // L19: identidade da escola (nome, logotipo e cor). A cor só vale se o aluno não escolheu a dele.
+  const [escola, setEscola] = useState<Identidade | null>(null);
+  const carregarEscola = useCallback(() => {
+    api
+      .identidade()
+      .then(({ identidade }) => {
+        setEscola(identidade);
+        definirEscola(identidade);
+        aplicarPreferencias(carregarPreferencias());
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    if (completo) carregarEscola();
+    else {
+      setEscola(null);
+      definirEscola(null);
+    }
+  }, [completo, carregarEscola]);
 
   // Grava neste aparelho e, com sessão completa, na conta. Se o banco falhar, vale neste aparelho.
   function mudarInterface(i: Interface) {
@@ -196,6 +220,14 @@ export function App() {
       naoLidas={naoLidas}
       rotulos={interfaceAtual.rotulos}
       vlibras={vlibras}
+      escola={
+        escola
+          ? {
+              nome: escola.nome_exibicao,
+              logotipo: escola.tem_logotipo ? `${URL_LOGOTIPO}?v=${escola.numero}` : null,
+            }
+          : null
+      }
     >
       {etapa ??
         (pagina === 'conta' && eu.nivel === 'completo' ? (
@@ -243,6 +275,14 @@ export function App() {
           <AvisosEscola perfil={eu.usuario.perfil} />
         ) : ehAluno && pagina === 'avisos' ? (
           <Avisos aoMudar={() => void contarAvisos()} />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'calendarioescola' &&
+          eu.usuario.perfil !== 'aluno' ? (
+          <CalendarioEscola perfil={eu.usuario.perfil} />
+        ) : eu.nivel === 'completo' && pagina === 'regrasnotas' && eu.usuario.perfil === 'admin' ? (
+          <RegrasNotas />
+        ) : eu.nivel === 'completo' && pagina === 'identidade' && eu.usuario.perfil === 'admin' ? (
+          <IdentidadeEscola aoMudar={carregarEscola} />
         ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (
           <Usuarios />
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (

@@ -20,6 +20,7 @@ import {
 } from './auth/sessao.js';
 import { registrarAvisos } from './avisos/rotas.js';
 import { registrarConta } from './conta/rotas.js';
+import { registrarEscola } from './escola/rotas.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
@@ -155,6 +156,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarAvisos(app, { banco: opcoes.banco, exigirSessao });
   registrarAjuda(app, { banco: opcoes.banco, exigirSessao });
   registrarConta(app, { banco: opcoes.banco, exigirSessao, limitar });
+  registrarEscola(app, { banco: opcoes.banco, exigirSessao });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)
   const limitadorOperacao = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);

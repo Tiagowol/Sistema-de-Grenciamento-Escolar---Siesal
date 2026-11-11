@@ -82,3 +82,12 @@ Mensagem de abertura do autor em chat, em 10/11/2026 (nova sessão, depois da pa
 4. L19 (ramo `lote-19-admin`) e L20 (ramo `lote-20-master`): commit e push no ramo próprio autorizados por esta mensagem; merge em `siesal-4` com autorização separada por lote. Proposta curta antes do código; nenhuma migração sem aviso prévio. L19 parte do `siesal-4` depois do merge do L17d, ou do `lote-17d-rotulos-libras` se o merge ainda não foi autorizado.
 5. Sem tocar no `main` (v3), sem deploy fora do computador, sem envio forçado, sem usar as contas `@teste.com`, sem imprimir senha.
 - Lembrete: nenhum lote vira "Verificado" antes do retorno do NAPNE e do professor (12/11/2026). Ajuste pedido nesse retorno entra nos lotes já feitos, salvo decisão do autor.
+
+## A-039 — Proposta do L19 aprovada (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026: "Aprovo o L19", em resposta à proposta em `docs/PLANO-L19.md` (calendário escolar lido junto com os eventos do aluno, sem cópia; regras de notas versionadas citadas no lançamento; identidade visual com PNG/JPEG até 200 KB e contraste de 4,5:1; matriz v11; migração 0016).
+- Ramo `lote-19-admin` a partir do `lote-17d-rotulos-libras` (`592a459`), porque o merge do L17d ainda não foi autorizado.
+- Commit e push no ramo próprio: autorizados (A-038). Merge e migração no banco do site: com aviso e autorização própria, como sempre.
+
+## A-040 — L19: média só para o aluno e o responsável; cor da escola por tema (10/11/2026)
+1. Conflito encontrado pelo Code: o teste do L15 (`api/src/notas/notas.integracao.test.ts`, "nenhuma resposta traz ranking, média da turma ou posição") proíbe a palavra "média" em qualquer resposta de notas, e a proposta do L19 (A-039) mostrava a média também para quem já vê as notas. Pergunta fechada ao autor; resposta: **"Só aluno e responsável"**. A média por período e a final aparecem só para o próprio aluno e para o responsável dele. Professor, Admin e Pedagógico não recebem médias; o teste do L15 continua igual para eles e, para o aluno e o responsável, passa a proibir ranking, posição e média da turma.
+2. Ajuste técnico na identidade visual, avisado na entrega: uma cor só não passa no contraste de 4,5:1 no tema claro e no escuro ao mesmo tempo (no claro a cor precisa ser escura; no escuro, clara). Em vez de "cor principal e cor de destaque", a escola escolhe **a cor da escola em duas versões**: uma para o tema claro e outra para o tema escuro. No alto contraste vale o tema do aluno, sem a cor da escola.

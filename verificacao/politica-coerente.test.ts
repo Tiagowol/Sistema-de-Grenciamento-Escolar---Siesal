@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PERFIS_CADASTRAVEIS,
   podeAdministrarConta,
+  podeAdministrarEscola,
   podeAdministrarInterface,
   podeAdministrarTurmas,
   podeAdministrarUsuarios,
@@ -12,7 +13,9 @@ import {
   podeLerAjuda,
   podeLerAvisoEscolar,
   podeLerCaixa,
+  podeLerEscola,
   podeLerNotas,
+  podeOcultarItemEscolar,
   podePedirAjuda,
   podePedirRevisao,
   podePedirSuporte,
@@ -128,4 +131,21 @@ describe('política das preferências de interface (L17d) x matriz de permissõe
       permitido(perfil, 'preferencias_interface', 'administrar') === 'proprio',
     );
   });
+});
+
+describe('política do Admin institucional (L19) x matriz de permissões (v11)', () => {
+  it.each(PERFIS)(
+    'perfil %s: calendário da escola, regras e identidade batem com a matriz',
+    (perfil) => {
+      for (const recurso of ['calendario_escolar', 'regras_nota', 'identidade_instituicao']) {
+        expect(podeAdministrarEscola(perfil), recurso).toBe(
+          permitido(perfil, recurso, 'administrar') === 'instituicao',
+        );
+        expect(podeLerEscola(perfil), recurso).toBe(permitido(perfil, recurso, 'ler') !== null);
+      }
+      expect(podeOcultarItemEscolar(perfil)).toBe(
+        permitido(perfil, 'calendario_escolar', 'ocultar') === 'proprio',
+      );
+    },
+  );
 });

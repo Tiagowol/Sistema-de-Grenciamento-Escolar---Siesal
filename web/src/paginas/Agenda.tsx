@@ -17,11 +17,9 @@ import {
   semanaDe,
   somarDias,
 } from '../datas';
-import { NOMES_TIPO } from '../eventos';
+import { NOMES_TIPO, nomeDoTipo } from '../eventos';
 import { Icone, type NomeIcone } from '../icones';
 import { texto } from '../linguagem-curta';
-
-const NOMES = NOMES_TIPO;
 
 // Parte do dia com nome e ícone; a hora exata é só um detalhe
 const PARTES: Record<ParteDoDia, { nome: string; icone: NomeIcone }> = {
@@ -192,23 +190,38 @@ export function Agenda() {
                   <div className="event-body">
                     <div className="event-title">{e.titulo}</div>
                     <div className="event-sub">
-                      {NOMES[e.tipo]}
+                      {nomeDoTipo(e.tipo)}
                       {e.minutos
                         ? ` · Bloco ${blocoDe(e.minutos).nome.toLowerCase()} (${e.minutos} min)`
                         : ''}
                       {e.origem === 'plano' ? ' · do seu plano' : ''}
+                      {e.origem === 'calendario_escolar' ? ' · do calendário da escola' : ''}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="small-link"
-                    onClick={async () => {
-                      await api.removerEvento(e.id);
-                      await recarregar();
-                    }}
-                  >
-                    Remover<span className="sr-only"> {e.titulo}</span>
-                  </button>
+                  {e.origem === 'calendario_escolar' && e.item_id ? (
+                    // Item da escola (L19): o aluno não remove, só oculta para si
+                    <button
+                      type="button"
+                      className="small-link"
+                      onClick={async () => {
+                        await api.ocultarItemEscolar(e.item_id as string);
+                        await recarregar();
+                      }}
+                    >
+                      Ocultar<span className="sr-only"> {e.titulo}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="small-link"
+                      onClick={async () => {
+                        await api.removerEvento(e.id);
+                        await recarregar();
+                      }}
+                    >
+                      Remover<span className="sr-only"> {e.titulo}</span>
+                    </button>
+                  )}
                 </div>
               ))
             )}
@@ -236,7 +249,7 @@ export function Agenda() {
                   value={tipo}
                   onChange={(e) => setTipo(e.target.value as Evento['tipo'])}
                 >
-                  {Object.entries(NOMES).map(([v, n]) => (
+                  {Object.entries(NOMES_TIPO).map(([v, n]) => (
                     <option key={v} value={v}>
                       {n}
                     </option>

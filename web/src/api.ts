@@ -69,8 +69,21 @@ export type PreferenciasServidor = {
 export type Evento = {
   id: string;
   titulo: string;
-  tipo: 'aula' | 'estudo' | 'pessoal' | 'prova' | 'trabalho' | 'lembrete' | 'compromisso';
+  // Os 3 últimos tipos só chegam do calendário da escola (L19); o aluno não cria evento com eles
+  tipo:
+    | 'aula'
+    | 'estudo'
+    | 'pessoal'
+    | 'prova'
+    | 'trabalho'
+    | 'lembrete'
+    | 'compromisso'
+    | 'periodo_letivo'
+    | 'feriado'
+    | 'evento_escolar';
   origem: 'manual' | 'plano' | 'google_agenda' | 'google_sala_de_aula' | 'calendario_escolar';
+  item_id?: string; // item do calendário da escola (para ocultar)
+  turma_nome?: string | null;
   id_externo?: string | null;
   tipo_atividade_id?: string | null;
   dia: string;
@@ -123,7 +136,51 @@ export type NotaOficial = {
   pode_revisar: boolean;
   pedido_aberto_meu: boolean;
   versoes?: VersaoNota[]; // só professor e Admin
+  regra_numero?: number | null; // L19: versão da regra de notas citada no lançamento
 };
+// Admin institucional (L19): calendário da escola, regras de notas e identidade visual
+export type TipoItemEscolar = 'periodo_letivo' | 'feriado' | 'evento';
+export type ItemEscolar = {
+  id: string;
+  tipo: TipoItemEscolar;
+  titulo: string;
+  dia_inicio: string;
+  dia_fim: string;
+  turma_id: string | null;
+  turma_nome: string | null;
+};
+export type NovoItemEscolar = Omit<ItemEscolar, 'id' | 'turma_nome'>;
+export type Arredondamento = 'nenhum' | 'decimo' | 'meio';
+export type PeriodoRegra = { nome: string; inicio: string; fim: string; peso: number };
+export type RegraNota = {
+  numero: number;
+  vigente_desde: string;
+  arredondamento: Arredondamento;
+  periodos: PeriodoRegra[];
+};
+export type VersaoRegra = RegraNota & { autor_nome: string; criada_em: string };
+export type MediaDoAluno = {
+  aluno_id: string;
+  disciplina_id: string;
+  disciplina_nome: string;
+  periodos: (PeriodoRegra & { media: number | null })[];
+  final: number | null;
+};
+export type Identidade = {
+  numero: number;
+  nome_exibicao: string;
+  cor_claro: string | null;
+  cor_escuro: string | null;
+  tem_logotipo: boolean;
+};
+export type VersaoIdentidade = Identidade & { autor_nome: string; criada_em: string };
+export type NovaIdentidade = {
+  nome_exibicao: string;
+  cor_claro: string | null;
+  cor_escuro: string | null;
+  logotipo: 'manter' | null | { tipo: 'image/png' | 'image/jpeg'; dados: string };
+};
+export const URL_LOGOTIPO = '/api/escola/identidade/logotipo';
 export type TurmaDoProfessor = {
   turma_id: string;
   turma_nome: string;
@@ -354,7 +411,29 @@ export const api = {
   criarVinculo: (d: NovoVinculo) => chamar<{ id: string }>('POST', '/vinculos', d),
   inativarVinculo: (id: string) => chamar<void>('POST', `/vinculos/${id}/inativar`),
   turmasDoProfessor: () => chamar<{ turmas: TurmaDoProfessor[] }>('GET', '/professor/turmas'),
-  notasOficiais: () => chamar<{ notas: NotaOficial[] }>('GET', '/notas-oficiais'),
+  notasOficiais: () =>
+    chamar<{ notas: NotaOficial[]; regra?: RegraNota | null; medias?: MediaDoAluno[] }>(
+      'GET',
+      '/notas-oficiais',
+    ),
+  calendarioEscola: (de: string, ate: string) =>
+    chamar<{ itens: ItemEscolar[] }>('GET', `/escola/calendario?de=${de}&ate=${ate}`),
+  criarItemEscolar: (d: NovoItemEscolar) => chamar<{ id: string }>('POST', '/escola/calendario', d),
+  editarItemEscolar: (id: string, d: NovoItemEscolar) =>
+    chamar<void>('POST', `/escola/calendario/${id}`, d),
+  desativarItemEscolar: (id: string) => chamar<void>('POST', `/escola/calendario/${id}/desativar`),
+  ocultarItemEscolar: (id: string) => chamar<void>('POST', `/escola/calendario/${id}/ocultar`),
+  regrasNotas: () =>
+    chamar<{ vigente: RegraNota | null; versoes: VersaoRegra[] }>('GET', '/escola/regras-notas'),
+  criarRegraNota: (d: Omit<RegraNota, 'numero'>) =>
+    chamar<{ numero: number }>('POST', '/escola/regras-notas', d),
+  identidade: () =>
+    chamar<{ identidade: Identidade | null; versoes: VersaoIdentidade[] }>(
+      'GET',
+      '/escola/identidade',
+    ),
+  salvarIdentidade: (d: NovaIdentidade) =>
+    chamar<{ identidade: Identidade }>('POST', '/escola/identidade', d),
   lancarNotaOficial: (d: {
     aluno_id: string;
     turma_id: string;

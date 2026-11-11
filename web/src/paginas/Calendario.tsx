@@ -18,7 +18,7 @@ import {
   semanaDe,
   somarDias,
 } from '../datas';
-import { NOMES_TIPO, podeEditar, podeRemover, SELO_ORIGEM } from '../eventos';
+import { NOMES_TIPO, nomeDoTipo, podeEditar, podeRemover, SELO_ORIGEM } from '../eventos';
 import { Icone, type NomeIcone } from '../icones';
 
 export type Visao = 'dia' | 'semana' | 'mes' | 'ano';
@@ -169,7 +169,8 @@ export function Calendario() {
         <div className="cal-corpo">
           <strong>{e.titulo}</strong>
           <div className="small muted">
-            {NOMES_TIPO[e.tipo]}
+            {nomeDoTipo(e.tipo)}
+            {e.turma_nome ? ` · Turma ${e.turma_nome}` : ''}
             {e.minutos
               ? ` · Bloco ${blocoDe(e.minutos).nome.toLowerCase()} (${e.minutos} min)`
               : ''}
@@ -218,7 +219,10 @@ export function Calendario() {
               type="button"
               className="btn btn-outline btn-sm"
               onClick={async () => {
-                await api.ocultarEvento(e.id);
+                // Item da escola (L19) se oculta pelo item; o evento do aluno, pelo próprio id
+                if (e.origem === 'calendario_escolar' && e.item_id)
+                  await api.ocultarItemEscolar(e.item_id);
+                else await api.ocultarEvento(e.id);
                 await recarregar();
               }}
             >

@@ -22,7 +22,10 @@ export type Pagina =
   | 'conta'
   | 'foco'
   | 'notas'
-  | 'avisos';
+  | 'avisos'
+  | 'calendarioescola'
+  | 'regrasnotas'
+  | 'identidade';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -140,6 +143,28 @@ const ITENS: Item[] = [
     so: ['admin'],
     palavras: ['vinculo', 'disciplina', 'classe', 'professor da turma'],
   },
+  // L19: Admin institucional. O calendário da escola é lido pelos outros perfis (o aluno o vê no Calendário)
+  {
+    id: 'calendarioescola',
+    rotulo: 'Calendário da escola',
+    icone: 'calendar',
+    so: ['admin', 'professor', 'pedagogico', 'responsavel'],
+    palavras: ['feriado', 'periodo letivo', 'bimestre', 'evento', 'ano letivo', 'datas'],
+  },
+  {
+    id: 'regrasnotas',
+    rotulo: 'Regras de notas',
+    icone: 'chart',
+    so: ['admin'],
+    palavras: ['peso', 'periodo', 'arredondamento', 'bimestre', 'semestre'],
+  },
+  {
+    id: 'identidade',
+    rotulo: 'Identidade da escola',
+    icone: 'spark',
+    so: ['admin'],
+    palavras: ['logotipo', 'logo', 'cor', 'nome da escola', 'marca'],
+  },
   {
     id: 'acessibilidade',
     rotulo: 'Acessibilidade',
@@ -170,6 +195,7 @@ type Props = {
   naoLidas?: number;
   rotulos?: 'icones' | 'texto'; // L17d: topo com ícones (padrão) ou com texto
   vlibras?: ReactNode; // L17d: ícone flutuante do VLibras, fora do conteúdo
+  escola?: { nome: string; logotipo: string | null } | null; // L19: identidade da escola
   children: ReactNode;
 };
 
@@ -182,6 +208,7 @@ export function Shell({
   naoLidas = 0,
   rotulos = 'icones',
   vlibras = null,
+  escola = null,
   children,
 }: Props) {
   const [aberto, setAberto] = useState(false);
@@ -226,12 +253,17 @@ export function Shell({
           aria-label="Menu principal"
         >
           <div className="brand">
-            <div className="brandmark" aria-hidden="true">
-              S
-            </div>
+            {/* L19: nome e logotipo da escola, se o Admin cadastrou; senão, a marca do SIESAL */}
+            {escola?.logotipo ? (
+              <img className="brand-logo" src={escola.logotipo} alt="" />
+            ) : (
+              <div className="brandmark" aria-hidden="true">
+                S
+              </div>
+            )}
             <div>
-              <strong>SIESAL</strong>
-              <small>Educação e inclusão</small>
+              <strong>{escola?.nome ?? 'SIESAL'}</strong>
+              <small>{escola ? 'com SIESAL' : 'Educação e inclusão'}</small>
             </div>
           </div>
           <div className="nav-section">Navegação</div>

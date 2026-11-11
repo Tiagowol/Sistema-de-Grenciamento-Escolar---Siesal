@@ -1,7 +1,8 @@
 import type { Evento } from './api';
 
 // Nomes em português dos tipos e das origens de evento (Agenda e Calendário usam os mesmos)
-export const NOMES_TIPO: Record<Evento['tipo'], string> = {
+type TipoDoAluno = Exclude<Evento['tipo'], 'periodo_letivo' | 'feriado' | 'evento_escolar'>;
+export const NOMES_TIPO: Record<TipoDoAluno, string> = {
   aula: 'Aula',
   estudo: 'Estudo',
   pessoal: 'Pessoal',
@@ -10,6 +11,16 @@ export const NOMES_TIPO: Record<Evento['tipo'], string> = {
   lembrete: 'Lembrete',
   compromisso: 'Compromisso',
 };
+// Tipos que só chegam do calendário da escola (L19)
+const NOMES_TIPO_ESCOLA: Record<Exclude<Evento['tipo'], TipoDoAluno>, string> = {
+  periodo_letivo: 'Período letivo',
+  feriado: 'Feriado',
+  evento_escolar: 'Evento da escola',
+};
+export const nomeDoTipo = (t: Evento['tipo']): string =>
+  (NOMES_TIPO as Record<string, string>)[t] ??
+  (NOMES_TIPO_ESCOLA as Record<string, string>)[t] ??
+  t;
 
 // Selo da origem: só aparece para evento que não nasceu no calendário do aluno
 export const SELO_ORIGEM: Partial<Record<Evento['origem'], string>> = {

@@ -14,9 +14,12 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { calcularMedias, type NotaParaMedia } from '../escola/regra.js';
+import { regraVigente } from '../escola/rotas.js';
 
 // Notas oficiais (L15): lançamento e revisão pelo professor, leitura por perfil e pedido de revisão.
 // Nada se apaga: a revisão grava nova versão. Sem ranking, sem média da turma, sem comparação entre alunos.
+// L19: cada versão cita a regra de notas vigente no dia da nota; a média é sempre de um aluno só.
 type Banco = Parameters<typeof WithTenant>[0];
 type Exigir = (req: FastifyRequest, res: FastifyReply) => Promise<SessaoAtiva | null>;
 type Opcoes = { banco: Banco; exigirSessao: Exigir };
@@ -148,13 +151,13 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
     return tx.$queryRaw<Linha[]>`
       SELECT n.id, n.aluno_id, a.nome AS aluno_nome, n.turma_id, t.nome AS turma_nome,
              n.disciplina_id, d.nome AS disciplina_nome, n.descricao, n.dia::text AS dia,
-             v.numero AS versao, v.valor::float8 AS valor,
+             v.numero AS versao, v.valor::float8 AS valor, v.regra_numero,
              to_char(v.criado_em AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS atualizada_em,
              (n.professor_id = ${eu}::uuid) AS minha,
              EXISTS (SELECT 1 FROM pedido_revisao p WHERE p.nota_id = n.id AND p.pedido_por = ${eu}::uuid
                         AND p.estado = 'aberto') AS pedido_aberto_meu
         FROM nota_oficial n
-        JOIN LATERAL (SELECT numero, valor, criado_em FROM nota_oficial_versao vv
+        JOIN LATERAL (SELECT numero, valor, criado_em, regra_numero FROM nota_oficial_versao vv
                        WHERE vv.instituicao_id = n.instituicao_id AND vv.nota_id = n.id
                        ORDER BY numero DESC LIMIT 1) v ON true
         JOIN usuario a ON a.id = n.aluno_id
@@ -237,12 +240,20 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
       const versoes =
         historico && ids.length
           ? await tx.$queryRaw<Linha[]>`
-              SELECT v.nota_id, v.numero, v.valor::float8 AS valor, v.motivo, u.nome AS autor_nome,
+              SELECT v.nota_id, v.numero, v.valor::float8 AS valor, v.motivo, v.regra_numero, u.nome AS autor_nome,
                      to_char(v.criado_em AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS dia
                 FROM nota_oficial_versao v JOIN usuario u ON u.id = v.autor_id
                WHERE v.nota_id = ANY(${ids}::uuid[]) ORDER BY v.nota_id, v.numero DESC`
           : [];
+      // L19: regra que vale hoje. Médias por período só para o próprio aluno e o responsável dele (A-040);
+      // professor, Admin e Pedagógico não recebem médias (nada de lista de médias da turma lado a lado)
+      const regra = await regraVigente(tx);
+      const comMedias = sessao.perfil === 'aluno' || sessao.perfil === 'responsavel';
       return {
+        regra,
+        ...(comMedias
+          ? { medias: regra ? calcularMedias(regra, notas as unknown as NotaParaMedia[]) : [] }
+          : {}),
         notas: notas.map((n) => ({
           ...n,
           // professor só revisa o que ele mesmo lançou; os outros perfis nunca
@@ -281,18 +292,22 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
               ${corpo.disciplina_id}::uuid, ${sessao.usuarioId}::uuid, ${corpo.descricao ?? ''}, ${corpo.dia}::date)
       RETURNING id`;
     if (!nova) throw new Error('Falha ao lançar a nota.');
+    // L19: a versão cita a regra de notas que valia no dia da nota (vazio se a escola ainda não tem regra)
+    const regra = await regraVigente(tx, corpo.dia);
     await tx.$executeRaw`
-      INSERT INTO nota_oficial_versao (instituicao_id, nota_id, numero, valor, autor_id)
-      VALUES (${sessao.instituicaoId}::uuid, ${nova.id}::uuid, 1, ${corpo.valor}, ${sessao.usuarioId}::uuid)`;
+      INSERT INTO nota_oficial_versao (instituicao_id, nota_id, numero, valor, autor_id, regra_numero)
+      VALUES (${sessao.instituicaoId}::uuid, ${nova.id}::uuid, 1, ${corpo.valor}, ${sessao.usuarioId}::uuid,
+              ${regra?.numero ?? null}::integer)`;
     await auditar(tx, sessao, 'nota.lancada', `nota:${nova.id}`, {
       aluno_id: corpo.aluno_id,
       turma_id: corpo.turma_id,
       disciplina_id: corpo.disciplina_id,
       valor: corpo.valor,
       dia: corpo.dia,
+      regra_numero: regra?.numero ?? null,
     });
     resposta.code(201);
-    return { id: nova.id };
+    return { id: nova.id, regra_numero: regra?.numero ?? null };
   });
 
   // ---------- Professor revisa a própria nota (nova versão; nada é apagado) ----------
@@ -303,8 +318,8 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
     { params: idParam, corpo: corpoRevisao },
     async ({ tx, sessao, params, corpo, resposta }) => {
       const [nota] = await tx.$queryRaw<
-        { professor_id: string; turma_id: string; disciplina_id: string }[]
-      >`SELECT professor_id, turma_id, disciplina_id FROM nota_oficial WHERE id = ${params.id}::uuid`;
+        { professor_id: string; turma_id: string; disciplina_id: string; dia: string }[]
+      >`SELECT professor_id, turma_id, disciplina_id, dia::text AS dia FROM nota_oficial WHERE id = ${params.id}::uuid`;
       if (!nota) return naoAchou(resposta);
       const [vinc] = await tx.$queryRaw<Linha[]>`
         SELECT 1 FROM vinculo WHERE tipo = 'professor_turma' AND usuario_id = ${sessao.usuarioId}::uuid
@@ -339,10 +354,11 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
         if (pedido.estado !== 'aberto')
           return resposta.code(409).send({ erro: 'Este pedido já foi respondido.' });
       }
+      const regra = await regraVigente(tx, nota.dia);
       const [versao] = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO nota_oficial_versao (instituicao_id, nota_id, numero, valor, motivo, autor_id)
+        INSERT INTO nota_oficial_versao (instituicao_id, nota_id, numero, valor, motivo, autor_id, regra_numero)
         VALUES (${sessao.instituicaoId}::uuid, ${params.id}::uuid, ${atual.numero + 1}, ${corpo.valor},
-                ${corpo.motivo}, ${sessao.usuarioId}::uuid)
+                ${corpo.motivo}, ${sessao.usuarioId}::uuid, ${regra?.numero ?? null}::integer)
         RETURNING id`;
       if (!versao) throw new Error('Falha ao gravar a revisão.');
       await auditar(
@@ -350,7 +366,12 @@ export function registrarNotas(app: FastifyInstance, opcoes: Opcoes): void {
         sessao,
         'nota.revisada',
         `nota:${params.id}`,
-        { versao: atual.numero + 1, valor: corpo.valor, motivo: corpo.motivo },
+        {
+          versao: atual.numero + 1,
+          valor: corpo.valor,
+          motivo: corpo.motivo,
+          regra_numero: regra?.numero ?? null,
+        },
         { versao: atual.numero, valor: atual.valor },
       );
       // Fechar juntos (L16): a nova versão responde a TODOS os pedidos abertos desta nota, ligados a ela.

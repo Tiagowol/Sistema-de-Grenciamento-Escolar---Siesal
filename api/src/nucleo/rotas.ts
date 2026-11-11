@@ -8,6 +8,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { entradasEscolaresDoAluno } from '../escola/rotas.js';
 import { hojeBrasilia, somarDias } from './datas.js';
 import { combinacaoLegivel, ICONES_DE_TIPO, IDS_DE_COR, TEMAS } from './paleta.js';
 import { planoRegressivo } from './plano.js';
@@ -343,14 +344,23 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       const dias = (Date.parse(consulta.ate) - Date.parse(consulta.de)) / 86_400_000;
       if (dias < 0 || dias > MAXIMO_DIAS_CONSULTA)
         return resposta.code(400).send({ erro: 'Dados inválidos.' });
-      return {
-        eventos: await tx.$queryRaw<Linha[]>`
+      const proprios = await tx.$queryRaw<Linha[]>`
       SELECT id, tarefa_id, titulo, tipo, tipo_atividade_id, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos
         FROM evento
        WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL AND oculto_em IS NULL
          AND dia BETWEEN ${consulta.de}::date AND ${consulta.ate}::date
-       ORDER BY dia, hora_inicio NULLS LAST, criado_em`,
-      };
+       ORDER BY dia, hora_inicio NULLS LAST, criado_em`;
+      // L19: itens do calendário da escola e da turma do aluno entram juntos, só para leitura (sem cópia)
+      const escola = await entradasEscolaresDoAluno(
+        tx,
+        sessao.usuarioId,
+        consulta.de,
+        consulta.ate,
+      );
+      const eventos = [...escola, ...proprios].sort((a, b) =>
+        String(a.dia).localeCompare(String(b.dia)),
+      );
+      return { eventos };
     },
   );
 

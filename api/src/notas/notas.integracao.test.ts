@@ -247,9 +247,14 @@ describe('leitura por perfil (sem ranking nem comparação)', () => {
   });
 
   it('nenhuma resposta traz ranking, média da turma ou posição', async () => {
-    for (const quem of ['alunoA', 'respA', 'profA', 'adminA', 'pedA']) {
+    for (const quem of ['profA', 'adminA', 'pedA']) {
       const texto = (await chamar('GET', '/notas-oficiais', quem)).body;
       expect(texto, quem).not.toMatch(/ranking|posicao|posição|classifica|media|média/i);
+    }
+    // L19 (A-040): aluno e responsável recebem só as médias do próprio aluno, nunca da turma nem posição
+    for (const quem of ['alunoA', 'respA']) {
+      const texto = (await chamar('GET', '/notas-oficiais', quem)).body;
+      expect(texto, quem).not.toMatch(/ranking|posicao|posição|classifica|da_turma|da turma/i);
     }
   });
 });
