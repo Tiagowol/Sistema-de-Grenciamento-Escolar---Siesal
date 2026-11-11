@@ -143,3 +143,11 @@ Decididos pelo Code dentro do escopo aprovado na A-047, para o autor conferir. S
 3. **Migração 0018 sem conversão de tema:** o banco antigo só guardava "alto_contraste" (claro) para quem ligava escuro e contraste juntos; não dá para saber qual era a intenção. As linhas existentes ficam como estão; o tema novo `alto_contraste_escuro` vale só dali em diante.
 4. **C6 parcial:** foram para variáveis do tema o fundo suave, o menu, o item ativo do menu, o painel de boas-vindas, a marca, o realce do botão, o dia de hoje e o aviso de informação. Ficam fixas, de propósito ou por falta de lote, as demais cores escritas direto no CSS (estados de erro e sucesso, avisos, calendário, tipos de atividade). Contagem e lista na entrega.
 - **Não coberto:** aplicar a 0018 e a API nova no site (bloqueado pela F-052); merge em `siesal-4`.
+
+## A-049 — 0018 e API nova aplicadas no site (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Aplicar a 0018 e a API nova no site [...] faça". Dependências cumpridas: F-052 contornada e backup feito.
+- Backup antes: `backups/siesal-20261111-111939.dump` (com `.sha256`).
+- Aplicada pelo job `migrate`: `0018_personalizar_tema_e_blocos.sql`. API e site reconstruídos e no ar (200 em 18080 e no proxy); a API nova guarda tema, cor e minutos dos blocos na conta (conferido em tela com o aparelho limpo).
+- A conta de teste foi devolvida ao que estava (cor do tema, blocos 10/25/45).
+- Retorno: `docs/RETORNO-0018.md` (restaurar o backup acima).
+- **Não coberto:** merge em `siesal-4`; push do ramo; início do L20b (precisa de "aprovo" próprio).
