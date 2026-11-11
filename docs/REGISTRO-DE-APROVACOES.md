@@ -91,3 +91,9 @@ Mensagem do autor em chat, em 10/11/2026: "Aprovo o L19", em resposta à propost
 ## A-040 — L19: média só para o aluno e o responsável; cor da escola por tema (10/11/2026)
 1. Conflito encontrado pelo Code: o teste do L15 (`api/src/notas/notas.integracao.test.ts`, "nenhuma resposta traz ranking, média da turma ou posição") proíbe a palavra "média" em qualquer resposta de notas, e a proposta do L19 (A-039) mostrava a média também para quem já vê as notas. Pergunta fechada ao autor; resposta: **"Só aluno e responsável"**. A média por período e a final aparecem só para o próprio aluno e para o responsável dele. Professor, Admin e Pedagógico não recebem médias; o teste do L15 continua igual para eles e, para o aluno e o responsável, passa a proibir ranking, posição e média da turma.
 2. Ajuste técnico na identidade visual, avisado na entrega: uma cor só não passa no contraste de 4,5:1 no tema claro e no escuro ao mesmo tempo (no claro a cor precisa ser escura; no escuro, clara). Em vez de "cor principal e cor de destaque", a escola escolhe **a cor da escola em duas versões**: uma para o tema claro e outra para o tema escuro. No alto contraste vale o tema do aluno, sem a cor da escola.
+
+## A-041 — Merge do L17d e do L19 em siesal-4 (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026: "aprovo o merge do L17d e, depois, do L19, um de cada vez."
+- Feito pelo Code só por avanço rápido (`--ff-only`), primeiro `lote-17d-rotulos-libras` e depois `lote-19-admin`. Conferido antes: `siesal-4` (`05f3d01`) é ancestral do L17d, e o L17d é ancestral do L19.
+- Este registro vai no ramo `lote-19-admin` (commit e push autorizados, A-038), porque commit direto em `siesal-4` não foi autorizado. Chega ao `siesal-4` pelo merge do L19.
+- **Não coberto:** push do `siesal-4` para o `origin` (pedir antes), deploy fora do computador, envio forçado. O L20 parte do `siesal-4` depois deste merge.
