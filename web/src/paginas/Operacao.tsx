@@ -354,6 +354,7 @@ function CartaoInstituicao({
 
 function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
   const [lista, setLista] = useState<InstituicaoPainel[]>([]);
+  const [individuais, setIndividuais] = useState(0);
   const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
@@ -363,6 +364,7 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
     try {
       const [p, t] = await Promise.all([apiOperacao.painel(), apiOperacao.trilha()]);
       setLista(p.instituicoes);
+      setIndividuais(p.espacos_individuais ?? 0);
       setTrilha(t);
     } catch (x) {
       if (x instanceof ErroApi && x.status === 401) return aoSair();
@@ -444,6 +446,19 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
             <CartaoInstituicao key={`${i.id}-${i.situacao}`} i={i} agir={agir} />
           ))}
         </ul>
+      </section>
+      <section className="card mt" aria-labelledby="ops-individuais-titulo">
+        <div className="card-head">
+          <h2 id="ops-individuais-titulo">Espaços individuais</h2>
+        </div>
+        <p>
+          <strong>{individuais}</strong> {individuais === 1 ? 'espaço' : 'espaços'} de alunos sem
+          instituição.
+        </p>
+        <p className="muted small">
+          O Master vê só esta quantidade. Nome, e-mail, CPF e conteúdo de cada pessoa não aparecem
+          aqui.
+        </p>
       </section>
       <section className="card mt" aria-labelledby="ops-trilha-titulo">
         <div className="card-head">

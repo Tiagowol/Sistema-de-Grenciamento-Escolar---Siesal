@@ -8,6 +8,8 @@ export type Eu = {
   nivel: Nivel;
   usuario: { id: string; nome: string; perfil: Perfil };
   modulos?: EstadoModulos;
+  // 20c-1: aluno sem instituição usa um espaço individual (sem turmas, notas oficiais nem avisos da escola)
+  espaco?: 'escola' | 'individual';
 };
 export type UsuarioLista = {
   id: string;
@@ -412,8 +414,11 @@ export const api = {
   config: () =>
     chamar<{ instituicao_padrao: string | null; modo_local: boolean }>('GET', '/config'),
   eu: () => chamar<Eu>('GET', '/auth/eu'),
-  login: (d: { instituicao_id: string; email: string; senha: string; codigo?: string }) =>
-    chamar<Eu>('POST', '/auth/login', d),
+  login: (
+    d:
+      | { instituicao_id: string; email: string; senha: string; codigo?: string }
+      | { sem_instituicao: true; email: string; senha: string; codigo?: string },
+  ) => chamar<Eu>('POST', '/auth/login', d),
   logout: () => chamar<void>('POST', '/auth/logout'),
   trocarSenha: (d: { senha_atual: string; senha_nova: string }) =>
     chamar<{ nivel: Nivel }>('POST', '/auth/senha/trocar', d),
@@ -643,7 +648,11 @@ export const apiOperacao = {
     chamar<{ instituicao: InstituicaoLista }>('POST', '/operacao/instituicoes', { nome }),
   suspender: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/suspender`),
   reativar: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/reativar`),
-  painel: () => chamar<{ instituicoes: InstituicaoPainel[] }>('GET', '/operacao/painel'),
+  painel: () =>
+    chamar<{ instituicoes: InstituicaoPainel[]; espacos_individuais: number }>(
+      'GET',
+      '/operacao/painel',
+    ),
   mudarSituacao: (id: string, situacao: Situacao, confirmar_nome?: string) =>
     chamar<void>('POST', `/operacao/instituicoes/${id}/situacao`, {
       situacao,

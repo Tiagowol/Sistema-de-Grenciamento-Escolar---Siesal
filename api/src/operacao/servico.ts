@@ -330,7 +330,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
     return comoOperacao(
       dep.banco,
       (tx) => tx.$queryRaw<InstituicaoLista[]>`
-        SELECT id, nome, situacao, criado_em FROM instituicao ORDER BY criado_em, nome`,
+        SELECT id, nome, situacao, criado_em FROM instituicao WHERE tipo = 'escola' ORDER BY criado_em, nome`,
     );
   }
 
@@ -368,7 +368,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
   ): Promise<'ok' | 'nao_encontrada' | 'sem_mudanca' | 'confirmacao'> {
     return comoOperacao(dep.banco, async (tx) => {
       const atual = await tx.$queryRaw<{ situacao: string; nome: string }[]>`
-        SELECT situacao, nome FROM instituicao WHERE id = ${id}::uuid FOR UPDATE`;
+        SELECT situacao, nome FROM instituicao WHERE id = ${id}::uuid AND tipo = 'escola' FOR UPDATE`;
       if (!atual[0]) return 'nao_encontrada';
       if (atual[0].situacao === situacao) return 'sem_mudanca';
       if (situacao === 'encerrada' && confirmarNome?.trim() !== atual[0].nome) return 'confirmacao';
@@ -392,7 +392,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
   async function painel(): Promise<PainelInstituicao[]> {
     return comoOperacao(dep.banco, async (tx) => {
       const insts = await tx.$queryRaw<InstituicaoLista[]>`
-        SELECT id, nome, situacao, criado_em FROM instituicao ORDER BY criado_em, nome`;
+        SELECT id, nome, situacao, criado_em FROM instituicao WHERE tipo = 'escola' ORDER BY criado_em, nome`;
       const ids = insts.map((i) => i.id);
       const modulos = await tx.$queryRaw<
         { instituicao_id: string; modulo: Modulo; ligado: boolean }[]
@@ -412,6 +412,14 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
+  // Só um número: quantos espaços individuais têm alguém ativo. Nunca nome, e-mail, CPF ou conteúdo.
+  async function contarEspacosIndividuais(): Promise<number> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [c] = await tx.$queryRaw<{ n: number }[]>`SELECT espaco_individual_contar() AS n`;
+      return c?.n ?? 0;
+    });
+  }
+
   async function mudarModulo(
     sessao: SessaoOperacao,
     id: string,
@@ -420,7 +428,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
   ): Promise<'ok' | 'nao_encontrada'> {
     return comoOperacao(dep.banco, async (tx) => {
       const existe = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM instituicao WHERE id = ${id}::uuid`;
+        SELECT id FROM instituicao WHERE id = ${id}::uuid AND tipo = 'escola'`;
       if (!existe[0]) return 'nao_encontrada';
       await tx.$executeRaw`
         INSERT INTO instituicao_modulo (instituicao_id, modulo, ligado) VALUES (${id}::uuid, ${modulo}, ${ligado})
@@ -458,6 +466,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
     iniciarTotp,
     confirmarTotp,
     listarInstituicoes,
+    contarEspacosIndividuais,
     criarInstituicao,
     mudarSituacao,
     painel,

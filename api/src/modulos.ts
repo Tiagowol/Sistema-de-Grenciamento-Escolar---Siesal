@@ -28,3 +28,39 @@ export async function lerModulos(tx: ClienteTransacao): Promise<EstadoModulos> {
   for (const l of linhas) estado[l.modulo] = l.ligado;
   return estado;
 }
+
+// ---------- Espaço individual (20c-1) ----------
+// Aluno sem instituição: um espaço só dele. Deny by default: só estas rotas existem lá. Não há turmas, notas oficiais,
+// avisos, caixa de mensagens, calendário nem identidade da escola, pedido de ajuda ao professor nem suporte.
+export type TipoDeEspaco = 'escola' | 'individual';
+const PREFIXOS_DO_ESPACO_INDIVIDUAL = [
+  '/auth',
+  '/preferencias',
+  '/tipos-atividade',
+  '/tarefas',
+  '/microetapas',
+  '/eventos',
+  '/sessoes',
+  '/notas-pessoais',
+  '/minhas-disciplinas',
+  '/meu-dia',
+  '/notificacoes',
+  '/conta',
+];
+export function rotaDoEspacoIndividual(url: string): boolean {
+  const caminho = url.split('?')[0] ?? '';
+  return PREFIXOS_DO_ESPACO_INDIVIDUAL.some((p) => caminho === p || caminho.startsWith(`${p}/`));
+}
+
+// Tipo da instituição do contexto (withTenant)
+export async function lerTipoDeEspaco(tx: ClienteTransacao): Promise<TipoDeEspaco> {
+  const [i] = await tx.$queryRaw<{ tipo: TipoDeEspaco }[]>`SELECT tipo FROM instituicao LIMIT 1`;
+  return i?.tipo === 'individual' ? 'individual' : 'escola';
+}
+
+// No espaço individual, o que é da escola fica desligado; o calendário pessoal continua
+export const MODULOS_DO_ESPACO_INDIVIDUAL: EstadoModulos = {
+  mensagens: false,
+  calendario: true,
+  apoio_aluno: false,
+};

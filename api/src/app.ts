@@ -11,6 +11,7 @@ import {
 import { derivarChave } from './auth/cifra.js';
 import { LimitadorJanela } from './auth/limitador.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
+import { verificarSenhaFalsa } from './auth/senha.js';
 import {
   COOKIE_LOCAL,
   COOKIE_PADRAO,
@@ -23,7 +24,13 @@ import { withTenant } from './banco/withTenant.js';
 import { registrarConta } from './conta/rotas.js';
 import { registrarEscola } from './escola/rotas.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
-import { lerModulos, moduloDaRota } from './modulos.js';
+import {
+  lerModulos,
+  lerTipoDeEspaco,
+  MODULOS_DO_ESPACO_INDIVIDUAL,
+  moduloDaRota,
+  rotaDoEspacoIndividual,
+} from './modulos.js';
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
 import { registrarOperacao } from './operacao/rotas.js';
@@ -40,12 +47,16 @@ export type OpcoesApp = {
   logger?: boolean;
 };
 
-const corpoLogin = z.strictObject({
-  instituicao_id: z.uuid(),
+// Duas entradas (20c-1): "Vinculado a uma instituição" (com o código) e "Sem instituição" (só e-mail e senha)
+const camposLogin = {
   email: z.string().min(3).max(254),
   senha: z.string().min(1).max(128),
   codigo: z.string().min(6).max(20).optional(),
-});
+};
+const corpoLogin = z.union([
+  z.strictObject({ instituicao_id: z.uuid(), ...camposLogin }),
+  z.strictObject({ sem_instituicao: z.literal(true), ...camposLogin }),
+]);
 const corpoTrocaSenha = z.strictObject({
   senha_atual: z.string().min(1).max(128),
   senha_nova: z.string().min(1).max(200),
@@ -73,6 +84,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     }
   });
   if (!opcoes.banco || !opcoes.authSecret) return app;
+  const banco = opcoes.banco;
 
   // Configuração pública mínima para a tela de login (nenhum segredo)
   app.get('/config', async () => ({
@@ -141,8 +153,21 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     if (!limitar(requisicao, resposta)) return resposta;
     const corpo = corpoLogin.safeParse(requisicao.body);
     if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    let instituicaoId: string;
+    if ('sem_instituicao' in corpo.data) {
+      // O espaço individual é achado pelo e-mail; e-mail desconhecido gasta o mesmo tempo e dá a mesma resposta
+      const [achado] = await banco.$queryRaw<{ id: string | null }[]>`
+        SELECT espaco_individual_achar(${corpo.data.email.trim()}) AS id`;
+      if (!achado?.id) {
+        await verificarSenhaFalsa(corpo.data.senha);
+        return resposta.code(401).send({ erro: MENSAGEM_FALHA });
+      }
+      instituicaoId = achado.id;
+    } else {
+      instituicaoId = corpo.data.instituicao_id;
+    }
     const r = await auth.login({
-      instituicaoId: corpo.data.instituicao_id,
+      instituicaoId,
       email: corpo.data.email,
       senha: corpo.data.senha,
       codigo: corpo.data.codigo,
@@ -162,13 +187,18 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return resposta.header('set-cookie', cookieDeSaida(cookie)).code(204).send();
   });
 
-  // L20: rota de módulo desligado pelo Master responde 403 para todos os perfis da escola
-  const banco = opcoes.banco;
+  // L20: rota de módulo desligado pelo Master responde 403 para todos os perfis da escola.
+  // 20c-1: no espaço individual só existem as rotas da lista (deny by default).
   app.addHook('preHandler', async (requisicao, resposta) => {
-    const modulo = moduloDaRota(requisicao.url);
-    if (!modulo) return;
+    const caminho = requisicao.url.split('?')[0] ?? '';
+    if (caminho === '/saude' || caminho === '/config' || caminho.startsWith('/operacao')) return;
     const sessao = await auth.obterSessao(lerCookie(requisicao.headers.cookie, cookie.nome));
     if (!sessao) return; // a própria rota responde 401
+    const tipo = await withTenant(banco, { instituicaoId: sessao.instituicaoId }, lerTipoDeEspaco);
+    if (tipo === 'individual' && !rotaDoEspacoIndividual(caminho))
+      return resposta.code(403).send({ erro: 'Este recurso não existe no espaço individual.' });
+    const modulo = moduloDaRota(requisicao.url);
+    if (!modulo) return;
     const ligados = await withTenant(banco, { instituicaoId: sessao.instituicaoId }, lerModulos);
     if (!ligados[modulo])
       return resposta.code(403).send({ erro: 'Este recurso está desligado nesta escola.' });
@@ -206,7 +236,13 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       nivel: sessao.nivel,
       usuario: { id: sessao.usuarioId, nome: sessao.nome, perfil: sessao.perfil },
       // L20: o site esconde do menu o que o Master desligou nesta escola
-      modulos: await withTenant(banco, { instituicaoId: sessao.instituicaoId }, lerModulos),
+      ...(await withTenant(banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+        const espaco = await lerTipoDeEspaco(tx);
+        return {
+          espaco,
+          modulos: espaco === 'individual' ? MODULOS_DO_ESPACO_INDIVIDUAL : await lerModulos(tx),
+        };
+      })),
     };
   });
 

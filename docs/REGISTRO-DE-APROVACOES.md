@@ -178,3 +178,21 @@ Mensagem do autor em chat, em 11/11/2026: "Sim, aplicar" (à pergunta "Aplico a 
 - A conta de teste foi devolvida: as 8 disciplinas foram tiradas da lista (desativadas, não apagadas). Fica gravada a etapa "fundamental" na preferência dela.
 - Retorno: `docs/RETORNO-0019.md` (restaurar o backup acima).
 - **Não coberto:** merge em `siesal-4`; L20c (precisa de "aprovo" próprio e das decisões D1, D4, D7 e D8).
+
+## A-053 — Aprovo o 20c-1, com D1 = espaço individual (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Aprovo 20c-1, D1 sim", depois de `docs/PLANO-L20C.md`.
+- Escopo aprovado: itens 1 e 2 do 20c-1 (espaço individual e isolamento; tela de entrada com as 2 opções e login sem código), ramo `lote-20c1-espaco-individual` (a partir de `lote-20b-disciplinas`), migração 0020, matriz v15.
+- **D1:** cada aluno sem instituição tem uma instituição do tipo "individual", só dele.
+- **Item 3 (cadastro por convite) fica parado** até a resposta da D4 (convite ou cadastro aberto). Não será implementado antes.
+- **Não coberto:** 20c-2 (CPF, data de nascimento, responsável); aplicar a 0020 e a API no site (backup, `docs/RETORNO-0020.md`, aviso de 1 linha, F-052); merge.
+
+## A-054 — Ajustes de execução do 20c-1 em relação à proposta (11/11/2026)
+Decididos pelo Code dentro do escopo aprovado na A-053, para o autor conferir. Se discordar, volta-se atrás.
+1. **Correção da A-052:** a verificação do L20b dizia que o site não tinha textos de disciplina para converter. Havia (19 tarefas e 1 nota); a conversão da 0019 não rodou por causa da RLS (F-054). O texto da A-052 não foi apagado; esta é a correção. A conversão agora é feita pela API (0020 + código).
+2. **Índice de e-mails** (`espaco_individual`): é como a entrada "Sem instituição" acha o espaço sem ler dado de ninguém. Nenhum papel da aplicação lê a tabela; só a função `espaco_individual_achar` devolve o identificador. O mesmo e-mail não pode estar em dois espaços individuais.
+3. **Deny by default no espaço individual:** só existem as rotas de aluno (tarefas, agenda, foco, notas pessoais, disciplinas, preferências, notificações, conta). Turmas, avisos, caixa, calendário e identidade da escola, pedido de ajuda e suporte respondem 403.
+4. **Nome do espaço** é sempre "Espaço individual" (nunca o nome da pessoa), e o Master vê só a quantidade de espaços com alguém ativo.
+5. **Encerrar a conta** tira o e-mail do índice e o espaço deixa de ser contado; a instituição individual não muda de situação (o papel da aplicação não escreve em `instituicao`).
+6. **Criar espaço individual:** nesta etapa só por script ou teste (administrador do banco). A criação pela pessoa depende do item 3 (cadastro por convite), parado até a D4.
+7. Matriz **v15**: recurso `espacos_individuais` (ler: só o Master, escopo "plataforma", só a quantidade).
+- **Não coberto:** item 3 do 20c-1 (convite) e o botão "Criar conta" da tela de entrada, até a D4; aplicar a 0020 e a API no site; merge.

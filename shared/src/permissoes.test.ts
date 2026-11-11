@@ -218,6 +218,15 @@ describe('regras fixas da matriz', () => {
     }
   });
 
+  it('o Master só lê a quantidade de espaços individuais (v15, 20c-1)', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(15);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'espacos_individuais', 'ler')).toBe(
+        perfil === 'master' ? 'plataforma' : null,
+      );
+    }
+  });
+
   it('só o master cria instituições, liga o login Google da demo e usa acesso excepcional', () => {
     for (const perfil of PERFIS) {
       const so = perfil === 'master' ? 'plataforma' : null;

@@ -259,3 +259,11 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: ainda não investigada. Conferido em 11/11/2026 que acontece também no commit `c395289`, sem nenhuma mudança do L20a. Provável resposta simulada sem o campo `itens` no teste.
 - **Não resolvida.** Não afeta o uso do site. Fica para um lote de manutenção.
 - Como voltar atrás: não se aplica.
+
+## F-054 — 11/11/2026 — A conversão de disciplinas da 0019 não converteu nada no site
+- O que falhou: a migração 0019 devia criar uma disciplina do aluno para cada texto de disciplina já usado em tarefas e notas e ligar os dois. No site ficaram 0 disciplinas do aluno e 0 tarefas ligadas, embora existissem 19 tarefas com texto de disciplina e 1 nota. No teste e na verificação (A-052) afirmei que "o site não tinha disciplinas em texto para converter": **isso estava errado**. Descobri em 11/11/2026 ao ler o banco para outra tarefa.
+- Causa: o job `migrate` roda como `siesal_owner`, sem BYPASSRLS, e a RLS é forçada em todas as tabelas. Sem `app.instituicao_id` definido, a migração não enxerga nenhuma linha escolar e o `INSERT ... SELECT` e os `UPDATE` não alteram nada, sem erro. O teste de integração só exercitou banco vazio.
+- Dano: nenhum dado se perdeu (o texto continua nas tarefas e notas). Só faltou a lista das disciplinas já usadas em "Minhas disciplinas".
+- Correção (neste lote): a conversão passa a ser feita pela API ao abrir "Minhas disciplinas" (`withTenant`, uma vez por aluno, marcada em `preferencia_usuario.disciplinas_convertidas_em`, que a 0020 cria). Teste de integração novo com texto antigo, incluindo o limite de 20. A correção só vale no site depois de aplicar a 0020 e a API (precisa do seu "aplicar").
+- Lição: migração com dados escolares não pode depender de RLS; conversão de dados vai para a API ou usa a mesma técnica do `contagem_por_perfil` (definir o contexto por instituição).
+- Como voltar atrás: não se aplica (nada foi alterado no site).

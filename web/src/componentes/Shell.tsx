@@ -42,6 +42,7 @@ type Item = {
   so?: string[];
   palavras?: string[];
   modulo?: Modulo; // L20: some do menu quando o Master desliga o módulo nesta escola
+  soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
 };
 const ALUNO = ['aluno'];
 const ITENS: Item[] = [
@@ -99,6 +100,7 @@ const ITENS: Item[] = [
     id: 'notasoficiais',
     rotulo: 'Notas oficiais',
     icone: 'book',
+    soEscola: true,
     so: ['aluno'],
     palavras: ['boletim', 'prova', 'revisao', 'pedir revisao', 'resultado'],
   },
@@ -243,8 +245,12 @@ export function Shell({
     }
   };
   const ligado = (m?: Modulo) => !m || (eu.modulos?.[m] ?? true);
+  const individual = eu.espaco === 'individual';
   const itens = ITENS.filter(
-    (i) => (!i.so || i.so.includes(eu.usuario.perfil)) && ligado(i.modulo),
+    (i) =>
+      (!i.so || i.so.includes(eu.usuario.perfil)) &&
+      ligado(i.modulo) &&
+      !(individual && i.soEscola),
   );
   const atual = itens.find((i) => i.id === pagina);
   const achados = buscarNoMenu(itens, busca, 'acessibilidade');

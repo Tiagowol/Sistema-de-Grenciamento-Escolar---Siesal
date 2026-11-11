@@ -158,7 +158,10 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
   app.get('/operacao/painel', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;
-    return { instituicoes: await ops.painel() };
+    return {
+      instituicoes: await ops.painel(),
+      espacos_individuais: await ops.contarEspacosIndividuais(),
+    };
   });
 
   app.get('/operacao/auditoria', async (requisicao, resposta) => {

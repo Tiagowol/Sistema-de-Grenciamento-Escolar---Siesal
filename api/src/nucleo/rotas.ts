@@ -731,7 +731,57 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       alvo,
     });
 
+  // F-054: converte os textos de disciplina já usados em tarefas e notas (uma vez por aluno). A 0019 não conseguiu
+  // fazer isto no banco do site (RLS forçada); aqui o withTenant já vale. Só cria se o aluno ainda não foi convertido.
+  const converterDisciplinasAntigas = async (tx: ClienteTransacao, sessao: SessaoAtiva) => {
+    const u = sessao.usuarioId;
+    const [ja] = await tx.$queryRaw<{ feito: boolean }[]>`
+      SELECT (disciplinas_convertidas_em IS NOT NULL) AS feito FROM preferencia_usuario WHERE usuario_id = ${u}::uuid`;
+    if (ja?.feito) return;
+    // 1) o que é igual a uma do catálogo vira "catalogo"
+    await tx.$executeRaw`
+      INSERT INTO disciplina_aluno (instituicao_id, usuario_id, nome, catalogo_id, origem)
+      SELECT DISTINCT ON (k.id) ${sessao.instituicaoId}::uuid, ${u}::uuid, k.nome, k.id, 'catalogo'
+        FROM disciplina_catalogo k
+       WHERE (EXISTS (SELECT 1 FROM tarefa t WHERE t.usuario_id = ${u}::uuid AND t.desativado_em IS NULL AND sem_acento(t.disciplina) = k.nome_busca)
+          OR EXISTS (SELECT 1 FROM nota_pessoal n WHERE n.usuario_id = ${u}::uuid AND n.desativado_em IS NULL AND sem_acento(n.disciplina) = k.nome_busca))
+          AND NOT EXISTS (SELECT 1 FROM disciplina_aluno d WHERE d.usuario_id = ${u}::uuid AND d.desativado_em IS NULL AND d.nome_busca = k.nome_busca)`;
+    // 2) o resto vira "propria", as mais usadas primeiro, até completar 20 próprias; o que passar fica só como texto
+    await tx.$executeRaw`
+      INSERT INTO disciplina_aluno (instituicao_id, usuario_id, nome, origem)
+      SELECT ${sessao.instituicaoId}::uuid, ${u}::uuid, c.nome, 'propria'
+        FROM (
+          SELECT sem_acento(x.disciplina) AS chave, min(btrim(x.disciplina)) AS nome, count(*) AS n
+            FROM (SELECT disciplina FROM tarefa WHERE usuario_id = ${u}::uuid AND desativado_em IS NULL
+                  UNION ALL
+                  SELECT disciplina FROM nota_pessoal WHERE usuario_id = ${u}::uuid AND desativado_em IS NULL) x
+           WHERE btrim(x.disciplina) <> '' AND length(btrim(x.disciplina)) <= 80
+             AND btrim(x.disciplina) !~* '(https?:|www[.]|://|@)'
+           GROUP BY sem_acento(x.disciplina)
+        ) c
+       WHERE NOT EXISTS (SELECT 1 FROM disciplina_aluno d WHERE d.usuario_id = ${u}::uuid AND d.desativado_em IS NULL AND d.nome_busca = c.chave)
+       ORDER BY c.n DESC, c.nome
+       LIMIT greatest(0, 20 - (SELECT count(*) FROM disciplina_aluno WHERE usuario_id = ${u}::uuid AND origem = 'propria' AND desativado_em IS NULL))`;
+    // 3) liga tarefas e notas à disciplina de mesmo nome (o texto antigo continua como está)
+    await tx.$executeRaw`
+      UPDATE tarefa t SET disciplina_aluno_id = d.id
+        FROM disciplina_aluno d
+       WHERE t.usuario_id = ${u}::uuid AND t.disciplina_aluno_id IS NULL AND btrim(t.disciplina) <> ''
+         AND d.usuario_id = t.usuario_id AND d.desativado_em IS NULL AND d.nome_busca = sem_acento(t.disciplina)`;
+    await tx.$executeRaw`
+      UPDATE nota_pessoal n SET disciplina_aluno_id = d.id
+        FROM disciplina_aluno d
+       WHERE n.usuario_id = ${u}::uuid AND n.disciplina_aluno_id IS NULL AND btrim(n.disciplina) <> ''
+         AND d.usuario_id = n.usuario_id AND d.desativado_em IS NULL AND d.nome_busca = sem_acento(n.disciplina)`;
+    await tx.$executeRaw`
+      INSERT INTO preferencia_usuario (instituicao_id, usuario_id, disciplinas_convertidas_em)
+      VALUES (${sessao.instituicaoId}::uuid, ${u}::uuid, now())
+      ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET disciplinas_convertidas_em = now()`;
+    await auditarDisciplina(tx, sessao, 'disciplina.convertidas', `usuario:${u}`);
+  };
+
   rota('get', '/minhas-disciplinas', {}, async ({ tx, sessao }) => {
+    await converterDisciplinasAntigas(tx, sessao);
     const [pref] = await tx.$queryRaw<{ etapa: string | null }[]>`
       SELECT etapa_disciplinas AS etapa FROM preferencia_usuario WHERE usuario_id = ${sessao.usuarioId}::uuid`;
     const catalogo = await tx.$queryRaw<Linha[]>`

@@ -7,6 +7,8 @@ import { Campo } from '../componentes/Campo';
 type Props = { instituicaoPadrao: string | null; aoEntrar: (eu: Eu) => void };
 
 export function Login({ instituicaoPadrao, aoEntrar }: Props) {
+  // 20c-1: uma pergunta, duas opções. "Sem instituição" pede só e-mail e senha.
+  const [modo, setModo] = useState<'instituicao' | 'individual'>('instituicao');
   const [instituicao, setInstituicao] = useState(instituicaoPadrao ?? '');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -20,12 +22,16 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
     setErro('');
     setEnviando(true);
     try {
-      const eu = await api.login({
-        instituicao_id: instituicao.trim(),
+      const comuns = {
         email: email.trim(),
         senha,
         ...(codigo ? { codigo: codigo.trim() } : {}),
-      });
+      };
+      const eu = await api.login(
+        modo === 'individual'
+          ? { sem_instituicao: true, ...comuns }
+          : { instituicao_id: instituicao.trim(), ...comuns },
+      );
       aoEntrar(eu);
     } catch (x) {
       if (x instanceof ErroApi && x.message === 'segundo_fator_necessario') {
@@ -62,26 +68,49 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
         </div>
         <div className="stack">
           {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
-          {/* L15, item extra: o campo aparece sempre; com instituição padrão ele já vem preenchido */}
-          <Campo
-            rotulo="Código da instituição"
-            dica={
-              instituicaoPadrao
-                ? 'Já preenchido com a instituição padrão. Troque se você é de outra escola.'
-                : 'Quem cadastrou você informa este código.'
-            }
-          >
-            {({ id, descricao }) => (
+          <fieldset className="login-modo">
+            <legend>Como você usa o SIESAL?</legend>
+            <label className="opcao">
               <input
-                id={id}
-                aria-describedby={descricao}
-                value={instituicao}
-                required
-                autoComplete="off"
-                onChange={(e) => setInstituicao(e.target.value)}
-              />
-            )}
-          </Campo>
+                type="radio"
+                name="login-modo"
+                checked={modo === 'instituicao'}
+                onChange={() => setModo('instituicao')}
+              />{' '}
+              Vinculado a uma instituição
+            </label>
+            <label className="opcao">
+              <input
+                type="radio"
+                name="login-modo"
+                checked={modo === 'individual'}
+                onChange={() => setModo('individual')}
+              />{' '}
+              Sem instituição
+            </label>
+          </fieldset>
+          {/* L15, item extra: o campo aparece sempre; com instituição padrão ele já vem preenchido */}
+          {modo === 'instituicao' ? (
+            <Campo
+              rotulo="Código da instituição"
+              dica={
+                instituicaoPadrao
+                  ? 'Já preenchido com a instituição padrão. Troque se você é de outra escola.'
+                  : 'Quem cadastrou você informa este código.'
+              }
+            >
+              {({ id, descricao }) => (
+                <input
+                  id={id}
+                  aria-describedby={descricao}
+                  value={instituicao}
+                  required
+                  autoComplete="off"
+                  onChange={(e) => setInstituicao(e.target.value)}
+                />
+              )}
+            </Campo>
+          ) : null}
           <Campo rotulo="E-mail">
             {({ id }) => (
               <input
