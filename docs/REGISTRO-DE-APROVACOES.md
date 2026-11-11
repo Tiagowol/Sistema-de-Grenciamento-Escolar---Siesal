@@ -107,3 +107,8 @@ Mensagem do autor em chat, em 10/11/2026: "Aprovo o merge", em resposta à pergu
 - Feito pelo Code só por avanço rápido (`--ff-only`) de `lote-20-master` em `siesal-4`. Conferido antes: `siesal-4` (`6a0bf10`) é ancestral do L20 (`0c2de3b`).
 - Este registro vai no ramo `lote-20-master` (commit e push autorizados, A-038) e chega ao `siesal-4` pelo merge.
 - **Não coberto:** push do `siesal-4` para o `origin` (continua pendente de autorização), deploy fora do computador, envio forçado.
+
+## A-044 — Push do siesal-4 para o origin (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026: "Autorizo o push", em resposta à pergunta "Autoriza o push do siesal-4 para o GitHub?".
+- Feito pelo Code sem envio forçado: `origin/siesal-4` (`05f3d01`, conferido como ancestral) avançou para `628692e` (L17d, L19, L20, A-041, A-043 e F-051).
+- Commit deste registro direto em `siesal-4`: autorizado pelo autor em chat, em 10/11/2026 ("Autorizo o commit"), só para este arquivo. O push desse commit não foi autorizado.
