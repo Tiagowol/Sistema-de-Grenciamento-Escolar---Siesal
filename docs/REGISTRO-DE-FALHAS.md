@@ -239,3 +239,10 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: a mesma da F-047 e da F-049. Com `core.autocrlf=true`, a troca de ramo deixou as migrações 0007 a 0014 com CRLF na pasta. O `migrate` calcula o hash do arquivo e compara com o hash gravado em `_migracoes` (feito com LF); CRLF muda o hash. A trava funcionou como deveria.
 - Correção: as 8 migrações voltaram para LF na pasta (no git já eram LF; nenhum conteúdo mudou). Segunda tentativa: `aplicada 0015_interface.sql`. Para não repetir na troca de ramo do L19: linha `*.sql text eol=lf` no `.gitattributes`.
 - Como voltar atrás: da migração, `docs/RETORNO-0015.md`. Do `.gitattributes`, apagar a linha (não recomendado: a falha volta).
+
+## F-051 — 10/11/2026 — Ramo do L20 com ponteiro zerado depois de reinício do computador
+- O que falhou: durante o commit e o push do registro A-043, o notebook do autor deu erro de memória e reiniciou (por volta de 22:15). Depois disso, o git não abria o ramo `lote-20-master`: o arquivo do ramo (`.git/refs/heads/lote-20-master`) ficou com 41 bytes zerados ("invalid sha1 pointer 0000…").
+- Causa: o sistema desligou no meio da gravação do arquivo do ramo. O commit em si já estava gravado: o histórico do ramo (reflog) registrava `81379e5` (A-043), com pai `0c2de3b` (L20). O push desse commit não chegou a sair; no GitHub o ramo continuava em `0c2de3b`. O merge não tinha começado (`siesal-4` em `6a0bf10`).
+- Conferido antes de consertar: cópia da pasta `.git` guardada no rascunho da sessão; os 3 commits (`81379e5`, `0c2de3b`, `6a0bf10`) íntegros; o commit `81379e5` só muda o registro de aprovações (6 linhas).
+- Correção: o arquivo do ramo foi regravado com `81379e5`. `git fsck` sem nenhum erro; pasta de trabalho igual ao commit; nenhum arquivo do projeto zerado. Removida uma trava antiga e vazia (`.git/objects/maintenance.lock`, de 20:19, sem git rodando). Contêineres subiram sozinhos; banco com as migrações até a 0017; `/saude` com banco "ok"; site e `/status` respondendo 200, também pelo link externo.
+- Como voltar atrás: restaurar a cópia da pasta `.git` guardada antes do conserto. Não é necessário: nada foi perdido.
