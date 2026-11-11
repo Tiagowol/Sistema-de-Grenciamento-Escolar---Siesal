@@ -8,6 +8,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { lerModulos } from '../modulos.js';
 import {
   ARREDONDAMENTOS,
   corDaEscolaLegivel,
@@ -137,6 +138,8 @@ export async function entradasEscolaresDoAluno(
   de: string,
   ate: string,
 ): Promise<Linha[]> {
+  // L20: com o módulo calendário desligado pelo Master, a Agenda não traz itens da escola
+  if (!(await lerModulos(tx)).calendario) return [];
   const itens = await itensVisiveis(tx, { perfil: 'aluno', usuarioId }, de, ate);
   const ocultos = new Set(
     (

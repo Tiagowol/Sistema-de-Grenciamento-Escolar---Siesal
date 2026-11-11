@@ -28,6 +28,15 @@ export const BLOQUEIO_MINUTOS = 15;
 export const MENSAGEM_FALHA = 'Credenciais inválidas ou conta temporariamente bloqueada.';
 
 export type Nivel = 'completo' | 'configurar_totp' | 'trocar_senha';
+// Situação da instituição (L20): null = ninguém entra (suspensa, encerrada ou não achada);
+// true = só o Admin entra (em implantação); false = todos entram (ativa)
+async function soAdminEntra(tx: ClienteTransacao): Promise<boolean | null> {
+  const i = await tx.instituicao.findFirst({ select: { situacao: true } });
+  if (i?.situacao === 'ativa') return false;
+  if (i?.situacao === 'em_implantacao') return true;
+  return null;
+}
+
 export type SessaoAtiva = {
   sessaoId: string;
   instituicaoId: string;
@@ -182,8 +191,9 @@ export function criarAutenticacao(dep: Dependencias) {
       dep.banco,
       { instituicaoId: entrada.instituicaoId },
       async (tx): Promise<ResultadoLogin> => {
-        // L18: instituição suspensa pelo Master não entra (a RLS só mostra a própria instituição)
-        if (!(await tx.instituicao.findFirst({ where: { situacao: 'ativa' } }))) {
+        // L18 e L20: suspensa ou encerrada, ninguém entra; em implantação, só o Admin (a RLS só mostra a própria)
+        const soAdmin = await soAdminEntra(tx);
+        if (soAdmin === null) {
           await verificarSenhaFalsa(entrada.senha);
           return { tipo: 'falha' };
         }
@@ -191,6 +201,7 @@ export function criarAutenticacao(dep: Dependencias) {
           where: {
             situacao: 'ativo',
             email: { equals: entrada.email.trim(), mode: 'insensitive' },
+            ...(soAdmin ? { perfil: 'admin' } : {}),
           },
         });
         const cred = usuario
@@ -280,10 +291,15 @@ export function criarAutenticacao(dep: Dependencias) {
         where: { token_hash: lido.hash, revogada_em: null, expira_em: { gt: agora } },
       });
       if (!sessao) return null;
-      // L18: sessão aberta antes da suspensão deixa de valer
-      if (!(await tx.instituicao.findFirst({ where: { situacao: 'ativa' } }))) return null;
+      // L18 e L20: sessão aberta antes da suspensão (ou do encerramento) deixa de valer
+      const soAdmin = await soAdminEntra(tx);
+      if (soAdmin === null) return null;
       const usuario = await tx.usuario.findFirst({
-        where: { id: sessao.usuario_id, situacao: 'ativo' },
+        where: {
+          id: sessao.usuario_id,
+          situacao: 'ativo',
+          ...(soAdmin ? { perfil: 'admin' } : {}),
+        },
       });
       if (!usuario) return null;
       return {

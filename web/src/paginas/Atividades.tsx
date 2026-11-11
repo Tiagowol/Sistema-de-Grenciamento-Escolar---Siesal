@@ -11,6 +11,7 @@ import { useCarregar } from '../componentes/useCarregar';
 import { formatar, paraTexto } from '../datas';
 import { Icone } from '../icones';
 import { texto } from '../linguagem-curta';
+import { moduloLigado } from '../modulos';
 import { previaPlano } from '../plano';
 
 type Filtro = 'todas' | 'atrasadas' | 'andamento' | 'comecar' | 'concluidas';
@@ -402,7 +403,7 @@ function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
         </button>
       </form>
       {/* Pedido de ajuda (L17): ao professor da turma ou à equipe pedagógica */}
-      {ajuda ? (
+      {!moduloLigado('apoio_aluno') ? null : ajuda ? (
         <PedirAjuda
           tarefa={t}
           etapaInicial={t.microetapas.find((m) => !m.feita)?.id}

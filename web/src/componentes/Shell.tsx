@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
-import type { Eu } from '../api';
+import type { Eu, Modulo } from '../api';
 import { Icone, type NomeIcone } from '../icones';
 import { buscarNoMenu } from '../menu';
 import { SinoMensagens, SinoPrazos } from './Sinos';
@@ -35,7 +35,14 @@ const ROTULO_PERFIL: Record<string, string> = {
   responsavel: 'Responsável',
 };
 
-type Item = { id: Pagina; rotulo: string; icone: NomeIcone; so?: string[]; palavras?: string[] };
+type Item = {
+  id: Pagina;
+  rotulo: string;
+  icone: NomeIcone;
+  so?: string[];
+  palavras?: string[];
+  modulo?: Modulo; // L20: some do menu quando o Master desliga o módulo nesta escola
+};
 const ALUNO = ['aluno'];
 const ITENS: Item[] = [
   {
@@ -61,6 +68,7 @@ const ITENS: Item[] = [
   },
   {
     id: 'calendario',
+    modulo: 'calendario',
     rotulo: 'Calendário',
     icone: 'calendar',
     so: ALUNO,
@@ -96,6 +104,7 @@ const ITENS: Item[] = [
   },
   {
     id: 'avisos',
+    modulo: 'mensagens',
     rotulo: 'Avisos',
     icone: 'bell',
     so: ALUNO,
@@ -124,6 +133,7 @@ const ITENS: Item[] = [
   },
   {
     id: 'avisosescola',
+    modulo: 'mensagens',
     rotulo: 'Avisos da escola',
     icone: 'file',
     so: ['admin', 'pedagogico'],
@@ -146,6 +156,7 @@ const ITENS: Item[] = [
   // L19: Admin institucional. O calendário da escola é lido pelos outros perfis (o aluno o vê no Calendário)
   {
     id: 'calendarioescola',
+    modulo: 'calendario',
     rotulo: 'Calendário da escola',
     icone: 'calendar',
     so: ['admin', 'professor', 'pedagogico', 'responsavel'],
@@ -231,7 +242,10 @@ export function Shell({
       // Armazenamento bloqueado: vale só nesta visita
     }
   };
-  const itens = ITENS.filter((i) => !i.so || i.so.includes(eu.usuario.perfil));
+  const ligado = (m?: Modulo) => !m || (eu.modulos?.[m] ?? true);
+  const itens = ITENS.filter(
+    (i) => (!i.so || i.so.includes(eu.usuario.perfil)) && ligado(i.modulo),
+  );
   const atual = itens.find((i) => i.id === pagina);
   const achados = buscarNoMenu(itens, busca, 'acessibilidade');
   const iniciais = eu.usuario.nome
@@ -384,7 +398,7 @@ export function Shell({
             <div className="top-actions">
               {eu.nivel === 'completo' ? (
                 <div className="sinos">
-                  <SinoMensagens aoIr={aoIr} />
+                  {ligado('mensagens') ? <SinoMensagens aoIr={aoIr} /> : null}
                   {eu.usuario.perfil === 'aluno' ? <SinoPrazos aoIr={aoIr} /> : null}
                 </div>
               ) : null}

@@ -1,0 +1,79 @@
+/* Página de status (L20): fora do aplicativo, sem estilo embutido (CSP), contraste alto, alvos de 44 px */
+:root {
+  color-scheme: light dark;
+  --fundo: #ffffff;
+  --texto: #152940;
+  --borda: #4b5563;
+  --ok: #087f78;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #152940;
+    --texto: #ffffff;
+    --borda: #c3ccd8;
+    --ok: #77ddd0;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font:
+    17px / 1.5 system-ui,
+    sans-serif;
+}
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 8px;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  display: grid;
+  gap: 12px;
+}
+li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.circulo {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 3px solid var(--borda);
+}
+li.ok .circulo {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 18px;
+  font: inherit;
+  border-radius: 10px;
+  border: 2px solid var(--texto);
+  background: var(--fundo);
+  color: var(--texto);
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 3px solid var(--ok);
+  outline-offset: 2px;
+}

@@ -1,6 +1,15 @@
 import type { FormEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { apiOperacao, ErroApi, type EuOperacao, type InstituicaoLista } from '../api';
+import {
+  apiOperacao,
+  ErroApi,
+  type EuOperacao,
+  type EventoMaster,
+  type InstituicaoPainel,
+  type Modulo,
+  type Perfil,
+  type Situacao,
+} from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 
@@ -218,16 +227,143 @@ function Totp({ aoConcluir }: { aoConcluir: () => void }) {
   );
 }
 
-// Painel mínimo: ver, criar, suspender e reativar instituições. Só nome, situação e data.
+// Painel do Master (L18 + L20): criar instituição, situação (4), módulos, contagens só numéricas e a trilha
+// do Master. Nenhum nome de pessoa, nota ou dado de aluno.
+const SITUACOES: { valor: Situacao; rotulo: string; efeito: string }[] = [
+  { valor: 'em_implantacao', rotulo: 'Em implantação', efeito: 'só o Admin da escola entra' },
+  { valor: 'ativa', rotulo: 'Ativa', efeito: 'todos entram' },
+  { valor: 'suspensa', rotulo: 'Suspensa', efeito: 'ninguém entra; os dados ficam guardados' },
+  { valor: 'encerrada', rotulo: 'Encerrada', efeito: 'ninguém entra; os dados ficam guardados' },
+];
+const MODULOS: { valor: Modulo; rotulo: string }[] = [
+  { valor: 'mensagens', rotulo: 'Mensagens e avisos' },
+  { valor: 'calendario', rotulo: 'Calendário' },
+  { valor: 'apoio_aluno', rotulo: 'Apoio ao aluno' },
+];
+const PERFIS_CONTAGEM: { valor: Perfil; um: string; varios: string }[] = [
+  { valor: 'admin', um: 'Admin', varios: 'Admin' },
+  { valor: 'professor', um: 'professor', varios: 'professores' },
+  { valor: 'aluno', um: 'aluno', varios: 'alunos' },
+  { valor: 'pedagogico', um: 'Pedagógico', varios: 'Pedagógico' },
+  { valor: 'responsavel', um: 'responsável', varios: 'responsáveis' },
+];
+const situacaoDe = (s: Situacao) => SITUACOES.find((x) => x.valor === s) ?? SITUACOES[1];
+const contagemEmTexto = (c: InstituicaoPainel['contagem']) =>
+  PERFIS_CONTAGEM.map((p) => {
+    const n = c[p.valor] ?? 0;
+    return `${n} ${n === 1 ? p.um : p.varios}`;
+  }).join(', ');
+const dataEHora = (iso: string) =>
+  `${dataCurta(iso)}, ${new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
+function CartaoInstituicao({
+  i,
+  agir,
+}: {
+  i: InstituicaoPainel;
+  agir: (acao: () => Promise<unknown>, ok: string) => Promise<void>;
+}) {
+  const [nova, setNova] = useState<Situacao>(i.situacao);
+  const [confirmar, setConfirmar] = useState('');
+  const atual = situacaoDe(i.situacao);
+  const escolhida = situacaoDe(nova);
+  return (
+    <li className="ops-instituicao">
+      <div>
+        <strong>{i.nome}</strong>
+        <span className="small">
+          Situação: <b>{atual?.rotulo}</b> ({atual?.efeito}). Criada em {dataCurta(i.criado_em)}.
+        </span>
+        <span className="small muted">Pessoas ativas: {contagemEmTexto(i.contagem)}.</span>
+      </div>
+      <fieldset className="ops-modulos">
+        <legend>
+          Módulos<span className="sr-only"> de {i.nome}</span>
+        </legend>
+        {MODULOS.map((m) => (
+          <label key={m.valor} className="opcao-radio">
+            <input
+              type="checkbox"
+              role="switch"
+              aria-checked={i.modulos[m.valor]}
+              checked={i.modulos[m.valor]}
+              onChange={(e) =>
+                void agir(
+                  () => apiOperacao.mudarModulo(i.id, m.valor, e.target.checked),
+                  `${i.nome}: ${m.rotulo} ${e.target.checked ? 'ligado' : 'desligado'}.`,
+                )
+              }
+            />
+            <span>{m.rotulo}</span>
+          </label>
+        ))}
+      </fieldset>
+      <div className="ops-situacao">
+        <Campo rotulo={`Nova situação de ${i.nome}`}>
+          {({ id }) => (
+            <select
+              id={id}
+              value={nova}
+              onChange={(e) => {
+                setNova(e.target.value as Situacao);
+                setConfirmar('');
+              }}
+            >
+              {SITUACOES.map((s) => (
+                <option key={s.valor} value={s.valor}>
+                  {s.rotulo}
+                </option>
+              ))}
+            </select>
+          )}
+        </Campo>
+        {nova === 'encerrada' && i.situacao !== 'encerrada' ? (
+          <Campo
+            rotulo="Para encerrar, escreva o nome da instituição"
+            dica="Ninguém entra depois do encerramento. Os dados ficam guardados."
+          >
+            {({ id, descricao }) => (
+              <input
+                id={id}
+                aria-describedby={descricao}
+                value={confirmar}
+                maxLength={120}
+                onChange={(e) => setConfirmar(e.target.value)}
+              />
+            )}
+          </Campo>
+        ) : null}
+        <button
+          type="button"
+          className="btn btn-outline"
+          disabled={nova === i.situacao}
+          onClick={() =>
+            void agir(
+              () =>
+                apiOperacao.mudarSituacao(i.id, nova, nova === 'encerrada' ? confirmar : undefined),
+              `${i.nome}: agora ${escolhida?.rotulo.toLowerCase()} (${escolhida?.efeito}).`,
+            )
+          }
+        >
+          Mudar a situação<span className="sr-only"> de {i.nome}</span>
+        </button>
+      </div>
+    </li>
+  );
+}
+
 function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
-  const [lista, setLista] = useState<InstituicaoLista[]>([]);
+  const [lista, setLista] = useState<InstituicaoPainel[]>([]);
+  const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
   const [feito, setFeito] = useState('');
 
   const carregar = useCallback(async () => {
     try {
-      setLista((await apiOperacao.instituicoes()).instituicoes);
+      const [p, t] = await Promise.all([apiOperacao.painel(), apiOperacao.trilha()]);
+      setLista(p.instituicoes);
+      setTrilha(t);
     } catch (x) {
       if (x instanceof ErroApi && x.status === 401) return aoSair();
       setErro(mensagem(x, 'Falha ao listar.'));
@@ -243,10 +379,10 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
     try {
       await acao();
       setFeito(ok);
-      await carregar();
     } catch (x) {
       setErro(mensagem(x, 'Não foi possível concluir. Tente de novo.'));
     }
+    await carregar();
   }
 
   async function criar(e: FormEvent) {
@@ -263,7 +399,8 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
           <div className="eyebrow">Operação da plataforma</div>
           <h1>Instituições</h1>
           <p>
-            Você entrou como <b>{eu.usuario}</b>. Esta área não mostra dados de alunos nem de notas.
+            Você entrou como <b>{eu.usuario}</b>. Esta área mostra só números; nunca dados de alunos
+            nem de notas.
           </p>
         </div>
         <button
@@ -304,41 +441,31 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
         {lista.length === 0 ? <p className="muted">Nenhuma instituição cadastrada.</p> : null}
         <ul className="ops-lista">
           {lista.map((i) => (
-            <li key={i.id}>
-              <div>
-                <strong>{i.nome}</strong>
-                <span className="small muted">
-                  Situação: {i.situacao === 'ativa' ? 'ativa' : 'suspensa'}. Criada em{' '}
-                  {dataCurta(i.criado_em)}.
-                </span>
-              </div>
-              {i.situacao === 'ativa' ? (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() =>
-                    void agir(
-                      () => apiOperacao.suspender(i.id),
-                      `${i.nome}: suspensa. As pessoas dessa instituição não entram até a reativação.`,
-                    )
-                  }
-                >
-                  Suspender<span className="sr-only"> {i.nome}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() =>
-                    void agir(() => apiOperacao.reativar(i.id), `${i.nome}: reativada.`)
-                  }
-                >
-                  Reativar<span className="sr-only"> {i.nome}</span>
-                </button>
-              )}
-            </li>
+            <CartaoInstituicao key={`${i.id}-${i.situacao}`} i={i} agir={agir} />
           ))}
         </ul>
+      </section>
+      <section className="card mt" aria-labelledby="ops-trilha-titulo">
+        <div className="card-head">
+          <h2 id="ops-trilha-titulo">Trilha do Master</h2>
+        </div>
+        {trilha ? (
+          <>
+            <p>
+              {trilha.integra
+                ? 'A trilha está íntegra: nenhum registro foi alterado.'
+                : 'Atenção: a conferência achou registro alterado na trilha.'}
+            </p>
+            <ol className="lista-versoes">
+              {trilha.eventos.map((e) => (
+                <li key={e.seq}>
+                  {dataEHora(e.criado_em)} · {e.ator} · {e.acao}
+                  {e.alvo ? ` · ${e.alvo}` : ''}
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : null}
       </section>
     </>
   );

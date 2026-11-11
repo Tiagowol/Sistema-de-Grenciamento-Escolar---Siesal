@@ -1080,3 +1080,18 @@ fieldset {
   border: 0;
   padding: 0;
 }
+
+/* L20: painel do Master (situação, módulos e contagens) no mesmo padrão da lista do L18 */
+.ops-instituicao {
+  align-items: flex-start;
+}
+.ops-modulos {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.ops-situacao {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 220px;
+  min-width: 0;
+}

@@ -3,6 +3,7 @@ import { api, ErroApi, type Eu, type Identidade, URL_LOGOTIPO } from './api';
 import { type Pagina, Shell } from './componentes/Shell';
 import { BotaoVLibras } from './componentes/VLibras';
 import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } from './interface';
+import { definirModulos } from './modulos';
 import { Acessibilidade } from './paginas/Acessibilidade';
 import { Agenda } from './paginas/Agenda';
 import { Ajuda } from './paginas/Ajuda';
@@ -60,7 +61,9 @@ export function App() {
 
   const atualizarEu = useCallback(async () => {
     try {
-      setEu(await api.eu());
+      const novo = await api.eu();
+      definirModulos(novo.modulos); // L20: o que o Master desligou some das telas
+      setEu(novo);
     } catch (x) {
       if (!(x instanceof ErroApi)) throw x;
       setEu(null);
@@ -199,7 +202,13 @@ export function App() {
   if (!eu)
     return (
       <>
-        <Login instituicaoPadrao={padrao} aoEntrar={setEu} />
+        <Login
+          instituicaoPadrao={padrao}
+          aoEntrar={(novo) => {
+            setEu(novo);
+            void atualizarEu(); // L20: busca também os módulos ligados desta escola
+          }}
+        />
         {vlibras}
       </>
     );

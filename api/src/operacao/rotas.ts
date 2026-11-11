@@ -2,11 +2,13 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { type ConfigCookie, cookieDeSaida, lerCookie, serializarCookie } from '../auth/sessao.js';
 import type { PrismaClient } from '../gerado/prisma/client.js';
+import { MODULOS } from '../modulos.js';
 import {
   criarOperacao,
   FALHA_OPERACAO,
   type NivelOperacao,
   type SessaoOperacao,
+  SITUACOES,
 } from './servico.js';
 
 // Cookie próprio do Master: nunca é o cookie da escola, e a sessão escolar não vale aqui
@@ -27,6 +29,11 @@ const corpoPrimeiroAcesso = z.strictObject({
 const corpoCodigo = z.strictObject({ codigo: z.string().min(6).max(6) });
 const corpoInstituicao = z.strictObject({ nome: z.string().trim().min(1).max(120) });
 const parametroId = z.strictObject({ id: z.uuid() });
+const corpoSituacao = z.strictObject({
+  situacao: z.enum(SITUACOES),
+  confirmar_nome: z.string().max(120).optional(),
+});
+const corpoModulo = z.strictObject({ modulo: z.enum(MODULOS), ligado: z.boolean() });
 
 export type OpcoesOperacao = {
   banco: PrismaClient;
@@ -145,6 +152,63 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     return resposta
       .code(201)
       .send({ instituicao: await ops.criarInstituicao(sessao, corpo.data.nome) });
+  });
+
+  // L20: painel com módulos e contagens (só números), trilha do Master, situação e módulos
+  app.get('/operacao/painel', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { instituicoes: await ops.painel() };
+  });
+
+  app.get('/operacao/auditoria', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const t = await ops.trilha();
+    return {
+      integra: t.problemas === 0,
+      eventos: t.eventos.map((e) => ({ ...e, seq: Number(e.seq) })),
+    };
+  });
+
+  app.post('/operacao/instituicoes/:id/situacao', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const parametros = parametroId.safeParse(requisicao.params);
+    const corpo = corpoSituacao.safeParse(requisicao.body);
+    if (!parametros.success || !corpo.success)
+      return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await ops.mudarSituacao(
+      sessao,
+      parametros.data.id,
+      corpo.data.situacao,
+      corpo.data.confirmar_nome,
+    );
+    if (r === 'nao_encontrada')
+      return resposta.code(404).send({ erro: 'Instituição não encontrada.' });
+    if (r === 'confirmacao')
+      return resposta
+        .code(409)
+        .send({ erro: 'Para encerrar, escreva o nome da instituição exatamente como aparece.' });
+    return resposta.code(204).send();
+  });
+
+  app.post('/operacao/instituicoes/:id/modulos', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const parametros = parametroId.safeParse(requisicao.params);
+    const corpo = corpoModulo.safeParse(requisicao.body);
+    if (!parametros.success || !corpo.success)
+      return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await ops.mudarModulo(
+      sessao,
+      parametros.data.id,
+      corpo.data.modulo,
+      corpo.data.ligado,
+    );
+    if (r === 'nao_encontrada')
+      return resposta.code(404).send({ erro: 'Instituição não encontrada.' });
+    return resposta.code(204).send();
   });
 
   for (const [acao, situacao] of [

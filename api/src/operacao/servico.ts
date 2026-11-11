@@ -5,6 +5,7 @@ import { hashSenha, validarSenha, verificarSenha, verificarSenhaFalsa } from '..
 import { base32Codificar, gerarSegredoTotp, uriOtpauth, verificarTotp } from '../auth/totp.js';
 import type { ClienteTransacao } from '../banco/withTenant.js';
 import type { PrismaClient } from '../gerado/prisma/client.js';
+import { type EstadoModulos, MODULOS, type Modulo } from '../modulos.js';
 
 // Login e painel mínimo dos Masters (L18). Tudo roda como o papel siesal_ops, que não tem
 // nenhuma permissão em tabela escolar. Nenhuma função daqui usa withTenant.
@@ -22,6 +23,13 @@ export type SessaoOperacao = {
   nivel: NivelOperacao;
 };
 export type InstituicaoLista = { id: string; nome: string; situacao: string; criado_em: Date };
+// L20: situações da instituição e módulos que o Master liga e desliga
+export const SITUACOES = ['em_implantacao', 'ativa', 'suspensa', 'encerrada'] as const;
+export type Situacao = (typeof SITUACOES)[number];
+export type PainelInstituicao = InstituicaoLista & {
+  modulos: EstadoModulos;
+  contagem: Record<string, number>; // perfil -> usuários ativos (só números)
+};
 type Entrada =
   | { tipo: 'ok'; token: string; duracao: number; nivel: NivelOperacao; usuario: string }
   | { tipo: 'falha' };
@@ -344,27 +352,102 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
-  // Suspender e reativar: muda só a situação. Nada se apaga.
+  // Muda só a situação (L18: suspender e reativar; L20: as 4 situações). Nada se apaga.
+  // Encerrar pede o nome da instituição escrito igual (segundo passo da confirmação).
+  const ACAO_DA_SITUACAO: Record<Situacao, string> = {
+    em_implantacao: 'instituicao.em_implantacao',
+    ativa: 'instituicao.reativada',
+    suspensa: 'instituicao.suspensa',
+    encerrada: 'instituicao.encerrada',
+  };
   async function mudarSituacao(
     sessao: SessaoOperacao,
     id: string,
-    situacao: 'ativa' | 'suspensa',
-  ): Promise<'ok' | 'nao_encontrada' | 'sem_mudanca'> {
+    situacao: Situacao,
+    confirmarNome?: string,
+  ): Promise<'ok' | 'nao_encontrada' | 'sem_mudanca' | 'confirmacao'> {
     return comoOperacao(dep.banco, async (tx) => {
-      const atual = await tx.$queryRaw<{ situacao: string }[]>`
-        SELECT situacao FROM instituicao WHERE id = ${id}::uuid FOR UPDATE`;
+      const atual = await tx.$queryRaw<{ situacao: string; nome: string }[]>`
+        SELECT situacao, nome FROM instituicao WHERE id = ${id}::uuid FOR UPDATE`;
       if (!atual[0]) return 'nao_encontrada';
       if (atual[0].situacao === situacao) return 'sem_mudanca';
+      if (situacao === 'encerrada' && confirmarNome?.trim() !== atual[0].nome) return 'confirmacao';
       await tx.$executeRaw`UPDATE instituicao SET situacao = ${situacao} WHERE id = ${id}::uuid`;
       await auditar(
         tx,
         `master:${sessao.usuario}`,
-        situacao === 'suspensa' ? 'instituicao.suspensa' : 'instituicao.reativada',
+        ACAO_DA_SITUACAO[situacao],
         `instituicao:${id}`,
-        { de: atual[0].situacao, para: situacao },
+        {
+          de: atual[0].situacao,
+          para: situacao,
+        },
       );
       return 'ok';
     });
+  }
+
+  // Painel (L20): instituições com módulos e contagens por perfil. As contagens vêm da função do banco,
+  // que devolve só números; o siesal_ops continua sem ler a tabela usuario.
+  async function painel(): Promise<PainelInstituicao[]> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const insts = await tx.$queryRaw<InstituicaoLista[]>`
+        SELECT id, nome, situacao, criado_em FROM instituicao ORDER BY criado_em, nome`;
+      const ids = insts.map((i) => i.id);
+      const modulos = await tx.$queryRaw<
+        { instituicao_id: string; modulo: Modulo; ligado: boolean }[]
+      >`
+        SELECT instituicao_id, modulo, ligado FROM instituicao_modulo`;
+      const contagens = ids.length
+        ? await tx.$queryRaw<{ instituicao_id: string; perfil: string; total: number }[]>`
+            SELECT instituicao_id, perfil, total FROM contagem_por_perfil(${ids}::uuid[])`
+        : [];
+      return insts.map((i) => {
+        const estado = Object.fromEntries(MODULOS.map((m) => [m, true])) as EstadoModulos;
+        for (const m of modulos) if (m.instituicao_id === i.id) estado[m.modulo] = m.ligado;
+        const contagem: Record<string, number> = {};
+        for (const c of contagens) if (c.instituicao_id === i.id) contagem[c.perfil] = c.total;
+        return { ...i, modulos: estado, contagem };
+      });
+    });
+  }
+
+  async function mudarModulo(
+    sessao: SessaoOperacao,
+    id: string,
+    modulo: Modulo,
+    ligado: boolean,
+  ): Promise<'ok' | 'nao_encontrada'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const existe = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM instituicao WHERE id = ${id}::uuid`;
+      if (!existe[0]) return 'nao_encontrada';
+      await tx.$executeRaw`
+        INSERT INTO instituicao_modulo (instituicao_id, modulo, ligado) VALUES (${id}::uuid, ${modulo}, ${ligado})
+        ON CONFLICT (instituicao_id, modulo) DO UPDATE SET ligado = EXCLUDED.ligado, atualizado_em = now()`;
+      await auditar(
+        tx,
+        `master:${sessao.usuario}`,
+        ligado ? 'modulo.ligado' : 'modulo.desligado',
+        `instituicao:${id}`,
+        { modulo },
+      );
+      return 'ok';
+    });
+  }
+
+  // Trilha do Master (últimos 100 eventos) e conferência da cadeia de hash
+  async function trilha() {
+    return comoOperacao(dep.banco, async (tx) => ({
+      eventos: await tx.$queryRaw<
+        { seq: bigint; ator: string; acao: string; alvo: string; criado_em: Date }[]
+      >`SELECT seq, ator, acao, alvo, criado_em FROM operator_auditoria ORDER BY seq DESC LIMIT 100`,
+      problemas: (
+        await tx.$queryRaw<
+          { evento_id: bigint }[]
+        >`SELECT evento_id FROM operator_auditoria_verificar()`
+      ).length,
+    }));
   }
 
   return {
@@ -377,6 +460,9 @@ export function criarOperacao(dep: DependenciasOperacao) {
     listarInstituicoes,
     criarInstituicao,
     mudarSituacao,
+    painel,
+    mudarModulo,
+    trilha,
   };
 }
 

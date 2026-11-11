@@ -19,9 +19,11 @@ import {
   serializarCookie,
 } from './auth/sessao.js';
 import { registrarAvisos } from './avisos/rotas.js';
+import { withTenant } from './banco/withTenant.js';
 import { registrarConta } from './conta/rotas.js';
 import { registrarEscola } from './escola/rotas.js';
 import type { PrismaClient } from './gerado/prisma/client.js';
+import { lerModulos, moduloDaRota } from './modulos.js';
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
 import { registrarOperacao } from './operacao/rotas.js';
@@ -59,7 +61,17 @@ const corpoCodigo = z.strictObject({ codigo: z.string().min(6).max(20) });
 // Monta a API. Sem banco ou AUTH_SECRET, só a rota de saúde existe (deny by default).
 export function criarApp(opcoes: OpcoesApp = {}) {
   const app = Fastify({ logger: opcoes.logger ?? false, trustProxy: opcoes.trustProxy ?? false });
-  app.get('/saude', async () => ({ status: 'ok' }));
+  // Saúde pública (L20: diz também se o banco responde). Só "ok" ou "fora": nenhum dado e nenhuma credencial.
+  const bancoSaude = opcoes.banco;
+  app.get('/saude', async () => {
+    if (!bancoSaude) return { status: 'ok' };
+    try {
+      await bancoSaude.$queryRaw`SELECT 1`;
+      return { status: 'ok', banco: 'ok' };
+    } catch {
+      return { status: 'ok', banco: 'fora' };
+    }
+  });
   if (!opcoes.banco || !opcoes.authSecret) return app;
 
   // Configuração pública mínima para a tela de login (nenhum segredo)
@@ -150,6 +162,18 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return resposta.header('set-cookie', cookieDeSaida(cookie)).code(204).send();
   });
 
+  // L20: rota de módulo desligado pelo Master responde 403 para todos os perfis da escola
+  const banco = opcoes.banco;
+  app.addHook('preHandler', async (requisicao, resposta) => {
+    const modulo = moduloDaRota(requisicao.url);
+    if (!modulo) return;
+    const sessao = await auth.obterSessao(lerCookie(requisicao.headers.cookie, cookie.nome));
+    if (!sessao) return; // a própria rota responde 401
+    const ligados = await withTenant(banco, { instituicaoId: sessao.instituicaoId }, lerModulos);
+    if (!ligados[modulo])
+      return resposta.code(403).send({ erro: 'Este recurso está desligado nesta escola.' });
+  });
+
   registrarNucleo(app, { banco: opcoes.banco, exigirSessao, agora: opcoes.agora });
   registrarTurmas(app, { banco: opcoes.banco, exigirSessao });
   registrarNotas(app, { banco: opcoes.banco, exigirSessao });
@@ -181,6 +205,8 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return {
       nivel: sessao.nivel,
       usuario: { id: sessao.usuarioId, nome: sessao.nome, perfil: sessao.perfil },
+      // L20: o site esconde do menu o que o Master desligou nesta escola
+      modulos: await withTenant(banco, { instituicaoId: sessao.instituicaoId }, lerModulos),
     };
   });
 

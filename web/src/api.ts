@@ -1,7 +1,14 @@
 // Cliente da API. Tudo passa por /api (nginx em produção, proxy do Vite em desenvolvimento).
 export type Nivel = 'completo' | 'configurar_totp' | 'trocar_senha';
 export type Perfil = 'admin' | 'professor' | 'aluno' | 'pedagogico' | 'responsavel';
-export type Eu = { nivel: Nivel; usuario: { id: string; nome: string; perfil: Perfil } };
+// L20: módulos que o Master liga e desliga por escola (sem a informação, tudo ligado)
+export type Modulo = 'mensagens' | 'calendario' | 'apoio_aluno';
+export type EstadoModulos = Record<Modulo, boolean>;
+export type Eu = {
+  nivel: Nivel;
+  usuario: { id: string; nome: string; perfil: Perfil };
+  modulos?: EstadoModulos;
+};
 export type UsuarioLista = {
   id: string;
   perfil: Perfil;
@@ -556,10 +563,23 @@ export const api = {
 // L18: Masters (/operacao). Rotas e cookie próprios; nada daqui toca em dado escolar.
 export type NivelOperacao = 'completo' | 'configurar_totp';
 export type EuOperacao = { nivel: NivelOperacao; usuario: string };
+export type Situacao = 'em_implantacao' | 'ativa' | 'suspensa' | 'encerrada';
 export type InstituicaoLista = {
   id: string;
   nome: string;
-  situacao: 'ativa' | 'suspensa';
+  situacao: Situacao;
+  criado_em: string;
+};
+// L20: painel com módulos e contagens por perfil (só números)
+export type InstituicaoPainel = InstituicaoLista & {
+  modulos: EstadoModulos;
+  contagem: Partial<Record<Perfil, number>>;
+};
+export type EventoMaster = {
+  seq: number;
+  ator: string;
+  acao: string;
+  alvo: string;
   criado_em: string;
 };
 export const apiOperacao = {
@@ -577,4 +597,13 @@ export const apiOperacao = {
     chamar<{ instituicao: InstituicaoLista }>('POST', '/operacao/instituicoes', { nome }),
   suspender: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/suspender`),
   reativar: (id: string) => chamar<void>('POST', `/operacao/instituicoes/${id}/reativar`),
+  painel: () => chamar<{ instituicoes: InstituicaoPainel[] }>('GET', '/operacao/painel'),
+  mudarSituacao: (id: string, situacao: Situacao, confirmar_nome?: string) =>
+    chamar<void>('POST', `/operacao/instituicoes/${id}/situacao`, {
+      situacao,
+      ...(confirmar_nome === undefined ? {} : { confirmar_nome }),
+    }),
+  mudarModulo: (id: string, modulo: Modulo, ligado: boolean) =>
+    chamar<void>('POST', `/operacao/instituicoes/${id}/modulos`, { modulo, ligado }),
+  trilha: () => chamar<{ integra: boolean; eventos: EventoMaster[] }>('GET', '/operacao/auditoria'),
 };

@@ -97,3 +97,7 @@ Mensagem do autor em chat, em 10/11/2026: "aprovo o merge do L17d e, depois, do 
 - Feito pelo Code só por avanço rápido (`--ff-only`), primeiro `lote-17d-rotulos-libras` e depois `lote-19-admin`. Conferido antes: `siesal-4` (`05f3d01`) é ancestral do L17d, e o L17d é ancestral do L19.
 - Este registro vai no ramo `lote-19-admin` (commit e push autorizados, A-038), porque commit direto em `siesal-4` não foi autorizado. Chega ao `siesal-4` pelo merge do L19.
 - **Não coberto:** push do `siesal-4` para o `origin` (pedir antes), deploy fora do computador, envio forçado. O L20 parte do `siesal-4` depois deste merge.
+
+## A-042 — Proposta do L20 aprovada (10/11/2026)
+Mensagem do autor em chat, em 10/11/2026: "Aprovo o L20", em resposta à proposta em `docs/PLANO-L20.md` (4 situações da instituição com efeito no login; módulos mensagens, calendário e apoio ao aluno, que somem do menu e são negados na API; trilha do Master no painel e contagens só numéricas por função do banco; página `/status` pública servida pelo proxy; matriz v12; migração 0017).
+- Ramo `lote-20-master` a partir do `siesal-4` (`6a0bf10`). Commit e push do ramo: autorizados (A-038). Merge, push do `siesal-4` e migração no banco do site: com autorização ou aviso próprios, como sempre.

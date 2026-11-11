@@ -249,11 +249,12 @@ describe('painel mínimo: instituições', () => {
 });
 
 describe('isolamento: Master sem dado escolar, escola sem /operacao', () => {
+  // L20: instituicao_modulo é configuração da plataforma (módulos ligados por escola), não dado escolar
   it('como siesal_ops, toda tabela escolar responde "permission denied"', async () => {
     const { rows } = await amb.admin.query(
       `SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = 'public' AND c.relkind = 'r'
-          AND c.relname NOT IN ('instituicao', 'operator_account', 'operator_sessao', 'operator_auditoria')`,
+          AND c.relname NOT IN ('instituicao', 'instituicao_modulo', 'operator_account', 'operator_sessao', 'operator_auditoria')`,
     );
     expect(rows.length).toBeGreaterThan(20);
     for (const { relname } of rows as { relname: string }[]) {

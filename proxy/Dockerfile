@@ -6,6 +6,7 @@ RUN apk add --no-cache tzdata
 USER 101
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY manutencao /usr/share/manutencao
+COPY status /usr/share/status
 COPY vigia.sh /vigia.sh
 EXPOSE 8081
 CMD ["/bin/sh", "/vigia.sh"]

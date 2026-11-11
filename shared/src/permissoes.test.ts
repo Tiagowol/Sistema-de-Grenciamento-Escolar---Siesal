@@ -206,7 +206,7 @@ describe('regras fixas da matriz', () => {
   it('só o master cria instituições, liga o login Google da demo e usa acesso excepcional', () => {
     for (const perfil of PERFIS) {
       const so = perfil === 'master' ? 'plataforma' : null;
-      expect(permitido(perfil, 'instituicoes', 'criar_suspender')).toBe(so);
+      expect(permitido(perfil, 'instituicoes', 'administrar')).toBe(so);
       expect(permitido(perfil, 'login_google_demo', 'administrar')).toBe(so);
       expect(permitido(perfil, 'acesso_excepcional', 'usar')).toBe(so);
     }
@@ -297,5 +297,22 @@ describe('matriz v11 (L19: Admin institucional)', () => {
       expect(permitido(perfil, 'calendario_escolar', 'ocultar')).toBe(
         perfil === 'aluno' ? 'proprio' : null,
       );
+  });
+});
+
+describe('matriz v12 (L20: painel Master real)', () => {
+  it('só o master administra situação e módulos das instituições e lê as contagens da plataforma', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(12);
+    for (const perfil of PERFIS) {
+      const so = perfil === 'master' ? 'plataforma' : null;
+      expect(permitido(perfil, 'instituicoes', 'administrar'), perfil).toBe(so);
+      expect(permitido(perfil, 'modulos', 'administrar'), perfil).toBe(so);
+      expect(permitido(perfil, 'metricas_plataforma', 'ler'), perfil).toBe(so);
+    }
+  });
+
+  it('a ação antiga "criar_suspender" não existe mais (virou "administrar")', () => {
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'instituicoes', 'criar_suspender')).toBeNull();
   });
 });

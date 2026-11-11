@@ -8,6 +8,7 @@ import { useCarregar } from '../componentes/useCarregar';
 import { dataLonga, formatar } from '../datas';
 import { Icone } from '../icones';
 import { texto } from '../linguagem-curta';
+import { moduloLigado } from '../modulos';
 import { carregarPreferencias } from '../preferencias';
 
 function Linha({ t, hoje, aoIr }: { t: ResumoTarefa; hoje: string; aoIr: (p: Pagina) => void }) {
@@ -55,7 +56,8 @@ export function MeuDia({
   aoComecar?: (tarefaId: string) => void;
 }) {
   const { dados: d, erro } = useCarregar(api.meuDia);
-  const comEscolha = carregarPreferencias().escolhaAgora;
+  // L20: some também quando o Master desliga o módulo de apoio ao aluno
+  const comEscolha = carregarPreferencias().escolhaAgora && moduloLigado('apoio_aluno');
   if (erro) return <Aviso tipo="warn">{erro}</Aviso>;
   if (!d) return <p role="status">Carregando…</p>;
   const atencao = [...d.atrasadas, ...d.para_hoje, ...d.proximas].slice(0, 4);

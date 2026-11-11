@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <title>SIESAL: situação do sistema</title>
+  <link rel="stylesheet" href="/status.css">
+</head>
+<body>
+  <main>
+    <h1>Situação do sistema</h1>
+    <p>Esta página mostra se o SIESAL está funcionando. Ela não mostra nenhum dado da escola.</p>
+    <ul id="servicos" aria-live="polite">
+      <li data-servico="site"><span class="circulo" aria-hidden="true"></span><span class="texto">Conferindo o site…</span></li>
+      <li data-servico="login"><span class="circulo" aria-hidden="true"></span><span class="texto">Conferindo o sistema de login…</span></li>
+      <li data-servico="banco"><span class="circulo" aria-hidden="true"></span><span class="texto">Conferindo o banco de dados…</span></li>
+    </ul>
+    <p id="quando">Ainda não conferido.</p>
+    <button type="button" id="conferir">Conferir de novo</button>
+    <noscript><p>Para conferir, esta página precisa de JavaScript ligado.</p></noscript>
+  </main>
+  <script src="/status.js"></script>
+</body>
+</html>
