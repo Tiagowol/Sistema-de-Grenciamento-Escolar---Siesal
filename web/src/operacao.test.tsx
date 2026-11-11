@@ -74,7 +74,7 @@ describe('tela /operacao', () => {
   it('sem sessão mostra o login do Master, com rótulos e sem violações do axe', async () => {
     simular({});
     const { container } = render(<Operacao />);
-    await screen.findByRole('heading', { name: 'Entrar na operação' });
+    await screen.findByRole('heading', { name: 'Entrar na gestão' });
     for (const rotulo of ['Usuário', 'Senha', 'Código do aplicativo de autenticação'])
       expect(screen.getByLabelText(rotulo)).toBeTruthy();
     expect((await axe.run(container, semContraste)).violations).toEqual([]);
@@ -216,6 +216,6 @@ describe('tela /operacao', () => {
     });
     render(<Operacao />);
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Sair' }));
-    await screen.findByRole('heading', { name: 'Entrar na operação' });
+    await screen.findByRole('heading', { name: 'Entrar na gestão' });
   });
 });

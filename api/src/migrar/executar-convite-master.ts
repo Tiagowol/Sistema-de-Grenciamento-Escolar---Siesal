@@ -13,4 +13,5 @@ console.log(
   `convite-master: convite de ${usuario} (vale ${VALIDADE_CONVITE_MINUTOS} minutos, uma vez):`,
 );
 console.log(convite);
-console.log('Ele não será mostrado de novo. Use em /operacao, em "Primeiro acesso".');
+console.log('Ele não será mostrado de novo. Use em /gestao, em "Primeiro acesso".');
+console.log(`Ou envie o link: /cadastro/master#${usuario}.${convite} (depois do endereço do site)`);

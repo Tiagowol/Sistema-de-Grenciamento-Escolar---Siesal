@@ -12,8 +12,10 @@ import {
 } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { CodigoQr } from '../componentes/CodigoQr';
+import { lerCodigoDoLink, linkDeCadastro } from '../linkCadastro';
 
-// L18: entrada separada dos Masters (/operacao). Sem menu da escola e sem nenhum dado escolar.
+// L18: entrada separada dos Masters (/gestao; antes /operacao). Sem menu da escola e sem nenhum dado escolar.
 const mensagem = (x: unknown, padrao: string) => (x instanceof ErroApi ? x.message : padrao);
 const dataCurta = (iso: string) => {
   const [ano, mes, dia] = iso.slice(0, 10).split('-');
@@ -29,7 +31,7 @@ function Moldura({ children }: { children: ReactNode }) {
         </div>
         <div>
           <strong>SIESAL</strong>
-          <small>Operação da plataforma</small>
+          <small>Gestão da plataforma</small>
         </div>
       </div>
       {children}
@@ -39,11 +41,15 @@ function Moldura({ children }: { children: ReactNode }) {
 
 // Entrar (usuário, senha e código) ou primeiro acesso (usuário, convite e senha nova)
 function Entrada({ aoEntrar }: { aoEntrar: (eu: EuOperacao) => void }) {
-  const [primeiro, setPrimeiro] = useState(false);
-  const [usuario, setUsuario] = useState('');
+  // Link de cadastro do Master: /cadastro/master#USUARIO.CODIGO (ou só #CODIGO). Depois de ler, o código sai do endereço.
+  const [dosLink] = useState(() => lerCodigoDoLink('/cadastro/master'));
+  const [primeiro, setPrimeiro] = useState(() => dosLink !== null);
+  const [usuario, setUsuario] = useState(() =>
+    dosLink?.split('.')[1] ? (dosLink.split('.')[0] ?? '') : '',
+  );
   const [senha, setSenha] = useState('');
   const [codigo, setCodigo] = useState('');
-  const [convite, setConvite] = useState('');
+  const [convite, setConvite] = useState(() => dosLink?.split('.')[1] ?? dosLink ?? '');
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -76,7 +82,7 @@ function Entrada({ aoEntrar }: { aoEntrar: (eu: EuOperacao) => void }) {
     <form className="card" onSubmit={enviar} noValidate>
       <div className="card-head">
         <h1 className="page-title" style={{ fontSize: 24 }}>
-          {primeiro ? 'Primeiro acesso' : 'Entrar na operação'}
+          {primeiro ? 'Primeiro acesso' : 'Entrar na gestão'}
         </h1>
       </div>
       <div className="stack">
@@ -191,14 +197,21 @@ function Totp({ aoConcluir }: { aoConcluir: () => void }) {
       </div>
       <div className="stack">
         <Aviso>
-          Passo 1: abra um aplicativo de autenticação. Passo 2: adicione uma conta com a chave
-          abaixo. Passo 3: digite o código de 6 números.
+          Passo 1: abra um aplicativo de autenticação no celular (Google Authenticator, Microsoft
+          Authenticator ou Authy). Passo 2: leia o QR code ou digite a chave. Passo 3: digite o
+          código de 6 números que o aplicativo mostra. O código não vem por e-mail.
         </Aviso>
         {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
         {dados ? (
           <>
+            <div style={{ textAlign: 'center' }}>
+              <CodigoQr
+                texto={dados.uri}
+                rotulo="QR code para adicionar a conta ao aplicativo de autenticação"
+              />
+            </div>
             <p>
-              Chave para digitar no aplicativo:{' '}
+              Ou digite esta chave no aplicativo:{' '}
               <code style={{ fontSize: 18, wordBreak: 'break-all' }}>{dados.segredo}</code>
             </p>
             <p className="small muted">
@@ -401,7 +414,7 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
     <>
       <div className="page-title">
         <div>
-          <div className="eyebrow">Operação da plataforma</div>
+          <div className="eyebrow">Gestão da plataforma</div>
           <h1>Instituições</h1>
           <p>
             Você entrou como <b>{eu.usuario}</b>. Esta área mostra só números; nunca dados de alunos
@@ -480,9 +493,27 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
           Gerar convite
         </button>
         {conviteNovo ? (
-          <p role="status" className="mt-sm">
-            Código do convite (vale 7 dias, uma conta só): <strong>{conviteNovo}</strong>
-          </p>
+          <div role="status" className="mt-sm">
+            <p>
+              Código do convite (vale 7 dias, uma conta só): <strong>{conviteNovo}</strong>
+            </p>
+            <p>
+              Link para enviar ao aluno:{' '}
+              <code style={{ wordBreak: 'break-all' }}>{linkDeCadastro('aluno', conviteNovo)}</code>
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() =>
+                void navigator.clipboard
+                  ?.writeText(linkDeCadastro('aluno', conviteNovo))
+                  .then(() => setFeito('Link copiado.'))
+                  .catch(() => setErro('Não foi possível copiar. Selecione o link e copie.'))
+              }
+            >
+              Copiar o link
+            </button>
+          </div>
         ) : null}
       </section>
       <section className="card mt" aria-labelledby="ops-trilha-titulo">
@@ -524,7 +555,7 @@ export function Operacao() {
     setPronto(true);
   }, []);
   useEffect(() => {
-    document.title = 'SIESAL | Operação da plataforma';
+    document.title = 'SIESAL | Gestão da plataforma';
     void atualizar();
   }, [atualizar]);
   const sair = useCallback(() => setEu(null), []);

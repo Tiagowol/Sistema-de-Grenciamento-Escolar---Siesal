@@ -3,12 +3,17 @@ import { useState } from 'react';
 import { api, ErroApi, type Eu } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { lerCodigoDoLink } from '../linkCadastro';
 
 type Props = { instituicaoPadrao: string | null; aoEntrar: (eu: Eu) => void };
 
 export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   // 20c-1: uma pergunta, duas opções. "Sem instituição" pede só e-mail e senha.
-  const [modo, setModo] = useState<'instituicao' | 'individual'>('instituicao');
+  // Link de cadastro do aluno (/cadastro/aluno#CODIGO) já abre "Sem instituição" > Criar conta com o código preenchido
+  const [dosLink] = useState(() => lerCodigoDoLink('/cadastro/aluno'));
+  const [modo, setModo] = useState<'instituicao' | 'individual'>(
+    dosLink ? 'individual' : 'instituicao',
+  );
   const [instituicao, setInstituicao] = useState(instituicaoPadrao ?? '');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -17,8 +22,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
   // Criar conta com o convite do Master (só no modo "Sem instituição")
-  const [criando, setCriando] = useState(false);
-  const [convite, setConvite] = useState('');
+  const [criando, setCriando] = useState(dosLink !== null);
+  const [convite, setConvite] = useState(dosLink ?? '');
   const [nome, setNome] = useState('');
 
   async function criarConta(e: FormEvent) {

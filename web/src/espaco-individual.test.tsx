@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Eu } from './api';
+import { CodigoQr } from './componentes/CodigoQr';
 import { Shell } from './componentes/Shell';
+import { linkDeCadastro } from './linkCadastro';
 import { Login } from './paginas/Login';
 
 // 20c-1: a tela de entrada tem uma pergunta e duas opções; o menu do espaço individual não tem o que é da escola.
@@ -206,5 +208,51 @@ describe('menu do espaço individual', () => {
     const nav = montar('escola');
     expect(within(nav).getByRole('button', { name: /^Notas oficiais/ })).toBeTruthy();
     expect(within(nav).getByRole('button', { name: /^Avisos/ })).toBeTruthy();
+  });
+});
+
+describe('links de cadastro e QR code', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('o link do aluno abre "Sem instituição" > Criar conta com o código já preenchido e o tira do endereço', () => {
+    window.history.replaceState(null, '', '/cadastro/aluno#ABCD-EFGH-JKLM-NPQR');
+    render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
+    expect(screen.getByRole('heading', { name: 'Criar conta' })).toBeTruthy();
+    expect((screen.getByLabelText('Código do convite') as HTMLInputElement).value).toBe(
+      'ABCD-EFGH-JKLM-NPQR',
+    );
+    expect(
+      (screen.getByRole('radio', { name: 'Sem instituição' }) as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(window.location.hash).toBe('');
+    expect(window.location.pathname).toBe('/cadastro/aluno');
+  });
+
+  it('em outro endereço o código do "#" é ignorado', () => {
+    window.history.replaceState(null, '', '/outra#ABCD-EFGH-JKLM-NPQR');
+    render(<Login instituicaoPadrao="abc" aoEntrar={() => undefined} />);
+    expect(screen.getByRole('heading', { name: 'Entrar' })).toBeTruthy();
+    expect(window.location.hash).toBe('#ABCD-EFGH-JKLM-NPQR');
+  });
+
+  it('monta o link com o código depois do "#"', () => {
+    const l = linkDeCadastro('aluno', 'ABCD-EFGH-JKLM-NPQR');
+    expect(l).toBe(`${window.location.origin}/cadastro/aluno#ABCD-EFGH-JKLM-NPQR`);
+    expect(linkDeCadastro('master', 'w1.XYZ')).toContain('/cadastro/master#');
+  });
+
+  it('o QR code é um SVG com texto alternativo e muda com o conteúdo', () => {
+    const { container, rerender } = render(
+      <CodigoQr texto="otpauth://totp/SIESAL:a?secret=ABC" rotulo="QR de teste" />,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg?.getAttribute('role')).toBe('img');
+    expect(svg?.getAttribute('aria-label')).toBe('QR de teste');
+    const antes = container.querySelector('path')?.getAttribute('d');
+    expect(antes && antes.length > 200).toBe(true);
+    rerender(<CodigoQr texto="otpauth://totp/SIESAL:b?secret=XYZ" rotulo="QR de teste" />);
+    expect(container.querySelector('path')?.getAttribute('d')).not.toBe(antes);
   });
 });

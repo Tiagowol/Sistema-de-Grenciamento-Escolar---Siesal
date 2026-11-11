@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, ErroApi } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { CodigoQr } from '../componentes/CodigoQr';
 
 // Administrador precisa do segundo fator. A chave aparece em texto para quem não lê QR code.
 export function ConfigurarTotp({ aoConcluir }: { aoConcluir: () => void }) {
@@ -64,14 +65,21 @@ export function ConfigurarTotp({ aoConcluir }: { aoConcluir: () => void }) {
       </h1>
       <div className="stack">
         <Aviso>
-          Passo 1: abra um aplicativo de autenticação. Passo 2: adicione uma conta com a chave
-          abaixo. Passo 3: digite o código de 6 números.
+          Passo 1: abra um aplicativo de autenticação no celular (Google Authenticator, Microsoft
+          Authenticator ou Authy). Passo 2: leia o QR code ou digite a chave. Passo 3: digite o
+          código de 6 números que o aplicativo mostra. O código não vem por e-mail.
         </Aviso>
         {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
         {dados ? (
           <>
+            <div style={{ textAlign: 'center' }}>
+              <CodigoQr
+                texto={dados.uri}
+                rotulo="QR code para adicionar a conta ao aplicativo de autenticação"
+              />
+            </div>
             <p>
-              Chave para digitar no aplicativo:{' '}
+              Ou digite esta chave no aplicativo:{' '}
               <code style={{ fontSize: 18, wordBreak: 'break-all' }}>{dados.segredo}</code>
             </p>
             <p className="small muted">

@@ -51,11 +51,11 @@ Antes: preencher `SIESAL_APP_PASSWORD` no `.env` (`openssl rand -hex 24`). O `mi
 docker compose --profile release run --rm bootstrap
 ```
 
-## Lote 18: login dos Masters (`/operacao`)
-- Entrada separada em `http://localhost:18080/operacao`. Rotas da API: `POST /operacao/login`, `POST /operacao/primeiro-acesso`, `GET /operacao/eu`, `POST /operacao/logout`, `POST /operacao/totp/iniciar`, `POST /operacao/totp/confirmar`, `GET` e `POST /operacao/instituicoes`, `POST /operacao/instituicoes/:id/suspender` e `/reativar`.
+## Lote 18: login dos Masters (`/gestao`, antes `/operacao`)
+- Entrada separada em `http://localhost:18080/gestao` (o endereço antigo `/operacao` leva para `/gestao`). Rotas da API: `POST /operacao/login`, `POST /operacao/primeiro-acesso`, `GET /operacao/eu`, `POST /operacao/logout`, `POST /operacao/totp/iniciar`, `POST /operacao/totp/confirmar`, `GET` e `POST /operacao/instituicoes`, `POST /operacao/instituicoes/:id/suspender` e `/reativar`.
 - A API age como o papel `siesal_ops` por `SET LOCAL ROLE`, só dentro de uma transação. Esse papel não tem permissão em nenhuma tabela escolar. Detalhes e provas em `docs/PROPOSTA-L18-ARQUITETURA-MASTER.md`.
 - Cookie próprio (`__Host-siesal_operacao`), TOTP obrigatório, sessão de 1 hora, trilha própria (`operator_auditoria`, append-only com hash).
-- Primeiro acesso: o dono do servidor gera um convite (vale 30 minutos e uma vez) e usa em `/operacao`, em "Primeiro acesso". No terminal WSL, trocando `nome` pelo usuário do Master:
+- Primeiro acesso: o dono do servidor gera um convite (vale 30 minutos e uma vez) e usa em `/gestao`, em "Primeiro acesso" (ou no link `/cadastro/master#usuario.codigo`). No terminal WSL, trocando `nome` pelo usuário do Master:
 
 ```
 MASTER_USUARIO=nome docker compose --profile release run --rm convite-master
