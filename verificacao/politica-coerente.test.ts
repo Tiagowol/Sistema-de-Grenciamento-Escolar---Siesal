@@ -142,6 +142,15 @@ describe('política das preferências de acessibilidade (L20a) x matriz de permi
   });
 });
 
+describe('política das disciplinas do aluno (L20b) x matriz de permissões (v14)', () => {
+  it.each(PERFIS)('perfil %s: disciplinas e catálogo batem com a matriz', (perfil) => {
+    expect(podeUsarNucleo(perfil)).toBe(
+      permitido(perfil, 'disciplinas_aluno', 'administrar') === 'proprio',
+    );
+    expect(podeUsarNucleo(perfil)).toBe(permitido(perfil, 'catalogo_disciplinas', 'ler') !== null);
+  });
+});
+
 describe('política do Admin institucional (L19) x matriz de permissões (v11)', () => {
   it.each(PERFIS)(
     'perfil %s: calendário da escola, regras e identidade batem com a matriz',

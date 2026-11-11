@@ -66,6 +66,8 @@ const RECURSOS_ESCOLARES = [
   'pedidos_suporte',
   'pedidos_informacao',
   'preferencias_acessibilidade',
+  'catalogo_disciplinas',
+  'disciplinas_aluno',
   'preferencias_interface',
   'calendario_escolar',
   'regras_nota',
@@ -200,6 +202,18 @@ describe('regras fixas da matriz', () => {
     for (const perfil of PERFIS) {
       expect(permitido(perfil, 'preferencias_acessibilidade', 'administrar')).toBe(
         perfil === 'master' ? null : 'proprio',
+      );
+    }
+  });
+
+  it('as disciplinas do aluno e o catálogo são só do aluno (v14, L20b)', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(14);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'disciplinas_aluno', 'administrar')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'catalogo_disciplinas', 'ler')).toBe(
+        perfil === 'aluno' ? 'instituicao' : null,
       );
     }
   });

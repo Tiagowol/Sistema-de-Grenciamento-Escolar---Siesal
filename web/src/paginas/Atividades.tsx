@@ -4,6 +4,7 @@ import { api, ErroApi, type Tarefa } from '../api';
 import { BLOCOS } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
+import { CaixaDeDisciplina } from '../componentes/CaixaDeDisciplina';
 import { Campo } from '../componentes/Campo';
 import { PedirAjuda } from '../componentes/PedirAjuda';
 import { TempoVisual } from '../componentes/TempoVisual';
@@ -49,6 +50,7 @@ function situacaoDe(
 function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
   const [titulo, setTitulo] = useState('');
   const [disciplina, setDisciplina] = useState('');
+  const [disciplinaId, setDisciplinaId] = useState<string | null>(null);
   const [prazo, setPrazo] = useState('');
   const [tipo, setTipo] = useState<Tarefa['tipo']>('tarefa');
   const [prioridade, setPrioridade] = useState<Tarefa['prioridade']>('media');
@@ -65,6 +67,7 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
       await api.criarTarefa({
         titulo: titulo.trim(),
         disciplina: disciplina.trim(),
+        disciplina_id: disciplinaId,
         tipo,
         prioridade,
         prazo: prazo || null,
@@ -105,13 +108,20 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
             />
           )}
         </Campo>
-        <Campo rotulo="Disciplina (opcional)">
-          {({ id }) => (
-            <input
+        <Campo rotulo="Disciplina (opcional)" dica="Digite as primeiras letras e escolha na lista.">
+          {({ id, descricao }) => (
+            <CaixaDeDisciplina
               id={id}
-              value={disciplina}
-              maxLength={80}
-              onChange={(e) => setDisciplina(e.target.value)}
+              descricao={descricao}
+              valor={disciplina}
+              aoDigitar={(t) => {
+                setDisciplina(t);
+                setDisciplinaId(null);
+              }}
+              aoEscolher={(e) => {
+                setDisciplina(e.nome);
+                setDisciplinaId(e.id);
+              }}
             />
           )}
         </Campo>

@@ -29,6 +29,7 @@ const corpoTarefa = z.strictObject({
   prioridade: z.enum(['baixa', 'media', 'alta']).optional(),
   situacao: z.enum(['pendente', 'em_andamento', 'concluida']).optional(),
   tipo_atividade_id: z.uuid().nullable().optional(),
+  disciplina_id: z.uuid().nullable().optional(), // L20b: disciplina da lista do aluno
 });
 
 type Linha = Record<string, unknown>;
@@ -105,7 +106,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   // ---------- Tarefas e microetapas (L6) ----------
   const listarTarefas = async (tx: ClienteTransacao, usuarioId: string, soId?: string) => {
     const tarefas = await tx.$queryRaw<Linha[]>`
-      SELECT id, titulo, descricao, disciplina, tipo, tipo_atividade_id, prazo::text AS prazo, prioridade, situacao
+      SELECT id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, tipo_atividade_id, prazo::text AS prazo, prioridade, situacao
         FROM tarefa
        WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL
          AND (${soId ?? null}::uuid IS NULL OR id = ${soId ?? null}::uuid)
@@ -131,10 +132,13 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     async ({ tx, sessao, corpo, resposta }) => {
       if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
         return resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
+      const escolha = await resolverDisciplina(tx, sessao.usuarioId, corpo);
+      if (escolha === 'invalida')
+        return resposta.code(400).send({ erro: 'Disciplina não encontrada.' });
       const [nova] = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, tipo, prazo, prioridade, situacao, tipo_atividade_id)
+        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, prazo, prioridade, situacao, tipo_atividade_id)
         VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.descricao ?? ''},
-                ${corpo.disciplina ?? ''}, ${corpo.tipo ?? 'tarefa'}, ${corpo.prazo ?? null}::date,
+                ${escolha.texto}, ${escolha.id}::uuid, ${corpo.tipo ?? 'tarefa'}, ${corpo.prazo ?? null}::date,
                 ${corpo.prioridade ?? 'media'}, ${corpo.situacao ?? 'pendente'}, ${corpo.tipo_atividade_id ?? null}::uuid)
         RETURNING id`;
       if (!nova) throw new Error('Falha ao criar tarefa.');
@@ -162,13 +166,21 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     if (!antes) return naoAchou(c);
     if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
       return c.resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
+    // Disciplina: só muda se veio disciplina ou disciplina_id (null ou vazio limpa)
+    const mexeuDisciplina = corpo.disciplina !== undefined || corpo.disciplina_id !== undefined;
+    const escolha = mexeuDisciplina
+      ? await resolverDisciplina(tx, sessao.usuarioId, corpo)
+      : ({ texto: '', id: null } as EscolhaDisciplina);
+    if (escolha === 'invalida')
+      return c.resposta.code(400).send({ erro: 'Disciplina não encontrada.' });
     // Campos ausentes mantêm o valor atual; prazo nulo apaga o prazo
     const temPrazo = corpo.prazo !== undefined;
     await tx.$executeRaw`
       UPDATE tarefa SET
         titulo = coalesce(${corpo.titulo ?? null}::text, titulo),
         descricao = coalesce(${corpo.descricao ?? null}::text, descricao),
-        disciplina = coalesce(${corpo.disciplina ?? null}::text, disciplina),
+        disciplina = CASE WHEN ${mexeuDisciplina}::boolean THEN ${escolha.texto}::text ELSE disciplina END,
+        disciplina_aluno_id = CASE WHEN ${mexeuDisciplina}::boolean THEN ${escolha.id}::uuid ELSE disciplina_aluno_id END,
         tipo = coalesce(${corpo.tipo ?? null}::text, tipo),
         prioridade = coalesce(${corpo.prioridade ?? null}::text, prioridade),
         tipo_atividade_id = CASE WHEN ${corpo.tipo_atividade_id !== undefined}::boolean THEN ${corpo.tipo_atividade_id ?? null}::uuid ELSE tipo_atividade_id END,
@@ -645,16 +657,21 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     '/notas-pessoais',
     {
       corpo: z.strictObject({
-        disciplina: texto(80),
+        disciplina: texto(80).optional(),
+        disciplina_id: z.uuid().nullable().optional(), // L20b: disciplina da lista do aluno
         descricao: z.string().trim().max(200).optional(),
         valor: z.number().min(0).max(10),
         dia,
       }),
     },
     async ({ tx, sessao, corpo, resposta }) => {
+      const escolha = await resolverDisciplina(tx, sessao.usuarioId, corpo);
+      if (escolha === 'invalida')
+        return resposta.code(400).send({ erro: 'Disciplina não encontrada.' });
+      if (!escolha.texto) return resposta.code(400).send({ erro: 'Informe a disciplina.' });
       const [n] = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO nota_pessoal (instituicao_id, usuario_id, disciplina, descricao, valor, dia)
-        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.disciplina}, ${corpo.descricao ?? ''}, ${Math.round(corpo.valor * 10) / 10}, ${corpo.dia}::date)
+        INSERT INTO nota_pessoal (instituicao_id, usuario_id, disciplina, disciplina_aluno_id, descricao, valor, dia)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${escolha.texto}, ${escolha.id}::uuid, ${corpo.descricao ?? ''}, ${Math.round(corpo.valor * 10) / 10}, ${corpo.dia}::date)
         RETURNING id`;
       await registrarAuditoria(tx, {
         instituicaoId: sessao.instituicaoId,
@@ -670,6 +687,214 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     const n = await c.tx
       .$executeRaw`UPDATE nota_pessoal SET desativado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL`;
     return n === 0 ? naoAchou(c) : undefined;
+  });
+
+  // ---------- Disciplinas do aluno (L20b) ----------
+  // A disciplina escolhida precisa ser do próprio aluno e estar ativa. O texto da tarefa/nota guarda o nome
+  // (histórico); disciplina_aluno_id é a ligação com a lista do aluno. Texto livre ainda é aceito (liga se o nome existir).
+  type EscolhaDisciplina = { texto: string; id: string | null };
+  const resolverDisciplina = async (
+    tx: ClienteTransacao,
+    usuarioId: string,
+    entrada: { disciplina?: string | undefined; disciplina_id?: string | null | undefined },
+  ): Promise<EscolhaDisciplina | 'invalida'> => {
+    if (entrada.disciplina_id) {
+      const [d] = await tx.$queryRaw<{ id: string; nome: string }[]>`
+        SELECT id, nome FROM disciplina_aluno
+         WHERE id = ${entrada.disciplina_id}::uuid AND usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL`;
+      return d ? { texto: d.nome, id: d.id } : 'invalida';
+    }
+    const texto = (entrada.disciplina ?? '').trim();
+    if (!texto) return { texto: '', id: null };
+    const [d] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM disciplina_aluno
+       WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL AND nome_busca = sem_acento(${texto})`;
+    return { texto, id: d?.id ?? null };
+  };
+
+  const LIMITE_PROPRIAS = 20;
+  const ETAPAS = ['fundamental', 'medio', 'tecnico'] as const;
+  const minhasDisciplinas = (tx: ClienteTransacao, usuarioId: string) =>
+    tx.$queryRaw<Linha[]>`
+      SELECT id, nome, origem, catalogo_id FROM disciplina_aluno
+       WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL ORDER BY nome_busca`;
+  const auditarDisciplina = (
+    tx: ClienteTransacao,
+    sessao: SessaoAtiva,
+    acao: string,
+    alvo: string,
+  ) =>
+    registrarAuditoria(tx, {
+      instituicaoId: sessao.instituicaoId,
+      ator: `usuario:${sessao.usuarioId}`,
+      acao,
+      alvo,
+    });
+
+  rota('get', '/minhas-disciplinas', {}, async ({ tx, sessao }) => {
+    const [pref] = await tx.$queryRaw<{ etapa: string | null }[]>`
+      SELECT etapa_disciplinas AS etapa FROM preferencia_usuario WHERE usuario_id = ${sessao.usuarioId}::uuid`;
+    const catalogo = await tx.$queryRaw<Linha[]>`
+      SELECT id, nome, etapas, gerais_em, curso, sinonimos FROM disciplina_catalogo ORDER BY nome_busca`;
+    const minhas = await minhasDisciplinas(tx, sessao.usuarioId);
+    return {
+      etapa: pref?.etapa ?? null,
+      catalogo,
+      minhas,
+      limite_proprias: LIMITE_PROPRIAS,
+    };
+  });
+
+  // Escolher a etapa marca as disciplinas gerais dela (o aluno desmarca as que não tem)
+  rota(
+    'post',
+    '/minhas-disciplinas/etapa',
+    { corpo: z.strictObject({ etapa: z.enum(ETAPAS) }) },
+    async ({ tx, sessao, corpo }) => {
+      await tx.$executeRaw`
+        INSERT INTO preferencia_usuario (instituicao_id, usuario_id, etapa_disciplinas)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.etapa})
+        ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET etapa_disciplinas = EXCLUDED.etapa_disciplinas, atualizado_em = now()`;
+      const marcadas = await tx.$executeRaw`
+        INSERT INTO disciplina_aluno (instituicao_id, usuario_id, nome, catalogo_id, origem)
+        SELECT ${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, k.nome, k.id, 'catalogo'
+          FROM disciplina_catalogo k
+         WHERE ${corpo.etapa} = ANY (k.gerais_em)
+           AND NOT EXISTS (SELECT 1 FROM disciplina_aluno d
+                            WHERE d.usuario_id = ${sessao.usuarioId}::uuid AND d.desativado_em IS NULL AND d.nome_busca = k.nome_busca)`;
+      await auditarDisciplina(tx, sessao, 'disciplina.etapa', `usuario:${sessao.usuarioId}`);
+      return {
+        etapa: corpo.etapa,
+        marcadas,
+        minhas: await minhasDisciplinas(tx, sessao.usuarioId),
+      };
+    },
+  );
+
+  // Trazer as disciplinas das turmas do aluno na escola (origem "escola"; não contam no limite de 20)
+  rota('post', '/minhas-disciplinas/da-escola', {}, async ({ tx, sessao }) => {
+    const novas = await tx.$executeRaw`
+      INSERT INTO disciplina_aluno (instituicao_id, usuario_id, nome, origem)
+      SELECT DISTINCT ON (sem_acento(x.nome)) ${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, x.nome, 'escola'
+        FROM (
+          SELECT di.nome FROM vinculo al
+            JOIN vinculo pr ON pr.tipo = 'professor_turma' AND pr.turma_id = al.turma_id AND pr.desativado_em IS NULL
+            JOIN disciplina di ON di.id = pr.disciplina_id AND di.desativado_em IS NULL
+           WHERE al.tipo = 'aluno_turma' AND al.usuario_id = ${sessao.usuarioId}::uuid AND al.desativado_em IS NULL
+        ) x
+       WHERE NOT EXISTS (SELECT 1 FROM disciplina_aluno d
+                          WHERE d.usuario_id = ${sessao.usuarioId}::uuid AND d.desativado_em IS NULL AND d.nome_busca = sem_acento(x.nome))`;
+    await auditarDisciplina(tx, sessao, 'disciplina.da_escola', `usuario:${sessao.usuarioId}`);
+    return { novas, minhas: await minhasDisciplinas(tx, sessao.usuarioId) };
+  });
+
+  const nomeDisciplina = z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .refine((t) => !/(https?:|www\.|:\/\/|@)/i.test(t), 'Não use links nem e-mail.');
+  rota(
+    'post',
+    '/minhas-disciplinas',
+    {
+      corpo: z.union([
+        z.strictObject({ catalogo_id: z.number().int().positive() }),
+        z.strictObject({ nome: nomeDisciplina }),
+      ]),
+    },
+    async ({ tx, sessao, corpo, resposta }) => {
+      let nome: string;
+      let catalogoId: number | null = null;
+      if ('catalogo_id' in corpo) {
+        const [k] = await tx.$queryRaw<{ id: number; nome: string }[]>`
+          SELECT id, nome FROM disciplina_catalogo WHERE id = ${corpo.catalogo_id}::int`;
+        if (!k) return resposta.code(404).send({ erro: 'Disciplina do catálogo não encontrada.' });
+        nome = k.nome;
+        catalogoId = k.id;
+      } else {
+        nome = corpo.nome;
+        // Nome igual ao de uma do catálogo vira a do catálogo (não conta no limite)
+        const [k] = await tx.$queryRaw<{ id: number; nome: string }[]>`
+          SELECT id, nome FROM disciplina_catalogo WHERE nome_busca = sem_acento(${nome})`;
+        if (k) {
+          nome = k.nome;
+          catalogoId = k.id;
+        }
+      }
+      const [repetida] = await tx.$queryRaw<Linha[]>`
+        SELECT id FROM disciplina_aluno
+         WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL AND nome_busca = sem_acento(${nome})`;
+      if (repetida)
+        return resposta.code(409).send({ erro: 'Você já tem uma disciplina com esse nome.' });
+      if (catalogoId === null) {
+        const [t] = await tx.$queryRaw<{ n: number }[]>`
+          SELECT count(*)::int AS n FROM disciplina_aluno
+           WHERE usuario_id = ${sessao.usuarioId}::uuid AND origem = 'propria' AND desativado_em IS NULL`;
+        if ((t?.n ?? 0) >= LIMITE_PROPRIAS)
+          return resposta
+            .code(409)
+            .send({ erro: `Você chegou ao limite de ${LIMITE_PROPRIAS} disciplinas próprias.` });
+      }
+      const [d] = await tx.$queryRaw<Linha[]>`
+        INSERT INTO disciplina_aluno (instituicao_id, usuario_id, nome, catalogo_id, origem)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${nome}, ${catalogoId}::int,
+                ${catalogoId === null ? 'propria' : 'catalogo'})
+        RETURNING id, nome, origem, catalogo_id`;
+      await auditarDisciplina(
+        tx,
+        sessao,
+        'disciplina.criada',
+        `disciplina_aluno:${(d as Linha).id}`,
+      );
+      return resposta.code(201).send({ disciplina: d });
+    },
+  );
+
+  // Corrigir o nome: só das próprias. As tarefas e notas ligadas a ela mostram o nome corrigido.
+  rota(
+    'patch',
+    '/minhas-disciplinas/:id',
+    { params: idParam, corpo: z.strictObject({ nome: nomeDisciplina }) },
+    async (c) => {
+      const { tx, sessao, params, corpo } = c;
+      const [d] = await tx.$queryRaw<{ origem: string }[]>`
+        SELECT origem FROM disciplina_aluno
+         WHERE id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL`;
+      if (!d) return naoAchou(c);
+      if (d.origem !== 'propria')
+        return c.resposta
+          .code(409)
+          .send({ erro: 'Só as disciplinas que você criou podem ter o nome corrigido.' });
+      const [repetida] = await tx.$queryRaw<Linha[]>`
+        SELECT id FROM disciplina_aluno
+         WHERE usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL AND id <> ${params.id}::uuid
+           AND nome_busca = sem_acento(${corpo.nome})`;
+      if (repetida)
+        return c.resposta.code(409).send({ erro: 'Você já tem uma disciplina com esse nome.' });
+      const [novo] = await tx.$queryRaw<Linha[]>`
+        UPDATE disciplina_aluno SET nome = ${corpo.nome}, atualizado_em = now()
+         WHERE id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid
+        RETURNING id, nome, origem, catalogo_id`;
+      await tx.$executeRaw`UPDATE tarefa SET disciplina = ${corpo.nome}, atualizado_em = now() WHERE disciplina_aluno_id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid`;
+      await tx.$executeRaw`UPDATE nota_pessoal SET disciplina = ${corpo.nome} WHERE disciplina_aluno_id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid`;
+      await auditarDisciplina(tx, sessao, 'disciplina.corrigida', `disciplina_aluno:${params.id}`);
+      return { disciplina: novo };
+    },
+  );
+
+  // Desativar: tarefas e notas que já usam a disciplina continuam com o nome que tinham
+  rota('delete', '/minhas-disciplinas/:id', { params: idParam }, async (c) => {
+    const n = await c.tx
+      .$executeRaw`UPDATE disciplina_aluno SET desativado_em = now(), atualizado_em = now() WHERE id = ${c.params.id}::uuid AND usuario_id = ${c.sessao.usuarioId}::uuid AND desativado_em IS NULL`;
+    if (n === 0) return naoAchou(c);
+    await auditarDisciplina(
+      c.tx,
+      c.sessao,
+      'disciplina.desativada',
+      `disciplina_aluno:${c.params.id}`,
+    );
+    return undefined;
   });
 
   // ---------- Notificações e lembretes dentro do sistema (L10) ----------

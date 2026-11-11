@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api, ErroApi } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
+import { CaixaDeDisciplina } from '../componentes/CaixaDeDisciplina';
 import { Campo } from '../componentes/Campo';
 import { useCarregar } from '../componentes/useCarregar';
 import { formatar, paraTexto } from '../datas';
@@ -14,6 +15,7 @@ const nota = (n: number) =>
 export function Notas() {
   const { dados, erro, recarregar } = useCarregar(api.notas);
   const [disciplina, setDisciplina] = useState('');
+  const [disciplinaId, setDisciplinaId] = useState<string | null>(null);
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [dia, setDia] = useState(paraTexto(new Date()));
@@ -29,11 +31,13 @@ export function Notas() {
     try {
       await api.criarNota({
         disciplina: disciplina.trim(),
+        disciplina_id: disciplinaId,
         descricao: descricao.trim(),
         valor: n,
         dia,
       });
       setDisciplina('');
+      setDisciplinaId(null);
       setDescricao('');
       setValor('');
       await recarregar();
@@ -141,13 +145,20 @@ export function Notas() {
           <h2 id="nova-nota">Anotar uma nota</h2>
           {msg ? <Aviso tipo="warn">{msg}</Aviso> : null}
           <div className="stack mt-sm">
-            <Campo rotulo="Disciplina">
-              {({ id }) => (
-                <input
+            <Campo rotulo="Disciplina" dica="Digite as primeiras letras e escolha na lista.">
+              {({ id, descricao: d }) => (
+                <CaixaDeDisciplina
                   id={id}
-                  value={disciplina}
-                  maxLength={80}
-                  onChange={(e) => setDisciplina(e.target.value)}
+                  descricao={d}
+                  valor={disciplina}
+                  aoDigitar={(t) => {
+                    setDisciplina(t);
+                    setDisciplinaId(null);
+                  }}
+                  aoEscolher={(e) => {
+                    setDisciplina(e.nome);
+                    setDisciplinaId(e.id);
+                  }}
                 />
               )}
             </Campo>

@@ -58,7 +58,24 @@ export type Tarefa = {
   situacao: 'pendente' | 'em_andamento' | 'concluida';
   microetapas: Microetapa[];
   tipo_atividade_id?: string | null;
+  disciplina_aluno_id?: string | null;
 };
+// Disciplinas do aluno (L20b)
+export type DisciplinaCatalogo = {
+  id: number;
+  nome: string;
+  etapas: string[];
+  gerais_em: string[];
+  curso: string | null;
+  sinonimos: string[];
+};
+export type DisciplinaAluno = {
+  id: string;
+  nome: string;
+  origem: 'catalogo' | 'propria' | 'escola' | 'suap';
+  catalogo_id: number | null;
+};
+export type EtapaDisciplinas = 'fundamental' | 'medio' | 'tecnico';
 export type TipoAtividade = { id: string; nome: string; cor: string; icone: string };
 export type PreferenciasServidor = {
   apelido: string | null;
@@ -494,6 +511,7 @@ export const api = {
   criarTarefa: (d: {
     titulo: string;
     disciplina?: string;
+    disciplina_id?: string | null;
     tipo?: Tarefa['tipo'];
     prazo?: string | null;
     prioridade?: Tarefa['prioridade'];
@@ -554,8 +572,33 @@ export const api = {
       notas: NotaPessoal[];
       medias: { disciplina: string; media: number; quantidade: number }[];
     }>('GET', '/notas-pessoais'),
-  criarNota: (d: { disciplina: string; descricao?: string; valor: number; dia: string }) =>
-    chamar<{ id: string }>('POST', '/notas-pessoais', d),
+  minhasDisciplinas: () =>
+    chamar<{
+      etapa: EtapaDisciplinas | null;
+      catalogo: DisciplinaCatalogo[];
+      minhas: DisciplinaAluno[];
+      limite_proprias: number;
+    }>('GET', '/minhas-disciplinas'),
+  escolherEtapaDisciplinas: (etapa: EtapaDisciplinas) =>
+    chamar<{ etapa: EtapaDisciplinas; marcadas: number; minhas: DisciplinaAluno[] }>(
+      'POST',
+      '/minhas-disciplinas/etapa',
+      { etapa },
+    ),
+  disciplinasDaEscola: () =>
+    chamar<{ novas: number; minhas: DisciplinaAluno[] }>('POST', '/minhas-disciplinas/da-escola'),
+  criarMinhaDisciplina: (d: { catalogo_id: number } | { nome: string }) =>
+    chamar<{ disciplina: DisciplinaAluno }>('POST', '/minhas-disciplinas', d),
+  corrigirMinhaDisciplina: (id: string, nome: string) =>
+    chamar<{ disciplina: DisciplinaAluno }>('PATCH', `/minhas-disciplinas/${id}`, { nome }),
+  removerMinhaDisciplina: (id: string) => chamar<void>('DELETE', `/minhas-disciplinas/${id}`),
+  criarNota: (d: {
+    disciplina?: string;
+    disciplina_id?: string | null;
+    descricao?: string;
+    valor: number;
+    dia: string;
+  }) => chamar<{ id: string }>('POST', '/notas-pessoais', d),
   removerNota: (id: string) => chamar<void>('DELETE', `/notas-pessoais/${id}`),
   notificacoes: () =>
     chamar<{ notificacoes: Notificacao[]; nao_lidas: number }>('GET', '/notificacoes'),

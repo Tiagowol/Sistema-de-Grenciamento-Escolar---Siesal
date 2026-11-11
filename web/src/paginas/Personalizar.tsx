@@ -12,6 +12,7 @@ import {
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { MinhasDisciplinas } from '../componentes/MinhasDisciplinas';
 import { useCarregar } from '../componentes/useCarregar';
 import { Icone, type NomeIcone } from '../icones';
 import { CORES, combinacaoLegivel, ICONES_DE_TIPO } from '../paleta';
@@ -253,6 +254,7 @@ export function Personalizar({ valor, aoMudar, aoPadrao }: Props) {
           </button>
         </div>
       </div>
+      <MinhasDisciplinas />
       <TiposDeAtividade />
     </>
   );

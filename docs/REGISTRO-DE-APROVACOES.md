@@ -151,3 +151,21 @@ Mensagem do autor em chat, em 11/11/2026: "Aplicar a 0018 e a API nova no site [
 - A conta de teste foi devolvida ao que estava (cor do tema, blocos 10/25/45).
 - Retorno: `docs/RETORNO-0018.md` (restaurar o backup acima).
 - **Não coberto:** merge em `siesal-4`; push do ramo; início do L20b (precisa de "aprovo" próprio).
+
+## A-050 — Aprovo o L20b, com D6 = só o confirmado (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Aprovo o L20b, D6 = confirmado", depois de `docs/PLANO-L20B.md`.
+- Escopo aprovado: os 3 itens do L20b (catálogo, Minhas disciplinas, busca na tarefa e na nota pessoal), ramo `lote-20b-disciplinas`, migração 0019, matriz v14.
+- **D6:** a 0019 carrega só o confirmado (componentes da BNCC e nomes confirmados do Técnico em Informática do IFRN). O que está marcado "[validar]" no Anexo A fica fora, para a versão 2 do catálogo.
+- Como o L20a ainda não tem merge em `siesal-4`, o ramo do L20b sai do ramo `lote-20a-personalizar` (ele depende da matriz v13 e da 0018).
+- **Não coberto:** aplicar a 0019 e a API nova no site (exige backup, `docs/RETORNO-0019.md` e aviso de 1 linha); merge; push (a mensagem de 11/11/2026 só autorizou push dos lotes já prontos).
+
+## A-051 — Ajustes de execução do L20b em relação à proposta (11/11/2026)
+Decididos pelo Code dentro do escopo aprovado na A-050, para o autor conferir. Se discordar, volta-se atrás.
+1. Rotas `/minhas-disciplinas` (o `/disciplinas` já é do cadastro de turmas do L14).
+2. As disciplinas da escola entram por um botão, com origem "escola", e não contam no limite de 20. A proposta dizia "entram marcadas sozinhas"; preferi o botão para o aluno decidir.
+3. A etapa do aluno fica em `preferencia_usuario.etapa_disciplinas` (coluna nova da 0019).
+4. Corrigir o nome de uma disciplina própria atualiza as tarefas e notas ligadas a ela.
+5. Catálogo v1 (D6): 14 componentes da BNCC e da LDB e 12 do Técnico em Informática do IFRN. Ficam fora o que o Anexo A marca "[validar]", Literatura, Redação, Espanhol, Projeto de Vida e Eletiva.
+6. Matriz v14. O L20c passa para a v15 e o L20d para a v16.
+7. Commit e push no ramo do lote: previstos pela mensagem de abertura de 10/11/2026, 23:15, depois do "aprovo" (a A-050 dizia que o push não estava coberto; a mensagem de abertura o cobre).
+- **Não coberto:** aplicar a 0019 e a API no site (backup, `docs/RETORNO-0019.md`, aviso de 1 linha e o procedimento da F-052); merge.

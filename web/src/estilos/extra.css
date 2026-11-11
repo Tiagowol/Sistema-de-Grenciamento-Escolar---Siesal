@@ -1141,3 +1141,59 @@ fieldset {
     grid-column: 2 / -1;
   }
 }
+
+/* L20b: caixa de busca de disciplina (combobox) e campos das disciplinas próprias */
+.combo {
+  position: relative;
+}
+.combo-lista {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.combo-lista[hidden] {
+  display: none;
+}
+.combo-opcao {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.combo-opcao.ativa {
+  background: var(--primary-soft);
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.combo-opcao.criar {
+  font-weight: 700;
+  color: var(--primary);
+}
+.disc-campo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.disc-campo input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+.disc-campo .btn {
+  min-height: 44px;
+}
