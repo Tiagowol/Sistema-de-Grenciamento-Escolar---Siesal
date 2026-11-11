@@ -7,7 +7,7 @@ PARA O CODE: salve este arquivo como `docs/ROTEIRO-L17A-A-L20.md` no repositóri
 2. Depois do L20 é a **Parte 2**, em lista sem número (seção 5).
 3. **L19 e L20 são Parte 1** e entram na entrega de **10/12/2026**. Pontos de controle: 20/11 e 01/12.
 4. **Aprovados para execução** ("completo como planejado"): **L17a, L17b, L17c e L18**. Não é preciso novo "aprovo" para começá-los. Commit, push, merge e deploy continuam com autorização separada, como sempre.
-5. **L19 e L20**: Planejados. Cada um só começa com "aprovo o L19" / "aprovo o L20".
+5. **L19 e L20**: aprovados (A-036; propostas em A-039 e A-042) e **Implementados** em 10/11/2026, com merge em `siesal-4` (A-041 e A-043).
 6. Prazo: se apertar, o trabalho **para** e o escopo é cortado, por decisão do proprietário. Reavaliação em 20/11.
 7. **Regra de registro:** toda alteração de plano, escopo, ordem ou decisão é registrada dos dois lados — o Code em `docs/` (REGISTRO-DE-APROVACOES.md e este roteiro) e o Claude do chat no Projeto do claude.ai. Mudança sem registro não vale.
 
@@ -47,12 +47,12 @@ PARA O CODE: salve este arquivo como `docs/ROTEIRO-L17A-A-L20.md` no repositóri
 - **L20 (painel real):** os 4 estados (em implantação, ativa, suspensa, encerrada), liga/desliga de módulos por instituição, trilha de auditoria do Master separada com contagens agregadas, e página de status pública.
 - Se o Code discordar desta divisa, propõe outra em 1–2 linhas na proposta do L18. A decisão é do proprietário.
 
-### L19 — Admin institucional completo (G) — Parte 1, PLANEJADO (começa com "aprovo o L19")
+### L19 — Admin institucional completo (G) — Parte 1, IMPLEMENTADO em 10/11/2026 (plano em `docs/PLANO-L19.md`)
 1. **Calendário escolar institucional**: o Admin cadastra períodos letivos, feriados e eventos; entram no Calendário dos alunos com `origem = calendario_escolar`. Versionado: alteração grava nova versão.
 2. **Regras de notas versionadas**: períodos, pesos e arredondamento por instituição, com histórico e data de vigência. O lançamento do L15 passa a citar a versão da regra usada. Nada se apaga.
 3. **Identidade visual da instituição**: nome de exibição, logotipo e cores, com validação automática de contraste (WCAG 2.2 AA). A personalização do aluno (L17b) sempre vence a da instituição.
 
-### L20 — Painel Master real (G) — Parte 1, PLANEJADO (começa com "aprovo o L20") — ÚLTIMO LOTE
+### L20 — Painel Master real (G) — Parte 1, IMPLEMENTADO em 10/11/2026 (plano em `docs/PLANO-L20.md`) — ÚLTIMO LOTE
 1. **Instituições e módulos**: 4 estados e liga/desliga de módulos por instituição (ex.: mensagens, calendário, apoio ao aluno). Módulo desligado some do menu daquela instituição.
 2. **Auditoria do Master**: toda ação em trilha append-only separada da escolar. O Master vê só contagens agregadas por perfil; nunca nome, nota ou dado de aluno.
 3. **Página de status independente**: pública, fora do aplicativo, estado dos serviços em linguagem literal, sem dado escolar e sem credencial.

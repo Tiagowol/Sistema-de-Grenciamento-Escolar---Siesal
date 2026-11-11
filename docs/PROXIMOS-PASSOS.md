@@ -1,5 +1,7 @@
 # Próximos passos (registro de 09/11/2026)
 
+> **Atualização de 10/11/2026, noite (A-038 a A-045):** L17d, L19 e L20 estão **Implementados**, com merge em `siesal-4` (avanço rápido) e `siesal-4` enviado ao GitHub. Migrações 0015, 0016 e 0017 aplicadas no banco do site, cada uma com backup antes e retorno escrito. A Parte 1 (L13 a L20) está completa no código. **Próximo passo:** checagem humana com login real e o retorno do NAPNE e do professor (12/11/2026); ajuste pedido nesse retorno entra nos lotes já feitos. Para conferir o painel do Master, o autor emite o convite de primeiro acesso de uma das contas reais (`w1lopes` ou `tw1lopes`).
+>
 > **Atualização de 10/11/2026, 15:30 (A-036):** L17, L17a, L17b, L17c e L18 estão **Implementados** (migrações até a 0014 aplicadas no banco do site) e já estão no ramo `siesal-4` do GitHub (avanço rápido até `05f3d01`). Nenhum é "Verificado": o retorno do NAPNE e do professor chega em 12/11/2026. **Próximo lote: L17d** (rótulos, chave do menu, ajuda "?" e VLibras), ramo `lote-17d-rotulos-libras`, plano em `docs/PLANO-L17D.md`. Depois: L19 e L20, já aprovados (A-036), cada um em ramo próprio. A ordem abaixo é histórica; o que falta do L18 está em `docs/RELATORIO-L18.md`.
 
 Estado: L16, L16a, L16b, L16c, L16d e L16e commitados no ramo `lote-16-avisos` (um commit só; os arquivos se misturam entre os sublotes). Estado dos lotes: **Implementado**, não "Verificado".

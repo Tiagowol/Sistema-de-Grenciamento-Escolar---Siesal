@@ -112,3 +112,10 @@ Mensagem do autor em chat, em 10/11/2026: "Aprovo o merge", em resposta à pergu
 Mensagem do autor em chat, em 10/11/2026: "Autorizo o push", em resposta à pergunta "Autoriza o push do siesal-4 para o GitHub?".
 - Feito pelo Code sem envio forçado: `origin/siesal-4` (`05f3d01`, conferido como ancestral) avançou para `628692e` (L17d, L19, L20, A-041, A-043 e F-051).
 - Commit deste registro direto em `siesal-4`: autorizado pelo autor em chat, em 10/11/2026 ("Autorizo o commit"), só para este arquivo. O push desse commit não foi autorizado.
+
+## A-045 — Push do commit da A-044 e atualização final (10/11/2026)
+Mensagens do autor em chat, em 10/11/2026:
+1. "Autorizo o push" (do commit `46694e2`, A-044). Feito sem envio forçado: `origin/siesal-4` de `628692e` para `46694e2`.
+2. "atualize todos os commits, push e branch necessários". Entendido pelo Code como: deixar computador e GitHub iguais e os documentos de estado sem divergência, sem tocar no `main`, sem envio forçado e sem enviar os ramos antigos L14 a L17 (A-036 e F-036).
+- Conferido: todos os ramos de lote que já estavam no GitHub (L17a a L20) estão iguais ao computador; L17d, L19 e L20 estão contidos no `siesal-4`. Nenhum ramo novo era necessário.
+- Atualizados: `README.md` (estado), `docs/PROXIMOS-PASSOS.md` (nota nova no topo; a antiga fica como histórico) e `docs/ROTEIRO-L17A-A-L20.md` (L19 e L20 Implementados). Commit e push no `siesal-4`.
