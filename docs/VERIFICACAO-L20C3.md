@@ -1,6 +1,6 @@
 # VERIFICAÇÃO DO 20c-3 — Convite de instituição (11/11/2026)
 
-Estado do lote: **Implementado**, aplicado no site em 11/11/2026 (ver A-058). Não é "Verificado": falta a checagem humana.
+Estado do lote: **Implementado**, aplicado no site em 11/11/2026 com backup antes (ver A-058). Não é "Verificado": falta a checagem humana.
 
 ## 1. O que foi conferido por máquina
 | Verificação | Resultado |
