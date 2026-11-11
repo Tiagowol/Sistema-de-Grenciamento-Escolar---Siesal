@@ -1,6 +1,6 @@
 # VERIFICAÇÃO DO L20b — Disciplinas (11/11/2026)
 
-Estado do lote: **Implementado**, não "Verificado". A migração 0019 e a API nova **não** foram aplicadas no site; as telas novas não foram vistas no navegador contra a API real.
+Estado do lote: **Implementado**, não "Verificado". A migração 0019 e a API nova foram aplicadas no site em 11/11/2026 (A-052) e as telas foram vistas no navegador contra a API real.
 
 ## 1. O que foi conferido por máquina
 | Verificação | Resultado |
@@ -19,7 +19,7 @@ Estado do lote: **Implementado**, não "Verificado". A migração 0019 e a API n
 | 3 | tarefa e nota antigas mantêm a disciplina | a 0019 não altera o texto; teste de integração: texto livre continua aceito e as tarefas mostram o nome mesmo com a disciplina desativada. **A conversão dos dados antigos só foi exercida em banco vazio** |
 | 4 | aluno não vê nem altera a de outro | teste de integração (404 ao alterar, lista própria, RLS direto no banco) |
 | 5 | o banco recusa a 21ª própria | teste de integração com `INSERT` direto |
-| 6 | 360, 768 e 1280 px, 4 temas, alvos de 44 px | **não medido em tela** (CSS pronto: opções de 44 px de altura, campos e botões de 44 px) |
+| 6 | 360, 768 e 1280 px, 4 temas, alvos de 44 px | medido em tela em 360 e 1280 px, tema escuro: sem rolagem horizontal (360 de 360), opções, campos e botões com 44 px. **Não medido:** 768 px e os outros 3 temas |
 | 7 | catálogo só com o confirmado (D6) | teste de integração: "Banco de Dados" e "Desenho Técnico" não estão no catálogo |
 
 ## 3. Decisões de execução (A-051)
@@ -31,8 +31,8 @@ Estado do lote: **Implementado**, não "Verificado". A migração 0019 e a API n
 6. Matriz **v14**: `catalogo_disciplinas` (ler) e `disciplinas_aluno` (administrar), só aluno.
 
 ## 4. O que NÃO foi feito
-1. Aplicar a 0019 e a API nova no site (precisa de backup, aviso e o procedimento da F-052).
-2. Ver as telas no navegador com dados reais e medir em 360, 768 e 1280 px.
+1. Medir 768 px e os temas claro e alto contraste em tela.
+2. A conversão dos dados antigos continua só exercida em banco vazio (o site não tinha disciplina em texto).
 3. Os 10 campos no cadastro do aluno (é do L20c; no L20b ficam em Personalizar).
 4. Leitor de tela, teclado completo e NAPNE.
 5. Catálogo versão 2 (itens "[validar]" e cursos de Eletromecânica e Eventos): depende do professor.
@@ -43,5 +43,5 @@ Estado do lote: **Implementado**, não "Verificado". A migração 0019 e a API n
 
 ## Feito, Falta, Sugestões
 **Feito:** os 3 itens do L20b no código; 17 testes de integração e 10 de tela novos; registros A-050 e A-051.
-**Falta:** aplicar a 0019 e a API (backup, aviso, F-052); conferir as telas e medir; checagem humana; "aprovo" para merge.
+**Falta:** medir 768 px e os outros temas; checagem humana; "aprovo" para merge.
 **Sugestões:** levar o Anexo A ao professor em 12/11/2026 para a versão 2 do catálogo.

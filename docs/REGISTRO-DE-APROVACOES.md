@@ -169,3 +169,12 @@ Decididos pelo Code dentro do escopo aprovado na A-050, para o autor conferir. S
 6. Matriz v14. O L20c passa para a v15 e o L20d para a v16.
 7. Commit e push no ramo do lote: previstos pela mensagem de abertura de 10/11/2026, 23:15, depois do "aprovo" (a A-050 dizia que o push não estava coberto; a mensagem de abertura o cobre).
 - **Não coberto:** aplicar a 0019 e a API no site (backup, `docs/RETORNO-0019.md`, aviso de 1 linha e o procedimento da F-052); merge.
+
+## A-052 — 0019 e API do L20b aplicadas no site (11/11/2026)
+Mensagem do autor em chat, em 11/11/2026: "Sim, aplicar" (à pergunta "Aplico a 0019 e a API nova no site (com backup)?").
+- Backup antes: `backups/siesal-20261111-120905.dump`. Imagem da API construída com o contorno da F-052 (nada mudou no repositório).
+- Aplicada pelo job `migrate`: `0019_disciplinas.sql`. Catálogo com 26 disciplinas; o site não tinha disciplinas em texto para converter.
+- Conferido em tela com a API real: etapa "Ensino Fundamental" marcou as 8 gerais; busca "port", "poo" e "teatro"; sem rolagem horizontal em 360 px; alvos de 44 px.
+- A conta de teste foi devolvida: as 8 disciplinas foram tiradas da lista (desativadas, não apagadas). Fica gravada a etapa "fundamental" na preferência dela.
+- Retorno: `docs/RETORNO-0019.md` (restaurar o backup acima).
+- **Não coberto:** merge em `siesal-4`; L20c (precisa de "aprovo" próprio e das decisões D1, D4, D7 e D8).
