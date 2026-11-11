@@ -119,3 +119,13 @@ Mensagens do autor em chat, em 10/11/2026:
 2. "atualize todos os commits, push e branch necessários". Entendido pelo Code como: deixar computador e GitHub iguais e os documentos de estado sem divergência, sem tocar no `main`, sem envio forçado e sem enviar os ramos antigos L14 a L17 (A-036 e F-036).
 - Conferido: todos os ramos de lote que já estavam no GitHub (L17a a L20) estão iguais ao computador; L17d, L19 e L20 estão contidos no `siesal-4`. Nenhum ramo novo era necessário.
 - Atualizados: `README.md` (estado), `docs/PROXIMOS-PASSOS.md` (nota nova no topo; a antiga fica como histórico) e `docs/ROTEIRO-L17A-A-L20.md` (L19 e L20 Implementados). Commit e push no `siesal-4`.
+
+## A-046 — Lotes de adequação 20a a 20d: planejamento registrado e preparos do SUAP aprovados (10/11/2026, noite)
+Mensagens do autor em chat (sessão do Projeto no claude.ai, com acesso à pasta), em 10/11/2026, de 22:31 a 22:57, depois da intervenção do professor, de Tiago Wagner e do NAPNE:
+1. Pedido de um "lote especial de adequação", L20a a L20d, logo depois do L20: aluno sem instituição, cadastro com data de nascimento e CPF, disciplinas em lista com busca, dificuldade de 0 a 10, cards de resumo, tempo das atividades personalizável e correção de Personalizar e Acessibilidade. "Não gere código"; autorização para analisar e gerar documentos.
+2. Pedidos de 22:44: cadastro do menor com CPF e data de nascimento do aluno e do responsável e e-mail válido para validar; autorização do responsável com declaração de veracidade; calendário por horário (06:00 a 23:00); disciplinas gerais já marcadas, 10 campos no cadastro e máximo de 20.
+3. **Aprovado (22:57):** "Sim, incluir e registrar" os 3 preparos para o SUAP (`origem`, `codigo_externo` e `matricula`) nos lotes 20b e 20c. "Atualize e documente tudo. Local e git."
+- Isto muda a A-036 (a numeração terminava no L20): passam a existir os lotes L20a a L20d, ainda na Parte 1.
+- Documentos: `docs/PLANO-L20A-A-L20D.md`, `docs/ADENDO-1-L20A-A-L20D.md` e `docs/ADENDO-2-L20A-A-L20D.md` (cópias no Projeto, em `claude/lote-20a-d/`).
+- **Não coberto:** a divisão e a ordem dos lotes ainda não receberam "aprovo"; nenhum lote pode começar; nenhum código, migração, merge ou deploy. Decisões D1, D4, D5, D7 e D8 pendentes, cada uma no seu lote. A integração com o SUAP continua na Parte 2.
+- Commit deste registro e dos 3 documentos direto em `siesal-4`: pedido pelo autor ("Local e git").
