@@ -352,3 +352,11 @@ Pedido do autor em chat, em 12/11/2026: "sim aplicar, concordo com a sugestão".
 
 ## A-077 — L22a-1b: início e divisão (12/11/2026)
 Resposta do autor em chat, em 12/11/2026: "Começar agora" (L22a-1b, com proposta curta antes). Proposta: `docs/PROPOSTA-L22A-1B.md`. Achado: pessoa sem vínculo não tem `usuario`, então precisa de senha e sessão próprias. Divisão avisada: **1b** (cadastro próprio, login da pessoa, escolha de espaço), **1c** (conta do Responsável), L22a-2 (convites). Estado: Planejado; implementação iniciada.
+
+## A-078 — L22a-1b implementado (12/11/2026)
+Sob o "Começar agora" do autor (A-077). **Estado: Implementado**, não aplicado no site, código sem commit.
+- Feito: migração `0026_pessoa_login.sql` (credencial, sessão e confirmação de e-mail da pessoa; índice pessoa->espaço); API `/auth/pessoa/*` (cadastro, confirmar e-mail, login, eu, entrar, logout); telas `/pessoa` e `/confirmar/email`; `entrarPorPessoa` abre a sessão normal do espaço (só professor e pedagógico; Admin só pelo login antigo).
+- Segurança conferida: resposta igual para e-mail novo e existente; 5 falhas bloqueiam 15 min; só e-mail confirmado entra; a aplicação não lê as tabelas da pessoa; o cookie da pessoa não vale como sessão de espaço; espaço suspenso não recebe ninguém.
+- Falha minha achada pelos testes e corrigida antes de qualquer aplicação: uma política ampla do dono em `usuario` inflava a contagem do painel do Master; trocada por um índice `pessoa_espaco` (lição: política ampla do dono afeta funções que dependem da RLS).
+- Verificação: 336 testes de integração (9 novos de pessoa/login); 1169 testes de unidade e de tela pela raiz, 0 falhas (6 novos de tela, com axe); tipos da API e da tela sem erro; lint sem erro novo. Ensaio da 0026 em cópia dos dados reais ok (40/40). Retorno: `docs/RETORNO-0026.md`.
+- Não feito / não conferido: matriz v19 (as rotas novas ficam antes da sessão, como `/auth/login`; nada a gerar); conferência em 360, 768 e 1280 px em navegador real; envio de e-mail real (Parte 2); conta do Responsável (L22a-1c); convites (L22a-2).

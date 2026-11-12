@@ -286,5 +286,6 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 ## F-057 — 12/11/2026 — 6 testes de contraste dos sinos falham ao rodar a tela no Docker (não resolvida)
 - O que falhou: `web/src/sinos.test.tsx` (contraste dos sinos e anel de foco), 6 testes, ao rodar `vitest` da pasta `web` dentro de um contêiner `node:26` com `pnpm install --frozen-lockfile`. Falham também no commit `aed8301` limpo (sem as mudanças do L21b), ou seja, não vêm do L21b.
 - Causa: ainda não investigada. Suspeita: leitura de `extra.css?raw` e o seletor do CSS no ambiente do contêiner (o `pnpm verificar` local do autor registrou esses testes passando).
-- Correção: nenhuma ainda. Confirmar rodando `pnpm verificar` no computador do autor.
+- **Esclarecida em 12/11/2026 (L22a-1b):** os 6 testes passam quando o `vitest` roda **pela raiz do projeto** (`pnpm exec vitest run`: 36 arquivos, 1169 testes, 0 falhas). Falham só quando rodados de dentro da pasta `web` (o arquivo de configuração da raiz não é lido e `extra.css?raw` não resolve). Foi o jeito de rodar do Code, não defeito do sistema. Falta o autor confirmar com `pnpm verificar`.
+- Correção: nenhuma necessária no código.
 - Como voltar atrás: não se aplica.
