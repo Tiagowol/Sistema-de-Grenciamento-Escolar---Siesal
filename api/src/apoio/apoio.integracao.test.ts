@@ -46,15 +46,10 @@ async function criar(instituicao: string, perfil: string, apelido: string) {
   expect(r.statusCode, r.body).toBe(200);
   cookies[apelido] = String(r.headers['set-cookie']).split(';')[0] as string;
 }
-// A API responde antes do fim da transação (a resposta sai de dentro do withTenant). Para ler pelo administrador,
-// o teste espera a linha aparecer.
+// F-056 corrigido: a resposta só sai depois do COMMIT, então a linha já existe quando a API responde.
 const esperarLinha = async (tabela: 'tarefa' | 'disciplina_aluno', id: string) => {
-  for (let i = 0; i < 100; i++) {
-    const q = await amb.admin.query(`SELECT 1 FROM ${tabela} WHERE id = $1`, [id]);
-    if (q.rows.length) return;
-    await new Promise((ok) => setTimeout(ok, 20));
-  }
-  throw new Error(`linha de ${tabela} não apareceu`);
+  const q = await amb.admin.query(`SELECT 1 FROM ${tabela} WHERE id = $1`, [id]);
+  if (!q.rows.length) throw new Error(`linha de ${tabela} não apareceu`);
 };
 const novaDisciplina = async (quem: string, nome: string) => {
   const r = await chamar('POST', '/minhas-disciplinas', quem, { nome });
@@ -348,14 +343,8 @@ describe('grade do dia: atividade colocada num horário', () => {
     });
     expect(dela.statusCode, dela.body).toBe(201);
     const id = dela.json().evento.id as string;
-    for (let i = 0; i < 100; i++) {
-      const q = await amb.admin.query('SELECT tarefa_id FROM evento WHERE id = $1', [id]);
-      if (q.rows.length) {
-        expect(q.rows[0].tarefa_id).toBe(t.id);
-        break;
-      }
-      await new Promise((ok) => setTimeout(ok, 20));
-    }
+    const q = await amb.admin.query('SELECT tarefa_id FROM evento WHERE id = $1', [id]);
+    expect(q.rows[0].tarefa_id).toBe(t.id);
     const alheia = await chamar('POST', '/eventos', 'b', {
       titulo: 'x',
       tipo: 'estudo',

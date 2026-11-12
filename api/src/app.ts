@@ -51,6 +51,7 @@ export type OpcoesApp = {
   authSecret?: string;
   agora?: () => Date;
   limiteTentativasPorMinuto?: number;
+  aoRegistrarRota?: (metodo: string | string[], url: string) => void; // só testes: lista as rotas
   instituicaoPadrao?: string; // id exibido no login (demonstração com uma escola só)
   trustProxy?: boolean; // atrás do nginx do compose: usa o IP real para o limite por tentativas
   cookieLocal?: boolean; // só demonstração em http (localhost/IP); padrão: cookie seguro com __Host-
@@ -144,6 +145,11 @@ const corpoCodigo = z.strictObject({ codigo: z.string().min(6).max(20) });
 // Monta a API. Sem banco ou AUTH_SECRET, só a rota de saúde existe (deny by default).
 export function criarApp(opcoes: OpcoesApp = {}) {
   const app = Fastify({ logger: opcoes.logger ?? false, trustProxy: opcoes.trustProxy ?? false });
+  // Só para testes (L21a): lista toda rota registrada, para a varredura de injeção de SQL
+  if (opcoes.aoRegistrarRota) {
+    const avisar = opcoes.aoRegistrarRota;
+    app.addHook('onRoute', (rota) => avisar(rota.method, rota.url));
+  }
   // Saúde pública (L20: diz também se o banco responde). Só "ok" ou "fora": nenhum dado e nenhuma credencial.
   const bancoSaude = opcoes.banco;
   app.get('/saude', async () => {

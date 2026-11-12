@@ -12,6 +12,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 
 // Apoio ao aluno (20d): dificuldade de 0 a 10, a visão do Apoio Pedagógico/NAPNE e os cards de resumo.
 // A dificuldade é a percepção do aluno, pedida pelo NAPNE para acompanhar e ajudar o aluno (A-064, A-065, A-066).
@@ -104,6 +105,8 @@ export function registrarApoio(app: FastifyInstance, opcoes: Opcoes): void {
           .code(400)
           .send({ erro: links ? 'O texto não pode ter links, e-mail nem HTML.' : 'Dados inválidos.' });
       }
+      // F-056: a resposta guardada só sai depois do COMMIT
+      const adiada = criarRespostaAdiada();
       const saida = await withTenant(opcoes.banco, { instituicaoId: sessao.instituicaoId }, (tx) =>
         funcao({
           tx,
@@ -111,10 +114,11 @@ export function registrarApoio(app: FastifyInstance, opcoes: Opcoes): void {
           params: params.data as never,
           corpo: corpo.data as never,
           consulta: consulta.data as never,
-          resposta: res,
+          resposta: adiada.resposta as unknown as FastifyReply,
         }),
       );
-      if (res.sent) return res;
+      const enviada = enviarGuardada(res, adiada.guardado());
+      if (enviada) return enviada;
       return saida === undefined ? res.code(204).send() : saida;
     });
   }

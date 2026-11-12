@@ -8,6 +8,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 import { entradasEscolaresDoAluno } from '../escola/rotas.js';
 import { hojeBrasilia, somarDias } from './datas.js';
 import { combinacaoLegivel, ICONES_DE_TIPO, IDS_DE_COR, TEMAS } from './paleta.js';
@@ -77,6 +78,8 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
         return res.code(400).send({ erro: 'Dados inválidos.' });
       }
       const hoje = hojeBrasilia(relogio());
+      // F-056: a resposta guardada só sai depois do COMMIT
+      const adiada = criarRespostaAdiada();
       const saida = await withTenant(opcoes.banco, { instituicaoId: sessao.instituicaoId }, (tx) =>
         funcao({
           tx,
@@ -85,10 +88,11 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
           corpo: corpo.data as never,
           consulta: consulta.data as never,
           hoje,
-          resposta: res,
+          resposta: adiada.resposta as unknown as FastifyReply,
         }),
       );
-      if (res.sent) return res;
+      const enviada = enviarGuardada(res, adiada.guardado());
+      if (enviada) return enviada;
       return saida === undefined ? res.code(204).send() : saida;
     });
   }

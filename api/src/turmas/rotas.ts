@@ -8,6 +8,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 
 type Banco = Parameters<typeof WithTenant>[0];
 type Exigir = (req: FastifyRequest, res: FastifyReply) => Promise<SessaoAtiva | null>;
@@ -75,16 +76,19 @@ export function registrarTurmas(app: FastifyInstance, opcoes: Opcoes): void {
       if (!params.success || !corpo.success) {
         return res.code(400).send({ erro: 'Dados inválidos.' });
       }
+      // F-056: a resposta guardada só sai depois do COMMIT
+      const adiada = criarRespostaAdiada();
       const saida = await withTenant(opcoes.banco, { instituicaoId: sessao.instituicaoId }, (tx) =>
         funcao({
           tx,
           sessao,
           params: params.data as never,
           corpo: corpo.data as never,
-          resposta: res,
+          resposta: adiada.resposta as unknown as FastifyReply,
         }),
       );
-      if (res.sent) return res;
+      const enviada = enviarGuardada(res, adiada.guardado());
+      if (enviada) return enviada;
       return saida === undefined ? res.code(204).send() : saida;
     });
   }

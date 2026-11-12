@@ -249,9 +249,6 @@ describe('isolamento nos 3 sentidos', () => {
     expect(await contar(espaco.i2 as string, 'tarefa')).toBe(0);
     expect(await contar(amb.instA, 'tarefa')).toBe(0);
     await chamar('POST', '/tarefas', 'esc', { titulo: 'Da escola' });
-    // A API responde antes do fim da transação (F-056): espera a linha aparecer antes de contar
-    for (let i = 0; i < 100 && (await contar(amb.instA, 'tarefa')) < 1; i++)
-      await new Promise((ok) => setTimeout(ok, 20));
     expect(await contar(amb.instA, 'tarefa')).toBe(1);
     expect(await contar(espaco.i1 as string, 'tarefa')).toBe(1);
     // a instituição que cada um enxerga é só a sua

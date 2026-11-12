@@ -15,6 +15,7 @@ import {
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
+import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 
 // Conta e suporte (L17c). Trocar e-mail e encerrar conta têm duas etapas: o pedido (com a senha atual) e a
 // confirmação. Aluno é menor de idade: quem confirma é o Responsável vinculado ou o Admin (A-032).
@@ -103,16 +104,19 @@ export function registrarConta(app: FastifyInstance, opcoes: Opcoes): void {
           .code(400)
           .send({ erro: links ? 'O texto não pode ter links.' : 'Dados inválidos.' });
       }
+      // F-056: a resposta guardada só sai depois do COMMIT
+      const adiada = criarRespostaAdiada();
       const saida = await withTenant(opcoes.banco, { instituicaoId: sessao.instituicaoId }, (tx) =>
         funcao({
           tx,
           sessao,
           params: (params?.data ?? undefined) as never,
           corpo: (corpo?.data ?? undefined) as never,
-          resposta: res,
+          resposta: adiada.resposta as unknown as FastifyReply,
         }),
       );
-      if (res.sent) return res;
+      const enviada = enviarGuardada(res, adiada.guardado());
+      if (enviada) return enviada;
       return saida === undefined ? res.code(204).send() : saida;
     });
   }
