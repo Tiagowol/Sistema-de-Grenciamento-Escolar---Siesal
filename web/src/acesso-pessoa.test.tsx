@@ -110,6 +110,116 @@ describe('entrada, cadastro e escolha de espaço', () => {
   });
 });
 
+describe('representante legal e tipo do Pedagógico', () => {
+  it('o cadastro oferece "Representante legal" com a declaração literal e o tipo de profissional só no Pedagógico; axe', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => sem401()));
+    const u = userEvent.setup();
+    const { container } = render(<AcessoPessoa aoEntrar={() => undefined} />);
+    await u.click(screen.getByRole('button', { name: 'Criar cadastro' }));
+    expect(screen.queryByLabelText('Tipo de profissional')).toBeNull();
+    await u.click(screen.getByRole('radio', { name: 'Pedagógico, NAPNE ou área da saúde' }));
+    expect(screen.getByLabelText('Tipo de profissional')).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    await u.click(screen.getByRole('radio', { name: 'Representante legal de aluno menor' }));
+    expect(screen.queryByLabelText('Tipo de profissional')).toBeNull();
+    expect(screen.getByText(/O SIESAL não consegue conferir essa declaração/)).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('pedagógico envia o tipo escolhido no cadastro', async () => {
+    const f = vi.fn(async (url: string, _init?: RequestInit) =>
+      String(url).endsWith('/auth/pessoa/cadastro') ? json({ mensagem: 'x' }, 202) : sem401(),
+    );
+    vi.stubGlobal('fetch', f);
+    const u = userEvent.setup();
+    render(<AcessoPessoa aoEntrar={() => undefined} />);
+    await u.click(screen.getByRole('button', { name: 'Criar cadastro' }));
+    await u.type(screen.getByLabelText('Seu nome'), 'Fono Teste');
+    await u.type(screen.getByLabelText('E-mail'), 'fono@teste.exemplo');
+    await u.type(screen.getByLabelText('Senha'), 'senha de teste longa 123');
+    await u.click(screen.getByRole('radio', { name: 'Pedagógico, NAPNE ou área da saúde' }));
+    await u.selectOptions(screen.getByLabelText('Tipo de profissional'), 'fonoaudiologo');
+    await u.click(screen.getByRole('checkbox'));
+    await u.click(screen.getByRole('button', { name: 'Cadastrar' }));
+    await screen.findByText(/Se o e-mail puder ser usado/);
+    const chamada = f.mock.calls.find((c) => String(c[0]).endsWith('/auth/pessoa/cadastro'));
+    expect(JSON.parse(String(chamada?.[1]?.body))).toMatchObject({
+      papel: 'pedagogico',
+      tipo_profissional: 'fonoaudiologo',
+    });
+  });
+
+  it('a tela do espaço mostra quantos alunos e o botão de criar; no limite, a mensagem do suporte e sem botão', async () => {
+    const eu = (alunos: number) =>
+      json({
+        pessoa: { nome: 'Rep Teste', email: 'r@r.exemplo' },
+        espacos: [],
+        representante: { alunos, limite: 5 },
+      });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => (String(url).endsWith('/auth/pessoa/eu') ? eu(2) : sem401())),
+    );
+    const { container } = render(<AcessoPessoa aoEntrar={() => undefined} />);
+    expect(await screen.findByText('Alunos cadastrados por você: 2 de 5.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Criar conta de aluno menor' })).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    cleanup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => (String(url).endsWith('/auth/pessoa/eu') ? eu(5) : sem401())),
+    );
+    render(<AcessoPessoa aoEntrar={() => undefined} />);
+    expect(
+      await screen.findByText('Você chegou ao limite de alunos. Entre em contato com o suporte.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Criar conta de aluno menor' })).toBeNull();
+  });
+
+  it('criar o aluno menor: sem a declaração não envia; com ela envia os dados e volta à lista', async () => {
+    let alunos = 0;
+    const f = vi.fn(async (url: string, _init?: RequestInit) => {
+      const u = String(url);
+      if (u.endsWith('/auth/pessoa/eu'))
+        return json({
+          pessoa: { nome: 'Rep', email: 'r@r.exemplo' },
+          espacos: [],
+          representante: { alunos, limite: 5 },
+        });
+      if (u.endsWith('/auth/pessoa/aluno-menor')) {
+        alunos = 1;
+        return json({ criado: true, instituicao_id: 'i1' }, 201);
+      }
+      return sem401();
+    });
+    vi.stubGlobal('fetch', f);
+    const u = userEvent.setup();
+    const { container } = render(<AcessoPessoa aoEntrar={() => undefined} />);
+    await u.click(await screen.findByRole('button', { name: 'Criar conta de aluno menor' }));
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    await u.type(screen.getByLabelText('Código do convite'), 'ABCD-EFGH-JKLM');
+    await u.type(screen.getByLabelText('Nome do aluno'), 'Aluno Teste');
+    await u.type(screen.getByLabelText('E-mail do aluno'), 'aluno@teste.exemplo');
+    await u.type(screen.getByLabelText('Data de nascimento do aluno'), '2015-03-10');
+    await u.type(screen.getByLabelText('Senha provisória do aluno'), 'senha provisoria longa 456');
+    await u.type(screen.getByLabelText('Sua data de nascimento'), '1985-06-20');
+    await u.click(screen.getByRole('button', { name: 'Criar conta do aluno' }));
+    expect(screen.getByText('Para criar a conta, marque a caixa da declaração.')).toBeTruthy();
+    expect(f.mock.calls.some((c) => String(c[0]).endsWith('/auth/pessoa/aluno-menor'))).toBe(false);
+    await u.click(screen.getByRole('checkbox'));
+    await u.click(screen.getByRole('button', { name: 'Criar conta do aluno' }));
+    expect(await screen.findByText(/Conta do aluno criada/)).toBeTruthy();
+    const chamada = f.mock.calls.find((c) => String(c[0]).endsWith('/auth/pessoa/aluno-menor'));
+    expect(JSON.parse(String(chamada?.[1]?.body))).toMatchObject({
+      codigo: 'ABCD-EFGH-JKLM',
+      aluno: { nome: 'Aluno Teste', nascimento: '2015-03-10' },
+      representante_nascimento: '1985-06-20',
+      aceite: true,
+    });
+    expect(screen.getByText('Alunos cadastrados por você: 1 de 5.')).toBeTruthy();
+  });
+});
+
 describe('confirmar o e-mail', () => {
   it('link bom confirma; link ruim mostra sempre o mesmo aviso; passa no axe', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ confirmado: true })));

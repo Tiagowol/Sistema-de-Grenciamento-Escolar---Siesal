@@ -147,6 +147,7 @@ export type DificuldadesDoAluno = {
 export type EtapaDisciplinas = 'fundamental' | 'medio' | 'tecnico';
 export type PessoaEu = {
   pessoa: { nome: string; email: string };
+  representante?: { alunos: number; limite: number };
   espacos: { instituicao_id: string; nome: string; tipo: string; perfil: string }[];
 };
 export type TipoAtividade = { id: string; nome: string; cor: string; icone: string };
@@ -504,9 +505,16 @@ export const api = {
     nome: string;
     email: string;
     senha: string;
-    papel: 'professor' | 'pedagogico';
+    papel: 'professor' | 'pedagogico' | 'responsavel';
+    tipo_profissional?: string;
     aceite: true;
   }) => chamar<{ mensagem: string }>('POST', '/auth/pessoa/cadastro', d),
+  pessoaAlunoMenor: (d: {
+    codigo: string;
+    aluno: { nome: string; email: string; nascimento: string; senha: string };
+    representante_nascimento: string;
+    aceite: true;
+  }) => chamar<{ criado: true; instituicao_id: string }>('POST', '/auth/pessoa/aluno-menor', d),
   pessoaConfirmarEmail: (token: string) =>
     chamar<{ confirmado: true }>('POST', '/auth/pessoa/confirmar-email', { token }),
   pessoaLogin: (d: { email: string; senha: string }) =>

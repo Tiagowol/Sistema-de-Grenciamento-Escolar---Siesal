@@ -26,7 +26,8 @@ const tokenDoEmail = (para: string) => {
 };
 
 async function cadastrarEConfirmar(nome: string, email: string, papel = 'professor') {
-  const c = await chamar('POST', '/auth/pessoa/cadastro', { nome, email, senha: SENHA, papel, aceite: true });
+  const tipo = papel === 'pedagogico' ? { tipo_profissional: 'psicopedagogo' } : {};
+  const c = await chamar('POST', '/auth/pessoa/cadastro', { nome, email, senha: SENHA, papel, aceite: true, ...tipo });
   expect(c.statusCode, c.body).toBe(202);
   const t = await chamar('POST', '/auth/pessoa/confirmar-email', { token: tokenDoEmail(email) });
   expect(t.statusCode, t.body).toBe(200);
@@ -88,6 +89,7 @@ describe('cadastro próprio e login da pessoa', () => {
       email: 'PROF-REPETIDO@p.exemplo',
       senha: SENHA,
       papel: 'pedagogico',
+      tipo_profissional: 'psicologo',
       aceite: true,
     });
     expect(c.statusCode).toBe(202);
@@ -96,6 +98,7 @@ describe('cadastro próprio e login da pessoa', () => {
       email: 'nova-resposta@p.exemplo',
       senha: SENHA,
       papel: 'pedagogico',
+      tipo_profissional: 'psicologo',
       aceite: true,
     });
     expect(nova.statusCode).toBe(202);

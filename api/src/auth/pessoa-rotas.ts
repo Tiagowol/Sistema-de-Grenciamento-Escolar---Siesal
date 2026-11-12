@@ -3,7 +3,11 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { PrismaClient } from '../gerado/prisma/client.js';
 import { type Autenticacao, BLOQUEIO_MINUTOS, MAX_FALHAS, MENSAGEM_FALHA } from './autenticacao.js';
+import { registrarAuditoria } from '../auditoria/auditoria.js';
+import { withTenant } from '../banco/withTenant.js';
 import { hashToken } from './cadastro-responsavel.js';
+import { hashCodigo } from './codigos.js';
+import { dataValida, idadeEm } from './cpf.js';
 import type { EnviarEmail } from './email.js';
 import { hashSenha, validarSenha, verificarSenha, verificarSenhaFalsa } from './senha.js';
 import { type ConfigCookie, lerCookie, serializarCookie } from './sessao.js';
@@ -14,6 +18,16 @@ import { TERMO_PESSOA_VERSAO } from './termo.js';
 const SESSAO_PESSOA_SEGUNDOS = 8 * 60 * 60;
 const MENSAGEM_CADASTRO =
   'Se o e-mail puder ser usado, enviamos um link para confirmar. Abra o link para ativar o cadastro.';
+
+export const TIPOS_PROFISSIONAIS = [
+  'pedagogo',
+  'psicopedagogo',
+  'terapeuta_ocupacional',
+  'fonoaudiologo',
+  'psicologo',
+  'psiquiatra',
+  'outro_saude',
+] as const;
 
 const email = z
   .string()
@@ -30,7 +44,28 @@ const corpoCadastro = z.strictObject({
     .refine((t) => !/(https?:|www\.|:\/\/|@)/i.test(t), 'Não use links nem e-mail.'),
   email,
   senha: z.string().min(1).max(128),
-  papel: z.enum(['professor', 'pedagogico']),
+  papel: z.enum(['professor', 'pedagogico', 'responsavel']),
+  // Tipo interno do perfil Pedagógico (A-081): um só perfil para pedagogo, terapeuta ocupacional, fonoaudiólogo, etc.
+  tipo_profissional: z.enum(TIPOS_PROFISSIONAIS).optional(),
+  aceite: z.literal(true),
+}).refine((c) => (c.papel === 'pedagogico') === (c.tipo_profissional !== undefined), {
+  message: 'Informe o tipo de profissional (e só para o perfil Pedagógico).',
+});
+const corpoAlunoMenor = z.strictObject({
+  codigo: z.string().trim().min(8).max(64),
+  aluno: z.strictObject({
+    nome: z
+      .string()
+      .trim()
+      .min(2)
+      .max(80)
+      .refine((t) => !/(https?:|www\.|:\/\/|@)/i.test(t), 'Não use links nem e-mail.'),
+    email,
+    nascimento: z.iso.date(),
+    senha: z.string().min(1).max(128),
+  }),
+  representante_nascimento: z.iso.date(),
+  // Declaração de representante legal: o sistema não consegue verificar (A-080, Q1)
   aceite: z.literal(true),
 });
 const corpoLoginPessoa = z.strictObject({ email, senha: z.string().min(1).max(128) });
@@ -86,7 +121,7 @@ export function registrarRotasPessoa(app: FastifyInstance, dep: Dependencias): v
     const token = novoToken();
     const [r] = await dep.banco.$queryRaw<{ r: string }[]>`
       SELECT pessoa_cadastrar(${corpo.data.nome}, ${corpo.data.email}, ${senhaHash}, ${corpo.data.papel},
-                              ${TERMO_PESSOA_VERSAO}, ${hashToken(token)}) AS r`;
+                              ${corpo.data.tipo_profissional ?? null}, ${TERMO_PESSOA_VERSAO}, ${hashToken(token)}) AS r`;
     if (r?.r === 'ok' && dep.enviarEmail) {
       const link = `${(dep.linkBase ?? 'http://localhost:18080').replace(/\/+$/, '')}/confirmar/email#${token}`;
       try {
@@ -142,8 +177,11 @@ export function registrarRotasPessoa(app: FastifyInstance, dep: Dependencias): v
     const s = await sessaoDaPessoa(req);
     if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
     const espacos = await espacosDa(s.pessoaId);
+    const [lim] = await dep.banco.$queryRaw<{ usados: number; maximo: number }[]>`
+      SELECT representante_contar(${s.pessoaId}::uuid) AS usados, plataforma_limite_alunos() AS maximo`;
     return {
       pessoa: { nome: s.nome, email: s.email },
+      representante: { alunos: lim?.usados ?? 0, limite: lim?.maximo ?? 5 },
       espacos: espacos.map((e) => ({
         instituicao_id: e.instituicao_id,
         nome: e.instituicao_nome,
@@ -167,6 +205,49 @@ export function registrarRotasPessoa(app: FastifyInstance, dep: Dependencias): v
     return res
       .header('set-cookie', serializarCookie(r.token, r.duracao, dep.cookie))
       .send({ nivel: r.nivel, usuario: r.usuario });
+  });
+
+  // O representante legal cria o aluno menor (A-080): espaço individual, aluno, vínculo 'legal' e aceite numa transação só
+  app.post('/auth/pessoa/aluno-menor', async (req, res) => {
+    const s = await sessaoDaPessoa(req);
+    if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    if (!dep.limitar(req, res)) return res;
+    const corpo = corpoAlunoMenor.safeParse(req.body);
+    const recusa = { erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.' };
+    if (!corpo.success) return res.code(400).send(recusa);
+    const hoje = dep.agora();
+    const c = corpo.data;
+    if (
+      !dataValida(c.aluno.nascimento, hoje) ||
+      !dataValida(c.representante_nascimento, hoje) ||
+      idadeEm(c.aluno.nascimento, hoje) >= 18 ||
+      idadeEm(c.representante_nascimento, hoje) < 18
+    )
+      return res
+        .code(400)
+        .send({ erro: 'Confira as datas. O aluno precisa ter menos de 18 anos e você, 18 anos ou mais.' });
+    const erroSenha = validarSenha(c.aluno.senha);
+    if (erroSenha) return res.code(400).send({ erro: erroSenha });
+    const senhaHash = await hashSenha(c.aluno.senha);
+    const [r] = await dep.banco.$queryRaw<{ resultado: string; instituicao_id: string | null }[]>`
+      SELECT * FROM representante_criar_aluno(${s.pessoaId}::uuid, ${hashCodigo(c.codigo)}, ${c.aluno.nome},
+        ${c.aluno.email}, ${senhaHash}, ${c.aluno.nascimento}::date, ${c.representante_nascimento}::date,
+        ${TERMO_PESSOA_VERSAO})`;
+    if (r?.resultado === 'limite')
+      return res
+        .code(409)
+        .send({ erro: 'Você chegou ao limite de alunos. Entre em contato com o suporte.', limite: true });
+    if (r?.resultado !== 'ok' || !r.instituicao_id) return res.code(400).send(recusa);
+    await withTenant(dep.banco, { instituicaoId: r.instituicao_id }, (tx) =>
+      registrarAuditoria(tx, {
+        instituicaoId: r.instituicao_id as string,
+        ator: `pessoa:${s.pessoaId}`,
+        acao: 'representante.aluno_criado',
+        alvo: `instituicao:${r.instituicao_id}`,
+        depois: { termo: TERMO_PESSOA_VERSAO },
+      }),
+    );
+    return res.code(201).send({ criado: true, instituicao_id: r.instituicao_id });
   });
 
   app.post('/auth/pessoa/logout', async (req, res) => {

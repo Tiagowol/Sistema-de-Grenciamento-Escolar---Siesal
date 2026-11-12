@@ -282,7 +282,7 @@ export function criarAutenticacao(dep: Dependencias) {
   }
 
   // L22a-1b: a pessoa já provou quem é (login da pessoa); aqui ela entra num espaço onde participa, sem digitar a senha
-  // de novo. Só professor e pedagógico; o Admin entra só pelo login antigo (com autenticador). Espaço que não está
+  // de novo. Só professor, pedagógico e representante legal; o Admin entra só pelo login antigo (com autenticador). Espaço que não está
   // ativo (suspenso, encerrado ou em implantação) não recebe ninguém por este caminho.
   async function entrarPorPessoa(
     instituicaoId: string,
@@ -292,7 +292,11 @@ export function criarAutenticacao(dep: Dependencias) {
     return withTenant(dep.banco, { instituicaoId }, async (tx) => {
       if ((await soAdminEntra(tx)) !== false) return null;
       const usuario = await tx.usuario.findFirst({
-        where: { id: usuarioId, situacao: 'ativo', perfil: { in: ['professor', 'pedagogico'] } },
+        where: {
+          id: usuarioId,
+          situacao: 'ativo',
+          perfil: { in: ['professor', 'pedagogico', 'responsavel'] },
+        },
       });
       if (!usuario) return null;
       const { token, duracao } = await abrirSessao(tx, instituicaoId, usuario.id, 'completo', agora);
