@@ -7,6 +7,8 @@ import { TempoVisual } from '../componentes/TempoVisual';
 import { paraTexto } from '../datas';
 import { lerCodigoDoLink } from '../linkCadastro';
 import { CadastroInstituicao } from './CadastroInstituicao';
+import { AcessoPessoa } from './AcessoPessoa';
+import { ConfirmarEmail } from './ConfirmarEmail';
 import { ConfirmarResponsavel } from './ConfirmarResponsavel';
 
 type Props = { instituicaoPadrao: string | null; aoEntrar: (eu: Eu) => void };
@@ -30,6 +32,9 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   const [dosLinkInstituicao] = useState(() => lerCodigoDoLink('/cadastro/instituicao'));
   // Link do e-mail do responsável (/confirmar/responsavel#LINK): outra tela, sem login
   const [dosLinkResponsavel] = useState(() => lerCodigoDoLink('/confirmar/responsavel'));
+  // L22a-1b: link do e-mail do cadastro próprio (/confirmar/email#LINK) e a página /pessoa
+  const [dosLinkEmail] = useState(() => lerCodigoDoLink('/confirmar/email'));
+  const [paginaPessoa] = useState(() => window.location.pathname.replace(/\/+$/, '') === '/pessoa');
   const [modo, setModo] = useState<'instituicao' | 'individual'>(
     dosLink ? 'individual' : 'instituicao',
   );
@@ -128,6 +133,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   if (dosLinkInstituicao !== null)
     return <CadastroInstituicao codigoInicial={dosLinkInstituicao} aoEntrar={aoEntrar} />;
   if (dosLinkResponsavel !== null) return <ConfirmarResponsavel token={dosLinkResponsavel} />;
+  if (dosLinkEmail !== null) return <ConfirmarEmail token={dosLinkEmail} />;
+  if (paginaPessoa) return <AcessoPessoa aoEntrar={aoEntrar} />;
   if (aguardando)
     return (
       <main
@@ -430,6 +437,9 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
           <button type="submit" className="btn btn-primary" disabled={enviando}>
             {criando ? (enviando ? 'Criando…' : 'Criar conta') : enviando ? 'Entrando…' : 'Entrar'}
           </button>
+          <a href="/pessoa" className="small">
+            Professor ou pedagogo sem instituição? Entre ou cadastre-se aqui
+          </a>
           {modo === 'individual' ? (
             <button
               type="button"

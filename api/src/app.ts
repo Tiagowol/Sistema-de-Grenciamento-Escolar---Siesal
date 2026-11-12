@@ -20,6 +20,7 @@ import { criarInstituicaoPorConvite } from './auth/convite-individual.js';
 import { derivarChavesCpf, mascararCpf } from './auth/cpf.js';
 import type { EnviarEmail } from './auth/email.js';
 import { LimitadorJanela } from './auth/limitador.js';
+import { registrarRotasPessoa } from './auth/pessoa-rotas.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
 import { verificarSenhaFalsa } from './auth/senha.js';
 import {
@@ -257,6 +258,17 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     return resposta
       .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
       .send({ nivel: r.nivel, usuario: r.usuario });
+  });
+
+  // L22a-1b: cadastro próprio, login da pessoa e escolha de espaço
+  registrarRotasPessoa(app, {
+    banco,
+    auth,
+    limitar,
+    cookie,
+    enviarEmail: opcoes.enviarEmail,
+    linkBase: opcoes.linkBase,
+    agora: relogio,
   });
 
   app.post('/auth/criar-conta-individual', async (requisicao, resposta) => {

@@ -281,6 +281,38 @@ export function criarAutenticacao(dep: Dependencias) {
     );
   }
 
+  // L22a-1b: a pessoa já provou quem é (login da pessoa); aqui ela entra num espaço onde participa, sem digitar a senha
+  // de novo. Só professor e pedagógico; o Admin entra só pelo login antigo (com autenticador). Espaço que não está
+  // ativo (suspenso, encerrado ou em implantação) não recebe ninguém por este caminho.
+  async function entrarPorPessoa(
+    instituicaoId: string,
+    usuarioId: string,
+  ): Promise<Extract<ResultadoLogin, { tipo: 'ok' }> | null> {
+    const agora = relogio();
+    return withTenant(dep.banco, { instituicaoId }, async (tx) => {
+      if ((await soAdminEntra(tx)) !== false) return null;
+      const usuario = await tx.usuario.findFirst({
+        where: { id: usuarioId, situacao: 'ativo', perfil: { in: ['professor', 'pedagogico'] } },
+      });
+      if (!usuario) return null;
+      const { token, duracao } = await abrirSessao(tx, instituicaoId, usuario.id, 'completo', agora);
+      await registrarAuditoria(tx, {
+        instituicaoId,
+        ator: ator(usuario.id),
+        acao: 'auth.login_pessoa_ok',
+        alvo: ator(usuario.id),
+        depois: { nivel: 'completo' },
+      });
+      return {
+        tipo: 'ok' as const,
+        token,
+        duracao,
+        nivel: 'completo' as const,
+        usuario: { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil },
+      };
+    });
+  }
+
   // Procura a sessão pelo hash do token; vencida, revogada ou de usuário inativo = sem sessão
   async function obterSessao(token: string | undefined): Promise<SessaoAtiva | null> {
     const lido = lerToken(token);
@@ -661,6 +693,7 @@ export function criarAutenticacao(dep: Dependencias) {
 
   return {
     login,
+    entrarPorPessoa,
     obterSessao,
     logout,
     iniciarTotp,

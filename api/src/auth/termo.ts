@@ -1,6 +1,8 @@
 // Termo literal do responsável (20c-2): 3 caixas. A versão vai junto com a prova do aceite (sem CPF).
 // Se o texto mudar, a versão muda e o texto novo precisa ser o mesmo da Política de Privacidade.
 export const TERMO_VERSAO = '1';
+// Termo do cadastro próprio de professor e pedagogo (L22a-1b); minuta pendente de parecer jurídico
+export const TERMO_PESSOA_VERSAO = 'pessoa-1';
 
 export function textosDoTermo(nomeAluno: string): [string, string, string] {
   return [

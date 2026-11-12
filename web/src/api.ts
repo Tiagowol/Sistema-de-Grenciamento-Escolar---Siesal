@@ -145,6 +145,10 @@ export type DificuldadesDoAluno = {
   }[];
 };
 export type EtapaDisciplinas = 'fundamental' | 'medio' | 'tecnico';
+export type PessoaEu = {
+  pessoa: { nome: string; email: string };
+  espacos: { instituicao_id: string; nome: string; tipo: string; perfil: string }[];
+};
 export type TipoAtividade = { id: string; nome: string; cor: string; icone: string };
 export type PreferenciasServidor = {
   apelido: string | null;
@@ -495,6 +499,22 @@ export const api = {
   confirmarResponsavel: (token: string, aceites: boolean[]) =>
     chamar<{ confirmado: true }>('POST', '/auth/responsavel/confirmar', { token, aceites }),
   dadosCadastro: () => chamar<DadosCadastro>('GET', '/conta/dados-cadastro'),
+  // L22a-1b: cadastro próprio, login da pessoa e escolha de espaço
+  pessoaCadastro: (d: {
+    nome: string;
+    email: string;
+    senha: string;
+    papel: 'professor' | 'pedagogico';
+    aceite: true;
+  }) => chamar<{ mensagem: string }>('POST', '/auth/pessoa/cadastro', d),
+  pessoaConfirmarEmail: (token: string) =>
+    chamar<{ confirmado: true }>('POST', '/auth/pessoa/confirmar-email', { token }),
+  pessoaLogin: (d: { email: string; senha: string }) =>
+    chamar<{ pessoa: { nome: string } }>('POST', '/auth/pessoa/login', d),
+  pessoaEu: () => chamar<PessoaEu>('GET', '/auth/pessoa/eu'),
+  pessoaEntrar: (instituicaoId: string) =>
+    chamar<Eu>('POST', '/auth/pessoa/entrar', { instituicao_id: instituicaoId }),
+  pessoaLogout: () => chamar<void>('POST', '/auth/pessoa/logout'),
   criarInstituicao: (d: {
     codigo: string;
     instituicao: string;
