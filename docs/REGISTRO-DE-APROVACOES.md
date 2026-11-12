@@ -325,3 +325,8 @@ Pedidos do autor em chat, em 12/11/2026: "autorizar aplicar no site agora" (L21a
 - Feito (L21b): backup antes `backups/siesal-20261112-161511.dump`; migração `0024_calendario_forma_dia.sql` pelo job `migrate`; API e site reconstruídos e saudáveis. Conferido: coluna `forma_dia` (padrão 'grade'), 24 migrações, 2 linhas de preferência em 'grade', `/api/preferencias` sem sessão responde 401.
 - Não conferido: uso real da escolha no navegador, 360/768/1280 px e a checagem humana.
 - Retorno: `docs/RETORNO-0024.md`. Estado: Implementado e aplicado (não Verificado).
+
+## A-073 — Responsável indicado vê o mesmo que o Responsável do menor (12/11/2026)
+Resposta do autor em chat, em 12/11/2026, à pergunta aberta da A-071: "o responsável vê a mesma coisa, mesma coisa do aluno menor". Vale para o Responsável **indicado** (aluno maior): vê o mesmo que o Responsável legal vê do aluno menor. O aluno maior pode retirar o indicado (Adendo 4).
+- Pedido do autor na mesma mensagem: "prepare e aplique a proposta". Como o Code entendeu: **escrever a proposta do L22a-1** (`docs/PROPOSTA-L22A-1.md`). **Código e migração não foram feitos**: a proposta tem 3 perguntas fechadas (N2, N4, N5) que são decisão do autor, e a regra da A-071 pede "ok proposta" antes do código.
+- Estado: Planejado (proposta escrita).
