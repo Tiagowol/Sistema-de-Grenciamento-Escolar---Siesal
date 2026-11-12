@@ -330,3 +330,11 @@ Pedidos do autor em chat, em 12/11/2026: "autorizar aplicar no site agora" (L21a
 Resposta do autor em chat, em 12/11/2026, à pergunta aberta da A-071: "o responsável vê a mesma coisa, mesma coisa do aluno menor". Vale para o Responsável **indicado** (aluno maior): vê o mesmo que o Responsável legal vê do aluno menor. O aluno maior pode retirar o indicado (Adendo 4).
 - Pedido do autor na mesma mensagem: "prepare e aplique a proposta". Como o Code entendeu: **escrever a proposta do L22a-1** (`docs/PROPOSTA-L22A-1.md`). **Código e migração não foram feitos**: a proposta tem 3 perguntas fechadas (N2, N4, N5) que são decisão do autor, e a regra da A-071 pede "ok proposta" antes do código.
 - Estado: Planejado (proposta escrita).
+
+## A-074 — N2 e N4 decididas; mensagens push entram no projeto (12/11/2026)
+Mensagem do autor em chat, em 12/11/2026: "n4 o aluno convida, o responsável aprova"; "n2 o próprio aluno pede suporte, o responsável vê tudo que acontece, tanto do aluno menor como do maior, tudo (tarefas, agendas, notas, mensagens, disciplinas e etc), mas não altera nada"; "coloque as mensagens push no projeto"; "corrija e siga com a proposta".
+- **N4:** o aluno convida o professor ou pedagogo; o Responsável aprova (aluno menor).
+- **N2:** o aluno pede suporte; o Responsável vê tudo (menor e maior), somente leitura.
+- **N5:** "siga com a proposta" lido como aceite da recomendação (dois espaços separados, dados não migram). Avisado na proposta; o autor pode corrigir.
+- **Escopo (aviso com motivo):** "Responsável vê tudo" vira o lote **L22a-3**; **mensagens push** viram o lote **L27f**. Ver `docs/PROPOSTA-L22A-1.md`, seção 3a.
+- **"Siga com a proposta"** lido como o "ok proposta" da A-071 para o L22a-1 (pessoa, participação, Responsável com conta). Estado: Planejado; código ainda não iniciado neste registro.
