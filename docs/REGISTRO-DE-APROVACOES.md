@@ -375,3 +375,14 @@ Mensagem do autor em chat, em 13/11/2026, respondendo às 5 perguntas da `docs/P
 - **Q4:** instituição, aluno e/ou representante encerram a qualquer momento, com justificativa registrada e auditável.
 - **Q5:** acompanhante = professores, pedagógico e demais; o aviso diz quem controla o acesso em cada caso.
 - Como o Code entendeu: as respostas valem como **"ok proposta" com ajustes** para 1c e L22a-2; **nenhum código foi feito** (o autor disse "paramos por hoje" e há 1 dúvida aberta, sobre o perfil dos psicopedagogos). Estado: Planejado.
+
+## A-081 — Perfil Pedagógico único, Q4 confirmada, só o 1c hoje (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026:
+- **Perfil Pedagógico é um só** para pedagogo, terapeuta ocupacional, fonoaudiólogo, psicopedagogo, psicólogo, psiquiatra e outro profissional da área da saúde; "só cria um tipo interno". Nenhum perfil novo.
+- **Leitura da Q4 confirmada** (no aluno maior encerram o aluno e a instituição nos vínculos dela; o representante indicado só vê; no menor encerram o representante, o aluno e a instituição).
+- **Só o 1c hoje**; o L22a-2 fica para outro dia.
+- **"Pode apagar" a pessoa fictícia de teste:** o Code **desativou** (`desativada_em`) em vez de apagar, pela regra do projeto (nada se apaga de verdade). Se o autor quiser a remoção física, é decisão à parte.
+
+## A-082 — L22a-1c implementado (13/11/2026)
+Sob o A-080 e o A-081. **Estado: Implementado**, não aplicado no site, código sem commit. Migração `0027_representante.sql`; `POST /auth/pessoa/aluno-menor`; tipo interno do Pedagógico; limite de alunos por representante (padrão 5, no Master); declaração literal de representante legal (não verificável). Verificação: 343 testes de integração, 1173 de unidade e tela, tipos e lint ok; ensaio da 0027 em cópia dos dados reais ok. Retorno: `docs/RETORNO-0027.md`.
+- **Não feito:** "ver tudo, só leitura" do representante (L22a-3); convites e "Quem pode ver meus dados" (L22a-2); tela do Master para o limite (L22c); conferência em navegador real; envio de e-mail real.
