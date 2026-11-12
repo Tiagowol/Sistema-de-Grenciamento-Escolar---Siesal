@@ -235,6 +235,34 @@ describe('regras fixas da matriz', () => {
     }
   });
 
+  it('só o aluno lê os próprios dados de cadastro, com o CPF mascarado (v17, 20c-2)', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(17);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'dados_cadastro', 'ler')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'dados_cadastro', 'administrar')).toBeNull();
+    }
+  });
+
+  it('dificuldade: aluno administra e lê o próprio; Pedagógico só lê, na instituição; cards só do aluno (v18, 20d)', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(18);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'dificuldade', 'administrar')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'cartoes_resumo', 'administrar')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+      expect(permitido(perfil, 'cartoes_resumo', 'ler')).toBe(
+        perfil === 'aluno' ? 'proprio' : null,
+      );
+    }
+    expect(permitido('pedagogico', 'dificuldade', 'ler')).toBe('instituicao');
+    for (const perfil of ['master', 'admin', 'professor', 'responsavel'] as const)
+      expect(permitido(perfil, 'dificuldade', 'ler'), perfil).toBeNull();
+  });
+
   it('só o master cria instituições, liga o login Google da demo e usa acesso excepcional', () => {
     for (const perfil of PERFIS) {
       const so = perfil === 'master' ? 'plataforma' : null;

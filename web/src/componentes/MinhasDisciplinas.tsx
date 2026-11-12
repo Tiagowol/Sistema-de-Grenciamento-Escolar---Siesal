@@ -3,6 +3,7 @@ import { api, type DisciplinaAluno, ErroApi, type EtapaDisciplinas } from '../ap
 import { Aviso } from './Aviso';
 import { Vazio } from './Basicos';
 import { CaixaDeDisciplina } from './CaixaDeDisciplina';
+import { Dificuldade } from './Dificuldade';
 import { useCarregar } from './useCarregar';
 
 // Minhas disciplinas (L20b), em Personalizar: escolher a etapa (marca as gerais), acrescentar do catálogo,
@@ -55,7 +56,7 @@ export function MinhasDisciplinas() {
       <h2 id="pz-disc">Minhas disciplinas</h2>
       <p className="muted small">
         Estas são as disciplinas que aparecem quando você cria uma atividade ou anota uma nota. Só
-        você vê a sua lista. Você pode tirar da lista as que não tem e criar as suas.
+        você vê a sua lista de disciplinas. Você pode tirar da lista as que não tem e criar as suas.
       </p>
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       {msg ? <Aviso tipo="info">{msg}</Aviso> : null}
@@ -92,6 +93,14 @@ export function MinhasDisciplinas() {
             <div className="cal-parte">
               <strong>{d.nome}</strong>{' '}
               <span className="small muted">({ROTULO_ORIGEM[d.origem]})</span>
+              <Dificuldade
+                rotulo={`Dificuldade de ${d.nome} (opcional)`}
+                nome={`dif-disc-${d.id}`}
+                valor={d.dificuldade}
+                aoMudar={(v) =>
+                  acao(() => api.dificuldadeDaDisciplina(d.id, v), 'Dificuldade salva.')
+                }
+              />
             </div>
             <div className="cal-acoes">
               <button

@@ -30,6 +30,7 @@ const corpoTarefa = z.strictObject({
   situacao: z.enum(['pendente', 'em_andamento', 'concluida']).optional(),
   tipo_atividade_id: z.uuid().nullable().optional(),
   disciplina_id: z.uuid().nullable().optional(), // L20b: disciplina da lista do aluno
+  dificuldade: z.number().int().min(0).max(10).nullable().optional(), // 20d: percepção do aluno (null limpa)
 });
 
 type Linha = Record<string, unknown>;
@@ -106,7 +107,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   // ---------- Tarefas e microetapas (L6) ----------
   const listarTarefas = async (tx: ClienteTransacao, usuarioId: string, soId?: string) => {
     const tarefas = await tx.$queryRaw<Linha[]>`
-      SELECT id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, tipo_atividade_id, prazo::text AS prazo, prioridade, situacao
+      SELECT id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, tipo_atividade_id, prazo::text AS prazo, prioridade, situacao, dificuldade
         FROM tarefa
        WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL
          AND (${soId ?? null}::uuid IS NULL OR id = ${soId ?? null}::uuid)
@@ -136,10 +137,11 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       if (escolha === 'invalida')
         return resposta.code(400).send({ erro: 'Disciplina não encontrada.' });
       const [nova] = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, prazo, prioridade, situacao, tipo_atividade_id)
+        INSERT INTO tarefa (instituicao_id, usuario_id, titulo, descricao, disciplina, disciplina_aluno_id, tipo, prazo, prioridade, situacao, tipo_atividade_id, dificuldade)
         VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.descricao ?? ''},
                 ${escolha.texto}, ${escolha.id}::uuid, ${corpo.tipo ?? 'tarefa'}, ${corpo.prazo ?? null}::date,
-                ${corpo.prioridade ?? 'media'}, ${corpo.situacao ?? 'pendente'}, ${corpo.tipo_atividade_id ?? null}::uuid)
+                ${corpo.prioridade ?? 'media'}, ${corpo.situacao ?? 'pendente'}, ${corpo.tipo_atividade_id ?? null}::uuid,
+                ${corpo.dificuldade ?? null}::smallint)
         RETURNING id`;
       if (!nova) throw new Error('Falha ao criar tarefa.');
       let ordem = 0;
@@ -185,11 +187,20 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
         prioridade = coalesce(${corpo.prioridade ?? null}::text, prioridade),
         tipo_atividade_id = CASE WHEN ${corpo.tipo_atividade_id !== undefined}::boolean THEN ${corpo.tipo_atividade_id ?? null}::uuid ELSE tipo_atividade_id END,
         prazo = CASE WHEN ${temPrazo}::boolean THEN ${corpo.prazo ?? null}::date ELSE prazo END,
+        dificuldade = CASE WHEN ${corpo.dificuldade !== undefined}::boolean THEN ${corpo.dificuldade ?? null}::smallint ELSE dificuldade END,
         situacao = coalesce(${corpo.situacao ?? null}::text, situacao),
         concluida_em = CASE WHEN ${corpo.situacao ?? null}::text = 'concluida' THEN now()
                             WHEN ${corpo.situacao ?? null}::text IS NOT NULL THEN NULL ELSE concluida_em END,
         atualizado_em = now()
       WHERE id = ${params.id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid`;
+    if (corpo.dificuldade !== undefined) {
+      await registrarAuditoria(tx, {
+        instituicaoId: sessao.instituicaoId,
+        ator: `usuario:${sessao.usuarioId}`,
+        acao: 'dificuldade.alterada',
+        alvo: `tarefa:${params.id}`,
+      });
+    }
     if (corpo.situacao === 'concluida' && antes.situacao !== 'concluida') {
       await registrarAuditoria(tx, {
         instituicaoId: sessao.instituicaoId,
@@ -327,6 +338,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     hora_inicio: horaOpcional,
     minutos: minutosOpcional,
     tipo_atividade_id: z.uuid().nullable().optional(),
+    tarefa_id: z.uuid().nullable().optional(), // 20d: atividade colocada na grade do dia
   });
   const MAXIMO_DIAS_CONSULTA = 400;
 
@@ -383,9 +395,14 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   rota('post', '/eventos', { corpo: corpoEvento }, async ({ tx, sessao, corpo, resposta }) => {
     if (!(await tipoDoAluno(tx, sessao.usuarioId, corpo.tipo_atividade_id)))
       return resposta.code(400).send({ erro: 'Tipo de atividade não encontrado.' });
+    if (corpo.tarefa_id) {
+      const [t] = await tx.$queryRaw<Linha[]>`
+        SELECT id FROM tarefa WHERE id = ${corpo.tarefa_id}::uuid AND usuario_id = ${sessao.usuarioId}::uuid AND desativado_em IS NULL`;
+      if (!t) return resposta.code(400).send({ erro: 'Atividade não encontrada.' });
+    }
     const [e] = await tx.$queryRaw<Linha[]>`
-        INSERT INTO evento (instituicao_id, usuario_id, titulo, tipo, dia, hora_inicio, minutos, tipo_atividade_id)
-        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.tipo ?? 'pessoal'}, ${corpo.dia}::date, ${corpo.hora_inicio ?? null}::time, ${corpo.minutos ?? null}, ${corpo.tipo_atividade_id ?? null}::uuid)
+        INSERT INTO evento (instituicao_id, usuario_id, titulo, tipo, dia, hora_inicio, minutos, tipo_atividade_id, tarefa_id)
+        VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${corpo.titulo}, ${corpo.tipo ?? 'pessoal'}, ${corpo.dia}::date, ${corpo.hora_inicio ?? null}::time, ${corpo.minutos ?? null}, ${corpo.tipo_atividade_id ?? null}::uuid, ${corpo.tarefa_id ?? null}::uuid)
         RETURNING id, titulo, tipo, tipo_atividade_id, origem, id_externo, dia::text AS dia, to_char(hora_inicio, 'HH24:MI') AS hora_inicio, minutos`;
     await gravarVersao(tx, sessao, (e as Linha).id as string, 'criado');
     return resposta.code(201).send({ evento: e });
@@ -716,7 +733,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   const ETAPAS = ['fundamental', 'medio', 'tecnico'] as const;
   const minhasDisciplinas = (tx: ClienteTransacao, usuarioId: string) =>
     tx.$queryRaw<Linha[]>`
-      SELECT id, nome, origem, catalogo_id FROM disciplina_aluno
+      SELECT id, nome, origem, catalogo_id, dificuldade FROM disciplina_aluno
        WHERE usuario_id = ${usuarioId}::uuid AND desativado_em IS NULL ORDER BY nome_busca`;
   const auditarDisciplina = (
     tx: ClienteTransacao,

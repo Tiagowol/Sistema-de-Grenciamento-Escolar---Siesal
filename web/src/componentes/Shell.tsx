@@ -25,7 +25,9 @@ export type Pagina =
   | 'avisos'
   | 'calendarioescola'
   | 'regrasnotas'
-  | 'identidade';
+  | 'identidade'
+  | 'cartoes'
+  | 'acompanhamento';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -43,6 +45,7 @@ type Item = {
   palavras?: string[];
   modulo?: Modulo; // L20: some do menu quando o Master desliga o módulo nesta escola
   soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
+  moduloNaEscola?: Modulo; // 20d: some se o Master desligar o módulo na escola; no espaço individual fica sempre
 };
 const ALUNO = ['aluno'];
 const ITENS: Item[] = [
@@ -90,6 +93,14 @@ const ITENS: Item[] = [
     palavras: ['concentrar', 'concentracao', 'estudar', 'estudo', 'sessao', 'cronometro'],
   },
   {
+    id: 'cartoes',
+    moduloNaEscola: 'apoio_aluno',
+    rotulo: 'Cards de resumo',
+    icone: 'file',
+    so: ALUNO,
+    palavras: ['resumo', 'cartao', 'cartoes', 'revisar', 'estudar', 'memorizar', 'flashcard'],
+  },
+  {
     id: 'notas',
     rotulo: 'Notas',
     icone: 'chart',
@@ -118,6 +129,15 @@ const ITENS: Item[] = [
     icone: 'home',
     so: ['admin', 'professor', 'pedagogico', 'responsavel'],
     palavras: ['home', 'principal', 'comeco'],
+  },
+  {
+    id: 'acompanhamento',
+    modulo: 'apoio_aluno',
+    rotulo: 'Acompanhamento',
+    icone: 'users',
+    so: ['pedagogico'],
+    soEscola: true,
+    palavras: ['dificuldade', 'nota de dificuldade', 'napne', 'aluno', 'apoio', 'ajudar'],
   },
   {
     id: 'notasprof',
@@ -246,10 +266,12 @@ export function Shell({
   };
   const ligado = (m?: Modulo) => !m || (eu.modulos?.[m] ?? true);
   const individual = eu.espaco === 'individual';
+  const ligadoNaEscola = (m?: Modulo) => !m || individual || ligado(m);
   const itens = ITENS.filter(
     (i) =>
       (!i.so || i.so.includes(eu.usuario.perfil)) &&
       ligado(i.modulo) &&
+      ligadoNaEscola(i.moduloNaEscola) &&
       !(individual && i.soEscola),
   );
   const atual = itens.find((i) => i.id === pagina);

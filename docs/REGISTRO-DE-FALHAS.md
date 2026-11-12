@@ -267,3 +267,17 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Correção (neste lote): a conversão passa a ser feita pela API ao abrir "Minhas disciplinas" (`withTenant`, uma vez por aluno, marcada em `preferencia_usuario.disciplinas_convertidas_em`, que a 0020 cria). Teste de integração novo com texto antigo, incluindo o limite de 20. A correção só vale no site depois de aplicar a 0020 e a API (precisa do seu "aplicar").
 - Lição: migração com dados escolares não pode depender de RLS; conversão de dados vai para a API ou usa a mesma técnica do `contagem_por_perfil` (definir o contexto por instituição).
 - Como voltar atrás: não se aplica (nada foi alterado no site).
+
+## F-055 — 12/11/2026 — A função nova de cadastro aceitava convite de instituição
+- O que falhou: a função `cadastro_aluno_criar` (migração 0022, ainda não aplicada em nenhum banco) não conferia o tipo do convite. Um convite de instituição criaria uma conta de aluno. Descoberto pelo teste existente "cada convite só serve para o seu tipo" (20c-3), que falhou na primeira rodada.
+- Causa: copiei a consulta da 0020 e esqueci o filtro `tipo = 'individual'` que a 0021 acrescentou.
+- Correção: filtro `tipo = 'individual'` na função. Testes de integração: 299 de 299 passando.
+- Como voltar atrás: não se aplica (a 0022 não foi aplicada; é só desfazer a edição do arquivo).
+- Observação: na segunda rodada, `conta.integracao.test.ts` ("cancelar um pedido deixa tudo como estava") falhou uma vez com 404 e passou em 3 rodadas seguintes. Não reproduzido; fica anotado como oscilação possível, sem relação conhecida com o 20c-2.
+
+## F-056 — 12/11/2026 — A API responde antes de gravar (a resposta sai de dentro da transação)
+- O que falhou: nas rotas do Núcleo (e em outros módulos), a resposta é enviada com `resposta.code(201).send(...)` **dentro** do `withTenant`, ou seja, antes do `COMMIT`. Quem pede logo em seguida pode não ver o dado, e se o `COMMIT` falhar a pessoa já recebeu "criado". Apareceu como teste que oscila: `conta.integracao.test.ts` ("cancelar um pedido deixa tudo como estava", 1 vez), `espaco-individual.integracao.test.ts` (isolamento no banco, várias vezes) e o teste do banco do 20d (corrigido).
+- Causa: o padrão das rotas envia a resposta no meio da função que roda dentro da transação; a transação só termina depois.
+- Correção feita neste lote: **só nos testes** (esperam a linha aparecer antes de contar), nos dois arquivos acima e no teste novo. A causa **não** foi corrigida: exige mudar o padrão de resposta em todos os módulos (guardar o código e o corpo, enviar depois do `COMMIT`). Fica como lote próprio (manutenção), com aprovação do autor.
+- Risco hoje: baixo (um clique seguinte quase nunca é mais rápido que o `COMMIT`), mas o caso do `COMMIT` falhar depois do "criado" é real em teoria.
+- Como voltar atrás: não se aplica.

@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
-import { useState } from 'react';
-import { api, ErroApi, type Evento, type TipoAtividade } from '../api';
+import { useRef, useState } from 'react';
+import { api, ErroApi, type Evento, type Tarefa, type TipoAtividade } from '../api';
 import { BLOCOS, blocoDe } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
@@ -34,6 +34,12 @@ const PARTES: Record<ParteDoDia | 'sem', { nome: string; icone: NomeIcone | null
   noite: { nome: 'Noite', icone: 'moon' },
   sem: { nome: 'Sem horário', icone: null },
 };
+// Grade do dia (20d): 06:00 a 23:00 em 3 partes
+const GRUPOS: { id: string; nome: string; icone: NomeIcone; horas: number[] }[] = [
+  { id: 'manha', nome: 'Manhã', icone: 'sun', horas: [6, 7, 8, 9, 10, 11] },
+  { id: 'tarde', nome: 'Tarde', icone: 'sunset', horas: [12, 13, 14, 15, 16, 17] },
+  { id: 'noite', nome: 'Noite', icone: 'moon', horas: [18, 19, 20, 21, 22, 23] },
+];
 const MESES = [
   'janeiro',
   'fevereiro',
@@ -125,6 +131,13 @@ export function Calendario() {
     tipoAtividade: '',
   };
   const [rascunho, setRascunho] = useState<Rascunho>(vazio);
+  // 20d: grade do dia (06:00 a 23:00). A lista simples continua disponível.
+  const [formaDia, setFormaDia] = useState<'grade' | 'lista'>('grade');
+  const [horaEscolhida, setHoraEscolhida] = useState<string | null>(null);
+  const [tarefasDaGrade, setTarefasDaGrade] = useState<Tarefa[] | null>(null);
+  const [tarefaEscolhida, setTarefaEscolhida] = useState('');
+  const [duracaoDaGrade, setDuracaoDaGrade] = useState('');
+  const formulario = useRef<HTMLFormElement>(null);
 
   const doDia = (d: string) => eventos.filter((e) => e.dia === d);
 
@@ -155,6 +168,57 @@ export function Calendario() {
     setRascunho((r) => (r.id ? r : { ...r, dia: d }));
   };
 
+  // Editar, remover ou ocultar: os mesmos botões na lista e na grade
+  const acoesDe = (e: Evento) => (
+    <div className="cal-acoes">
+      {podeEditar(e) ? (
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() =>
+            setRascunho({
+              id: e.id,
+              titulo: e.titulo,
+              tipo: e.tipo,
+              dia: e.dia,
+              hora: e.hora_inicio ?? '',
+              minutos: e.minutos,
+              tipoAtividade: e.tipo_atividade_id ?? '',
+            })
+          }
+        >
+          Editar<span className="sr-only"> {e.titulo}</span>
+        </button>
+      ) : null}
+      {podeRemover(e) ? (
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={async () => {
+            await api.removerEvento(e.id);
+            await recarregar();
+          }}
+        >
+          Remover<span className="sr-only"> {e.titulo}</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={async () => {
+            // Item da escola (L19) se oculta pelo item; o evento do aluno, pelo próprio id
+            if (e.origem === 'calendario_escolar' && e.item_id)
+              await api.ocultarItemEscolar(e.item_id);
+            else await api.ocultarEvento(e.id);
+            await recarregar();
+          }}
+        >
+          Ocultar<span className="sr-only"> {e.titulo}</span>
+        </button>
+      )}
+    </div>
+  );
+
   function linha(e: Evento) {
     const parte = parteDoDia(e.hora_inicio);
     const p = PARTES[parte ?? 'sem'];
@@ -183,54 +247,184 @@ export function Calendario() {
             <TempoVisual prazo={e.dia} hoje={hoje} />
           </div>
         </div>
-        <div className="cal-acoes">
-          {podeEditar(e) ? (
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() =>
-                setRascunho({
-                  id: e.id,
-                  titulo: e.titulo,
-                  tipo: e.tipo,
-                  dia: e.dia,
-                  hora: e.hora_inicio ?? '',
-                  minutos: e.minutos,
-                  tipoAtividade: e.tipo_atividade_id ?? '',
-                })
-              }
-            >
-              Editar<span className="sr-only"> {e.titulo}</span>
-            </button>
-          ) : null}
-          {podeRemover(e) ? (
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={async () => {
-                await api.removerEvento(e.id);
-                await recarregar();
-              }}
-            >
-              Remover<span className="sr-only"> {e.titulo}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={async () => {
-                // Item da escola (L19) se oculta pelo item; o evento do aluno, pelo próprio id
-                if (e.origem === 'calendario_escolar' && e.item_id)
-                  await api.ocultarItemEscolar(e.item_id);
-                else await api.ocultarEvento(e.id);
-                await recarregar();
-              }}
-            >
-              Ocultar<span className="sr-only"> {e.titulo}</span>
-            </button>
-          )}
-        </div>
+        {acoesDe(e)}
       </li>
+    );
+  }
+
+  // Grade do dia: horas de 06:00 a 23:00 em 3 partes com nome e ícone; a hora exata é só um detalhe
+  const tamanhoDoItem = (e: Evento) => (e.minutos ? blocoDe(e.minutos).id : 'curto');
+  const horaDe = (e: Evento) => (e.hora_inicio ? Number(e.hora_inicio.slice(0, 2)) : null);
+
+  function itemDaGrade(e: Evento) {
+    const selo = SELO_ORIGEM[e.origem];
+    return (
+      <div className={`grade-item ${tamanhoDoItem(e)}`} key={e.id}>
+        <strong>{e.titulo}</strong>{' '}
+        <small className="muted">
+          {e.hora_inicio}
+          {e.minutos ? ` · Bloco ${blocoDe(e.minutos).nome.toLowerCase()} (${e.minutos} min)` : ''}
+        </small>
+        {selo ? <span className="cal-selo">{selo}</span> : null}
+        {acoesDe(e)}
+      </div>
+    );
+  }
+
+  async function carregarTarefasDaGrade() {
+    if (tarefasDaGrade) return;
+    try {
+      const r = await api.tarefas();
+      setTarefasDaGrade((r.tarefas ?? []).filter((t) => t.situacao !== 'concluida'));
+    } catch {
+      setTarefasDaGrade([]);
+    }
+  }
+
+  async function colocarTarefa(e: FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    const t = tarefasDaGrade?.find((x) => x.id === tarefaEscolhida);
+    if (!t || !horaEscolhida) return setMsg('Escolha uma atividade.');
+    try {
+      await api.criarEvento({
+        titulo: t.titulo,
+        tipo: 'estudo',
+        dia: base,
+        hora_inicio: horaEscolhida,
+        minutos: duracaoDaGrade ? Number(duracaoDaGrade) : null,
+        tarefa_id: t.id,
+      });
+      setHoraEscolhida(null);
+      setTarefaEscolhida('');
+      setDuracaoDaGrade('');
+      await recarregar();
+    } catch (x) {
+      setMsg(x instanceof ErroApi ? x.message : 'Não foi possível colocar a atividade.');
+    }
+  }
+
+  function escolhaDaHora(hh: string, d: string) {
+    return (
+      <fieldset className="card slim mt-sm">
+        <legend>O que você quer colocar às {hh}?</legend>
+        <div className="chip-row">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              setRascunho({ ...vazio, dia: d, hora: hh });
+              setHoraEscolhida(null);
+              formulario.current?.querySelector('input')?.focus();
+            }}
+          >
+            Evento novo
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => void carregarTarefasDaGrade()}
+          >
+            Uma atividade que já existe
+          </button>
+        </div>
+        {tarefasDaGrade ? (
+          <form className="stack mt-sm" onSubmit={colocarTarefa} noValidate>
+            {tarefasDaGrade.length === 0 ? (
+              <p className="muted small">Você não tem atividades para colocar.</p>
+            ) : (
+              <>
+                <Campo rotulo="Atividade">
+                  {({ id }) => (
+                    <select
+                      id={id}
+                      value={tarefaEscolhida}
+                      onChange={(ev) => setTarefaEscolhida(ev.target.value)}
+                    >
+                      <option value="">Escolha</option>
+                      {tarefasDaGrade.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.titulo}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Campo>
+                <Campo rotulo="Duração (opcional)">
+                  {({ id }) => (
+                    <select
+                      id={id}
+                      value={duracaoDaGrade}
+                      onChange={(ev) => setDuracaoDaGrade(ev.target.value)}
+                    >
+                      <option value="">Sem duração</option>
+                      {BLOCOS.map((b) => (
+                        <option key={b.id} value={b.minutos}>
+                          {b.nome} ({b.minutos} min)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Campo>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Colocar na grade
+                </button>
+              </>
+            )}
+          </form>
+        ) : null}
+      </fieldset>
+    );
+  }
+
+  function gradeDoDia(d: string) {
+    const itens = doDia(d);
+    const fora = itens.filter((e) => horaDe(e) === null || (horaDe(e) as number) < 6);
+    return (
+      <div className="stack">
+        {itens.length === 0 ? <Vazio>Nada marcado neste dia.</Vazio> : null}
+        {fora.length ? (
+          <section aria-labelledby="grade-sem-hora">
+            <h3 id="grade-sem-hora">Sem horário na grade</h3>
+            <ul className="cal-lista">{fora.map(linha)}</ul>
+          </section>
+        ) : null}
+        {GRUPOS.map((g) => (
+          <section className="grade-parte" key={g.id} aria-labelledby={`grade-${g.id}`}>
+            <h3 id={`grade-${g.id}`}>
+              <Icone nome={g.icone} /> {g.nome}{' '}
+              <small className="muted">
+                {String(g.horas[0]).padStart(2, '0')}:00 às{' '}
+                {String(g.horas.at(-1)).padStart(2, '0')}
+                :59
+              </small>
+            </h3>
+            <ul className="grade-dia">
+              {g.horas.map((h) => {
+                const hh = `${String(h).padStart(2, '0')}:00`;
+                return (
+                  <li className="grade-hora" key={h}>
+                    <span className="small muted">{hh}</span>
+                    <div>
+                      {itens.filter((e) => horaDe(e) === h).map(itemDaGrade)}
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        aria-label={`Colocar algo às ${hh}`}
+                        aria-expanded={horaEscolhida === hh}
+                        onClick={() => setHoraEscolhida(horaEscolhida === hh ? null : hh)}
+                      >
+                        <Icone nome="plus" /> Colocar
+                      </button>
+                      {horaEscolhida === hh ? escolhaDaHora(hh, d) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
     );
   }
 
@@ -325,7 +519,30 @@ export function Calendario() {
           </p>
           <hr className="divider" />
 
-          {visao === 'dia' ? listaDoDia(base) : null}
+          {visao === 'dia' ? (
+            <>
+              <fieldset className="chip-row">
+                <legend className="sr-only">Como ver o dia</legend>
+                {(
+                  [
+                    ['grade', 'Grade de horas'],
+                    ['lista', 'Lista do dia'],
+                  ] as const
+                ).map(([id, nome]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`btn btn-sm ${formaDia === id ? 'btn-primary' : 'btn-outline'}`}
+                    aria-pressed={formaDia === id}
+                    onClick={() => setFormaDia(id)}
+                  >
+                    {nome}
+                  </button>
+                ))}
+              </fieldset>
+              {formaDia === 'grade' ? gradeDoDia(base) : listaDoDia(base)}
+            </>
+          ) : null}
 
           {visao === 'semana' ? (
             <div className="cal-semana">
@@ -351,6 +568,16 @@ export function Calendario() {
                 {diasMes.map((d) => celula(d, d.slice(0, 7) !== base.slice(0, 7)))}
               </div>
               <h3 className="mt">{dataLonga(base)}</h3>
+              <button
+                type="button"
+                className="btn btn-soft btn-sm"
+                onClick={() => {
+                  setFormaDia('grade');
+                  setVisao('dia');
+                }}
+              >
+                Ver as horas do dia
+              </button>
               {listaDoDia(base)}
             </>
           ) : null}
@@ -380,7 +607,13 @@ export function Calendario() {
           ) : null}
         </div>
 
-        <form className="card" onSubmit={salvar} noValidate aria-labelledby="cal-novo">
+        <form
+          className="card"
+          onSubmit={salvar}
+          noValidate
+          aria-labelledby="cal-novo"
+          ref={formulario}
+        >
           <h2 id="cal-novo">{rascunho.id ? 'Editar entrada' : 'Nova entrada'}</h2>
           <p className="muted small mt-sm">Dia escolhido: {dataLonga(rascunho.dia)}.</p>
           {msg ? <Aviso tipo="warn">{msg}</Aviso> : null}

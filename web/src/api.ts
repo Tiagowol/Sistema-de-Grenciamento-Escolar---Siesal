@@ -11,6 +11,38 @@ export type Eu = {
   // 20c-1: aluno sem instituição usa um espaço individual (sem turmas, notas oficiais nem avisos da escola)
   espaco?: 'escola' | 'individual';
 };
+// 20c-2: cadastro com data de nascimento e CPF (opcional); menor de 18 anos informa o responsável
+export type NovoCadastro = {
+  codigo: string;
+  nome: string;
+  email: string;
+  senha: string;
+  nascimento: string;
+  cpf?: string;
+  matricula?: string;
+  escolas?: string;
+  responsavel?: { nome: string; cpf: string; nascimento: string; email: string };
+};
+export type CadastroAguardando = {
+  aguardando_responsavel: true;
+  email_enviado: boolean;
+  expira_em: string;
+};
+export type PedidoDoResponsavel = {
+  aluno: string;
+  responsavel: string;
+  expiraEm: string;
+  termo: { versao: string; caixas: string[] };
+};
+export type DadosCadastro =
+  | { cadastrado: false }
+  | {
+      cadastrado: true;
+      nascimento: string;
+      cpf: string | null;
+      matricula: string | null;
+      escolas: string | null;
+    };
 export type UsuarioLista = {
   id: string;
   perfil: Perfil;
@@ -61,6 +93,7 @@ export type Tarefa = {
   microetapas: Microetapa[];
   tipo_atividade_id?: string | null;
   disciplina_aluno_id?: string | null;
+  dificuldade?: number | null; // 20d: percepção do aluno, de 0 a 10
 };
 // Disciplinas do aluno (L20b)
 export type DisciplinaCatalogo = {
@@ -76,6 +109,40 @@ export type DisciplinaAluno = {
   nome: string;
   origem: 'catalogo' | 'propria' | 'escola' | 'suap';
   catalogo_id: number | null;
+  dificuldade?: number | null; // 20d
+};
+// 20d: cards de resumo e visão do Apoio Pedagógico
+export type ModeloCartao = 'conceito' | 'passo_a_passo' | 'formula' | 'pergunta_resposta';
+export type Cartao = {
+  id: string;
+  modelo: ModeloCartao;
+  titulo: string;
+  frente: string;
+  verso: string;
+  tarefa_id: string | null;
+  disciplina_id: string | null;
+  tarefa_titulo: string | null;
+  disciplina_nome: string | null;
+};
+export type NovoCartao = {
+  modelo: ModeloCartao;
+  titulo: string;
+  frente: string;
+  verso: string;
+  tarefa_id?: string;
+  disciplina_id?: string;
+};
+export type DificuldadesDoAluno = {
+  aluno: { id: string; nome: string };
+  disciplinas: { id: string; nome: string; dificuldade: number }[];
+  tarefas: {
+    id: string;
+    titulo: string;
+    disciplina: string;
+    prazo: string | null;
+    situacao: Tarefa['situacao'];
+    dificuldade: number;
+  }[];
 };
 export type EtapaDisciplinas = 'fundamental' | 'medio' | 'tecnico';
 export type TipoAtividade = { id: string; nome: string; cor: string; icone: string };
@@ -419,8 +486,14 @@ export const api = {
       | { instituicao_id: string; email: string; senha: string; codigo?: string }
       | { sem_instituicao: true; email: string; senha: string; codigo?: string },
   ) => chamar<Eu>('POST', '/auth/login', d),
-  criarContaIndividual: (d: { codigo: string; nome: string; email: string; senha: string }) =>
-    chamar<Eu | { criada: true }>('POST', '/auth/criar-conta-individual', d),
+  criarContaIndividual: (d: NovoCadastro) =>
+    chamar<Eu | { criada: true } | CadastroAguardando>('POST', '/auth/criar-conta-individual', d),
+  // 20c-2: o responsável abre o link do e-mail, lê o termo e confirma
+  consultarResponsavel: (token: string) =>
+    chamar<PedidoDoResponsavel>('POST', '/auth/responsavel/consultar', { token }),
+  confirmarResponsavel: (token: string, aceites: boolean[]) =>
+    chamar<{ confirmado: true }>('POST', '/auth/responsavel/confirmar', { token, aceites }),
+  dadosCadastro: () => chamar<DadosCadastro>('GET', '/conta/dados-cadastro'),
   criarInstituicao: (d: {
     codigo: string;
     instituicao: string;
@@ -531,10 +604,11 @@ export const api = {
     prioridade?: Tarefa['prioridade'];
     microetapas?: string[];
     tipo_atividade_id?: string | null;
+    dificuldade?: number | null;
   }) => chamar<{ tarefa: Tarefa }>('POST', '/tarefas', d),
   atualizarTarefa: (
     id: string,
-    d: Partial<Pick<Tarefa, 'titulo' | 'situacao' | 'prazo' | 'prioridade'>>,
+    d: Partial<Pick<Tarefa, 'titulo' | 'situacao' | 'prazo' | 'prioridade' | 'dificuldade'>>,
   ) => chamar<{ tarefa: Tarefa }>('PATCH', `/tarefas/${id}`, d),
   removerTarefa: (id: string) => chamar<void>('DELETE', `/tarefas/${id}`),
   criarMicroetapa: (id: string, texto: string) =>
@@ -552,6 +626,7 @@ export const api = {
     hora_inicio?: string | null;
     minutos?: number | null;
     tipo_atividade_id?: string | null;
+    tarefa_id?: string | null; // 20d: atividade colocada na grade do dia
   }) => chamar<{ evento: Evento }>('POST', '/eventos', d),
   preferenciasServidor: () =>
     chamar<{ preferencias: PreferenciasServidor | null }>('GET', '/preferencias'),
@@ -606,6 +681,29 @@ export const api = {
   corrigirMinhaDisciplina: (id: string, nome: string) =>
     chamar<{ disciplina: DisciplinaAluno }>('PATCH', `/minhas-disciplinas/${id}`, { nome }),
   removerMinhaDisciplina: (id: string) => chamar<void>('DELETE', `/minhas-disciplinas/${id}`),
+  // 20d: dificuldade da disciplina (o aluno marca; null limpa)
+  dificuldadeDaDisciplina: (id: string, dificuldade: number | null) =>
+    chamar<{ id: string; dificuldade: number | null }>(
+      'PUT',
+      `/minhas-disciplinas/${id}/dificuldade`,
+      { dificuldade },
+    ),
+  // 20d: visão do Apoio Pedagógico/NAPNE, um aluno por vez
+  apoioAlunos: () => chamar<{ alunos: { id: string; nome: string }[] }>('GET', '/apoio/alunos'),
+  apoioDificuldades: (id: string) =>
+    chamar<DificuldadesDoAluno>('GET', `/apoio/alunos/${id}/dificuldades`),
+  // 20d: cards de resumo (só do aluno)
+  cartoes: (filtro: { tarefa_id?: string; disciplina_id?: string } = {}) => {
+    const q = new URLSearchParams(filtro as Record<string, string>).toString();
+    return chamar<{ limite: number; cartoes: Cartao[] }>(
+      'GET',
+      `/cartoes-resumo${q ? `?${q}` : ''}`,
+    );
+  },
+  criarCartao: (d: NovoCartao) => chamar<{ cartao: Cartao }>('POST', '/cartoes-resumo', d),
+  editarCartao: (id: string, d: Partial<Pick<Cartao, 'modelo' | 'titulo' | 'frente' | 'verso'>>) =>
+    chamar<{ cartao: Cartao }>('PATCH', `/cartoes-resumo/${id}`, d),
+  removerCartao: (id: string) => chamar<void>('DELETE', `/cartoes-resumo/${id}`),
   criarNota: (d: {
     disciplina?: string;
     disciplina_id?: string | null;

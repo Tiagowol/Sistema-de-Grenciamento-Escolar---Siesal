@@ -10,7 +10,7 @@ export type EstadoModulos = Record<Modulo, boolean>;
 const PREFIXOS: Record<Modulo, string[]> = {
   mensagens: ['/caixa', '/avisos-escolares'],
   calendario: ['/escola/calendario'],
-  apoio_aluno: ['/ajuda'],
+  apoio_aluno: ['/ajuda', '/cartoes-resumo', '/apoio'],
 };
 
 export function moduloDaRota(url: string): Modulo | null {
@@ -43,6 +43,7 @@ const PREFIXOS_DO_ESPACO_INDIVIDUAL = [
   '/sessoes',
   '/notas-pessoais',
   '/minhas-disciplinas',
+  '/cartoes-resumo',
   '/meu-dia',
   '/notificacoes',
   '/conta',

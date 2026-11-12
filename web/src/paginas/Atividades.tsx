@@ -6,6 +6,7 @@ import { Aviso } from '../componentes/Aviso';
 import { Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import { CaixaDeDisciplina } from '../componentes/CaixaDeDisciplina';
 import { Campo } from '../componentes/Campo';
+import { Dificuldade, dificuldadeAlta } from '../componentes/Dificuldade';
 import { PedirAjuda } from '../componentes/PedirAjuda';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
@@ -56,6 +57,7 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
   const [prioridade, setPrioridade] = useState<Tarefa['prioridade']>('media');
   const [etapas, setEtapas] = useState('');
   const [tipoAtividade, setTipoAtividade] = useState('');
+  const [dificuldade, setDificuldade] = useState<number | null>(null);
   const tipos = useCarregar(api.tiposAtividade).dados?.tipos ?? [];
   const [erro, setErro] = useState('');
 
@@ -72,6 +74,7 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
         prioridade,
         prazo: prazo || null,
         tipo_atividade_id: tipoAtividade || null,
+        dificuldade,
         microetapas: etapas
           .split('\n')
           .map((l) => l.trim())
@@ -82,6 +85,7 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
       setDisciplina('');
       setPrazo('');
       setEtapas('');
+      setDificuldade(null);
       aoCriar();
     } catch (x) {
       setErro(x instanceof ErroApi ? x.message : 'Não foi possível salvar.');
@@ -181,6 +185,9 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
             </select>
           )}
         </Campo>
+        <div className="cheio">
+          <Dificuldade valor={dificuldade} aoMudar={setDificuldade} nome="dif-nova" />
+        </div>
         <Campo
           rotulo="Pequenas etapas (uma por linha, opcional)"
           dica="Exemplo: ler o capítulo; fazer os tópicos; revisar."
@@ -204,9 +211,18 @@ function NovaAtividade({ aoCriar }: { aoCriar: () => void }) {
   );
 }
 
-function Planejar({ tarefa, aoPlanejar }: { tarefa: Tarefa; aoPlanejar: () => void }) {
-  const [quantos, setQuantos] = useState(4);
-  const [bloco, setBloco] = useState<(typeof BLOCOS)[number]['id']>('medio');
+// Com a sugestão aceita (dificuldade 7 ou mais), o plano começa com blocos curtos e mais blocos, para começar antes
+function Planejar({
+  tarefa,
+  aoPlanejar,
+  sugerir = false,
+}: {
+  tarefa: Tarefa;
+  aoPlanejar: () => void;
+  sugerir?: boolean;
+}) {
+  const [quantos, setQuantos] = useState(sugerir ? 6 : 4);
+  const [bloco, setBloco] = useState<(typeof BLOCOS)[number]['id']>(sugerir ? 'curto' : 'medio');
   const minutos = BLOCOS.find((b) => b.id === bloco)?.minutos ?? 25;
   const nomeBloco = BLOCOS.find((b) => b.id === bloco)?.nome ?? 'Médio';
   const previa = tarefa.prazo
@@ -359,6 +375,7 @@ function EditarPrazo({
 function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
   const [nova, setNova] = useState('');
   const [ajuda, setAjuda] = useState(false);
+  const [sugestao, setSugestao] = useState<'aberta' | 'aceita' | 'recusada'>('aberta');
   const [confirmar, setConfirmar] = useState(false);
   const [erro, setErro] = useState('');
   const agir = async (f: () => Promise<unknown>) => {
@@ -431,7 +448,50 @@ function Detalhe({ t, aoMudar }: { t: Tarefa; aoMudar: () => void }) {
       <hr className="divider" />
       <EditarPrazo t={t} agir={agir} />
       <hr className="divider" />
-      <Planejar tarefa={t} aoPlanejar={aoMudar} />
+      <Dificuldade
+        valor={t.dificuldade}
+        nome={`dif-${t.id}`}
+        aoMudar={(v) => {
+          setSugestao('aberta');
+          void agir(() => api.atualizarTarefa(t.id, { dificuldade: v }));
+        }}
+      />
+      {dificuldadeAlta(t.dificuldade) && t.situacao !== 'concluida' && sugestao === 'aberta' ? (
+        <section className="sugestao-dificuldade" aria-label="Sugestão para esta atividade">
+          <p>
+            Esta atividade parece difícil. Uma ideia: começar antes e usar blocos curtos. Você
+            escolhe se quer.
+          </p>
+          <div className="chip-row">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setSugestao('aceita')}
+            >
+              Quero essa ideia
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => setSugestao('recusada')}
+            >
+              Não, obrigado
+            </button>
+          </div>
+        </section>
+      ) : null}
+      {sugestao === 'aceita' ? (
+        <Aviso>
+          Pronto. O plano abaixo já vem com blocos curtos e mais blocos, para começar antes.
+        </Aviso>
+      ) : null}
+      <hr className="divider" />
+      <Planejar
+        key={sugestao === 'aceita' ? 'sugerido' : 'normal'}
+        tarefa={t}
+        aoPlanejar={aoMudar}
+        sugerir={sugestao === 'aceita'}
+      />
       <hr className="divider" />
       <div className="chip-row">
         {t.situacao === 'concluida' ? (

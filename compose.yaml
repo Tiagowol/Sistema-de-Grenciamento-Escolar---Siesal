@@ -43,6 +43,11 @@ services:
       # Atrás do nginx, a API lê o IP real do cabeçalho X-Forwarded-For
       TRUST_PROXY: ${TRUST_PROXY:-sim}
       INSTITUICAO_PADRAO_ID: ${INSTITUICAO_PADRAO_ID:-}
+      # 20c-2: chave própria do CPF (mínimo 32 caracteres; fora do git) e caixa de teste de e-mail
+      CPF_CHAVE: ${CPF_CHAVE:-}
+      EMAIL_TESTE_HOST: caixa-teste
+      EMAIL_TESTE_PORTA: "1025"
+      LINK_BASE: ${LINK_BASE:-http://localhost:${WEB_PORTA:-8080}}
     networks: [web, backend]
     read_only: true
     tmpfs: [/tmp]
@@ -56,6 +61,21 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+
+  # Caixa de teste de e-mail (20c-2, D8): recebe o e-mail do responsável e NÃO envia nada para fora. Só dados fictícios.
+  # Ver as mensagens: http://127.0.0.1:18025 (só neste computador). O envio real fica para a Parte 2.
+  caixa-teste:
+    image: axllent/mailpit:v1.27.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${EMAIL_TESTE_PORTA_WEB:-18025}:8025"
+    networks: [web, backend]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 128m
+    cpus: 0.25
 
   # Site: nginx serve o React e repassa /api para a API. Único ponto de entrada para o navegador.
   # Local: http://localhost:8080. Na rede: defina WEB_BIND=0.0.0.0 e acesse http://IP-DO-COMPUTADOR:8080.

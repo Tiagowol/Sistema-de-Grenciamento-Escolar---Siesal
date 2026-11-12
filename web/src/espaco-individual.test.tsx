@@ -115,7 +115,7 @@ describe('criar conta com convite', () => {
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeTruthy();
   });
 
-  it('envia só os 4 campos, entra com a resposta e mostra o erro literal quando recusa', async () => {
+  it('envia só os campos pedidos, entra com a resposta e mostra o erro literal quando recusa', async () => {
     const respostas = [
       new Response(
         JSON.stringify({
@@ -137,6 +137,7 @@ describe('criar conta com convite', () => {
     await u.click(screen.getByRole('button', { name: 'Criar conta' }));
     await u.type(screen.getByLabelText('Código do convite'), 'abcd-efgh-jklm-npqr');
     await u.type(screen.getByLabelText('Seu nome'), 'Ana');
+    await u.type(screen.getByLabelText('Data de nascimento'), '2000-01-15');
     await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
     await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
     await u.click(
@@ -157,6 +158,7 @@ describe('criar conta com convite', () => {
       nome: 'Ana',
       email: 'ana@x.exemplo',
       senha: 'uma senha bem longa 1',
+      nascimento: '2000-01-15',
     });
   });
 });

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   PERFIS_CADASTRAVEIS,
+  podeAcompanharAlunos,
   podeAdministrarConta,
+  podeAdministrarDificuldade,
   podeAdministrarEscola,
   podeAdministrarInterface,
   podeAdministrarPreferencias,
@@ -14,6 +16,7 @@ import {
   podeLerAjuda,
   podeLerAvisoEscolar,
   podeLerCaixa,
+  podeLerDificuldade,
   podeLerEscola,
   podeLerNotas,
   podeOcultarItemEscolar,
@@ -23,6 +26,7 @@ import {
   podePublicarAviso,
   podeResponderPedido,
   podeUsarCalendario,
+  podeUsarCartoes,
   podeUsarNucleo,
   podeUsarTiposAtividade,
   podeVerHistoricoNotas,
@@ -166,4 +170,27 @@ describe('política do Admin institucional (L19) x matriz de permissões (v11)',
       );
     },
   );
+});
+
+describe('política da dificuldade e dos cards (20d) x matriz de permissões (v18)', () => {
+  it.each(PERFIS)('perfil %s: dificuldade e cards batem com a matriz', (perfil) => {
+    expect(podeAdministrarDificuldade(perfil)).toBe(
+      permitido(perfil, 'dificuldade', 'administrar') !== null,
+    );
+    expect(podeLerDificuldade(perfil)).toBe(permitido(perfil, 'dificuldade', 'ler') !== null);
+    expect(podeUsarCartoes(perfil)).toBe(
+      permitido(perfil, 'cartoes_resumo', 'administrar') !== null,
+    );
+    expect(podeUsarCartoes(perfil)).toBe(permitido(perfil, 'cartoes_resumo', 'ler') !== null);
+    expect(podeAcompanharAlunos(perfil)).toBe(
+      permitido(perfil, 'dificuldade', 'ler') === 'instituicao',
+    );
+  });
+  it('só o aluno e o Pedagógico leem a dificuldade; só o aluno administra', () => {
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'dificuldade', 'ler')).toBe(
+        perfil === 'aluno' ? 'proprio' : perfil === 'pedagogico' ? 'instituicao' : null,
+      );
+    }
+  });
 });

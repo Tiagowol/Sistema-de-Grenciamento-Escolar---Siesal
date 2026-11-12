@@ -6,7 +6,7 @@ import { Titulo } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
-import { paraTexto } from '../datas';
+import { formatar, paraTexto } from '../datas';
 
 // Minha conta (L17c): trocar senha e e-mail, encerrar conta e pedir suporte.
 // Texto literal, sem pressão. Aluno é menor de idade: e-mail e encerramento precisam do Responsável ou do Admin.
@@ -288,6 +288,34 @@ function Suporte() {
   );
 }
 
+// Dados do cadastro (20c-2). O CPF só aparece mascarado. Quem não tem esses dados (aluno de escola) não vê o bloco.
+function DadosDoCadastro() {
+  const { dados } = useCarregar(api.dadosCadastro);
+  if (dados?.cadastrado !== true) return null;
+  return (
+    <section className="card mt" aria-labelledby="cc-cadastro">
+      <h2 id="cc-cadastro">Dados do cadastro</h2>
+      <p>
+        <b>Data de nascimento:</b>{' '}
+        {formatar(dados.nascimento, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+      </p>
+      <p>
+        <b>CPF:</b> {dados.cpf ?? 'não informado'}
+      </p>
+      {dados.matricula ? (
+        <p>
+          <b>Matrícula:</b> {dados.matricula}
+        </p>
+      ) : null}
+      {dados.escolas ? (
+        <p>
+          <b>Escola(s):</b> {dados.escolas}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export function Conta({ aoSair }: { aoSair: () => void }) {
   const { dados, erro, recarregar } = useCarregar(api.conta);
   const hoje = paraTexto(new Date());
@@ -313,6 +341,7 @@ export function Conta({ aoSair }: { aoSair: () => void }) {
           </p>
         </section>
       ) : null}
+      <DadosDoCadastro />
 
       {dados && dados.decisoes.length > 0 ? (
         <Secao titulo="Pedidos para você decidir" id="cc-decisoes">

@@ -5,6 +5,7 @@ import { BotaoVLibras } from './componentes/VLibras';
 import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } from './interface';
 import { definirModulos } from './modulos';
 import { Acessibilidade } from './paginas/Acessibilidade';
+import { Acompanhamento } from './paginas/Acompanhamento';
 import { Agenda } from './paginas/Agenda';
 import { Ajuda } from './paginas/Ajuda';
 import { Atividades } from './paginas/Atividades';
@@ -12,6 +13,7 @@ import { Avisos } from './paginas/Avisos';
 import { AvisosEscola } from './paginas/AvisosEscola';
 import { Calendario } from './paginas/Calendario';
 import { CalendarioEscola } from './paginas/CalendarioEscola';
+import { Cartoes } from './paginas/Cartoes';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
 import { Conta } from './paginas/Conta';
 import { Foco } from './paginas/Foco';
@@ -261,6 +263,12 @@ export function App() {
           <MeuDia nome={prefs.apelido ?? eu.usuario.nome} aoIr={ir} aoComecar={comecar} />
         ) : ehAluno && pagina === 'atividades' ? (
           <Atividades />
+        ) : ehAluno && pagina === 'cartoes' ? (
+          <Cartoes />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'acompanhamento' &&
+          eu.usuario.perfil === 'pedagogico' ? (
+          <Acompanhamento />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'personalizar' ? (

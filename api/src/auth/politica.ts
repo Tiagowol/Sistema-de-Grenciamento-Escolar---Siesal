@@ -81,3 +81,12 @@ export const podeAdministrarPreferencias = (perfil: string): boolean =>
 export const podeAdministrarEscola = (perfil: string): boolean => perfil === 'admin';
 export const podeLerEscola = (perfil: string): boolean => PERFIS_ESCOLARES.includes(perfil);
 export const podeOcultarItemEscolar = (perfil: string): boolean => perfil === 'aluno';
+
+// Dificuldade de 0 a 10 e cards de resumo (20d). Espelham a matriz v18: o aluno marca a própria dificuldade;
+// o Pedagógico/NAPNE a lê (um aluno por vez); cards são só do aluno.
+export const podeAdministrarDificuldade = (perfil: string): boolean => perfil === 'aluno';
+export const podeLerDificuldade = (perfil: string): boolean =>
+  perfil === 'aluno' || perfil === 'pedagogico';
+export const podeUsarCartoes = (perfil: string): boolean => perfil === 'aluno';
+// Visão da equipe: só o Pedagógico/NAPNE lê a dificuldade de um aluno (escopo da instituição na matriz).
+export const podeAcompanharAlunos = (perfil: string): boolean => perfil === 'pedagogico';

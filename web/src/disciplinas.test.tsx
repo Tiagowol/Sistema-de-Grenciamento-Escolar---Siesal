@@ -190,7 +190,9 @@ describe('Minhas disciplinas (Personalizar)', () => {
   it('mostra a lista, as etapas e 10 campos para as próprias; sem violação do axe', async () => {
     const { container } = render(<MinhasDisciplinas />);
     expect(await screen.findByRole('button', { name: 'Tirar Matemática da lista' })).toBeTruthy();
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(
+      screen.getAllByRole('radio').filter((r) => (r as HTMLInputElement).name === 'pz-etapa'),
+    ).toHaveLength(3);
     expect(screen.getAllByRole('textbox', { name: /Nova disciplina própria/ })).toHaveLength(10);
     const r = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(r.violations).toEqual([]);

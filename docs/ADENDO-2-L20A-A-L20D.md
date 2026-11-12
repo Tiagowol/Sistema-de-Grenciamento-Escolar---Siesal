@@ -50,7 +50,7 @@ Dependências externas: o IFRN autorizar o SIESAL como aplicação no SUAP; pare
 | D9 | Preparos para o SUAP | **Aprovada** (22:57) |
 | D1 | Espaço individual por aluno | Aguardando (20c) |
 | D4 | Cadastro por convite na Parte 1 | Aguardando (20c). Observação: o proprietário descreveu "marca sem vínculo e faz o cadastro"; confirmar se é aberto ou por convite |
-| D5 | Quem vê a dificuldade | Aguardando (20d) |
+| D5 | Quem vê a dificuldade | Respondida em 12/11/2026: opção 2, Aluno e Pedagógico/NAPNE, sem o aluno pedir (A-064, A-065) |
 | D7 | Foto de documento | Aguardando. Recomendado: não |
 | D8 | E-mail de validação na Parte 1 | Aguardando. Recomendado: caixa de teste no Docker |
 | — | Divisão e ordem dos lotes 20a a 20d | **Aguardando "aprovo"** |

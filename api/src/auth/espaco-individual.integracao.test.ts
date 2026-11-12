@@ -249,6 +249,9 @@ describe('isolamento nos 3 sentidos', () => {
     expect(await contar(espaco.i2 as string, 'tarefa')).toBe(0);
     expect(await contar(amb.instA, 'tarefa')).toBe(0);
     await chamar('POST', '/tarefas', 'esc', { titulo: 'Da escola' });
+    // A API responde antes do fim da transação (F-056): espera a linha aparecer antes de contar
+    for (let i = 0; i < 100 && (await contar(amb.instA, 'tarefa')) < 1; i++)
+      await new Promise((ok) => setTimeout(ok, 20));
     expect(await contar(amb.instA, 'tarefa')).toBe(1);
     expect(await contar(espaco.i1 as string, 'tarefa')).toBe(1);
     // a instituição que cada um enxerga é só a sua
@@ -459,6 +462,7 @@ describe('cadastro por convite (D4)', () => {
         nome: 'Aluna Convidada',
         email: `conv-${randomUUID().slice(0, 8)}@ei.exemplo`,
         senha: SENHA,
+        nascimento: '2000-01-15',
         ...extra,
       },
     });
@@ -659,6 +663,7 @@ describe('convite de instituição (20c-3)', () => {
         nome: 'Aluno X',
         email: `x-${randomUUID().slice(0, 8)}@ei.exemplo`,
         senha: SENHA,
+        nascimento: '2000-01-15',
       },
     });
     expect(recusadaAluno.statusCode).toBe(400);
@@ -673,6 +678,7 @@ describe('convite de instituição (20c-3)', () => {
         nome: 'Aluno Y',
         email: `y-${randomUUID().slice(0, 8)}@ei.exemplo`,
         senha: SENHA,
+        nascimento: '2000-01-15',
       },
     });
     expect(aluno.statusCode, aluno.body).toBe(201);

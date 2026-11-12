@@ -2,7 +2,7 @@
 
 Data: 11/11/2026. Estado: **Planejado. NÃO aprovado.** Nenhum ramo, código, migração ou commit do L20c.
 Base: `lote-20b-disciplinas` em `0af5153` (0018 e 0019 aplicadas no site; matriz v14). Complementa `PLANO-L20A-A-L20D.md` (4.1 a 4.3), `ADENDO-1` (seções 2 e 3) e `ADENDO-2` (seções 2 a 4). Onde divergirem, vale o mais novo.
-Migrações previstas: **0020** (20c-1) e **0021** (20c-2). Matriz: **v15** e **v16**. O 20d passa a usar a 0022 e a v17.
+Migrações previstas: **0020** (20c-1) e **0022** (20c-2; a 0021 foi do 20c-3). Matriz: **v15** e **v17** (v16 foi do 20c-3). O 20d passa a usar a 0023 e a v18.
 
 ## 1. Resultado em 4 linhas
 1. O L20c é o lote de maior risco do projeto (cadastro novo, CPF, menor de idade sem escola). **Proponho dividi-lo em dois**: **20c-1** (espaço individual, entrada e isolamento) e **20c-2** (cadastro com CPF, data de nascimento, menor com responsável e e-mail). Cada um com 3 itens e "aprovo" próprio.
@@ -34,7 +34,7 @@ Migrações previstas: **0020** (20c-1) e **0021** (20c-2). Matriz: **v15** e **
 2. **Menor de 18 anos:** conta fica "aguardando o responsável" e não guarda dado escolar. Pede nome, CPF, data de nascimento e e-mail do responsável; confere os dígitos dos 2 CPFs, que sejam diferentes, e responsável com 18 anos ou mais. Link de uso único válido por 7 dias; sem confirmação, o pedido expira e os dados são apagados.
 3. **Autorização do responsável:** termo literal com 3 caixas ("Sou o responsável legal por [nome]"; "Autorizo o uso do SIESAL por ele e o tratamento dos dados descritos na Política de Privacidade"; "Declaro que os dados informados são verdadeiros"). Prova guardada: versão do termo, data e hora, identificador do pedido (sem CPF). E-mail entregue na caixa de teste dentro do Docker (D8).
 - **Terminou quando:** nenhum teste automático acha o valor do CPF em resposta de API, log ou auditoria; menor de 18 não conclui o cadastro sozinho; pedido expirado some; os termos e o fluxo passam no axe e no teclado.
-- Migração **0021**; matriz **v16**; retorno em `docs/RETORNO-0021.md`; chave do CPF em segredo do Docker, fora do git, sem relação com o TI-REX.
+- Migração **0022** (a 0021 foi usada pelo 20c-3); matriz **v17**; retorno em `docs/RETORNO-0022.md`; chave do CPF em segredo do Docker, fora do git, sem relação com o TI-REX.
 - **Antes do código:** o RIPD, a Política e o Mapa de Riscos precisam mudar no Projeto ("não coletamos CPF" deixa de ser verdade). Eu entrego a lista exata de mudanças; quem as aplica é você.
 
 ## 4. Regras do espaço individual (4.1 do plano, sem mudança)

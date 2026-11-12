@@ -1,6 +1,7 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { registrarAjuda } from './ajuda/rotas.js';
+import { registrarApoio } from './apoio/rotas.js';
 import {
   type Autenticacao,
   criarAutenticacao,
@@ -8,8 +9,16 @@ import {
   type Nivel,
   type SessaoAtiva,
 } from './auth/autenticacao.js';
+import {
+  confirmarPedido,
+  consultarPedido,
+  criarCadastroAluno,
+  limparPedidosVencidos,
+} from './auth/cadastro-responsavel.js';
 import { derivarChave } from './auth/cifra.js';
-import { criarContaIndividual, criarInstituicaoPorConvite } from './auth/convite-individual.js';
+import { criarInstituicaoPorConvite } from './auth/convite-individual.js';
+import { derivarChavesCpf, mascararCpf } from './auth/cpf.js';
+import type { EnviarEmail } from './auth/email.js';
 import { LimitadorJanela } from './auth/limitador.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
 import { verificarSenhaFalsa } from './auth/senha.js';
@@ -46,6 +55,9 @@ export type OpcoesApp = {
   trustProxy?: boolean; // atrás do nginx do compose: usa o IP real para o limite por tentativas
   cookieLocal?: boolean; // só demonstração em http (localhost/IP); padrão: cookie seguro com __Host-
   logger?: boolean;
+  chaveCpf?: string; // CPF_CHAVE: segredo próprio do CPF (20c-2). Sem ela, cadastro com CPF é recusado (503)
+  enviarEmail?: EnviarEmail; // caixa de teste (Mailpit) na Parte 1; sem ela o e-mail do responsável não sai
+  linkBase?: string; // endereço do site, para o link enviado ao responsável
 };
 
 // Duas entradas (20c-1): "Vinculado a uma instituição" (com o código) e "Sem instituição" (só e-mail e senha)
@@ -58,21 +70,42 @@ const corpoLogin = z.union([
   z.strictObject({ instituicao_id: z.uuid(), ...camposLogin }),
   z.strictObject({ sem_instituicao: z.literal(true), ...camposLogin }),
 ]);
-// Criar a própria conta com o convite do Master (20c-1). Só nome, e-mail e senha; nenhum dado a mais.
+// Criar a própria conta com o convite do Master (20c-1) e, no 20c-2, data de nascimento, CPF (opcional),
+// matrícula e escolas (opcionais) e, para menor de 18 anos, os dados do responsável.
+const nomeDePessoa = z
+  .string()
+  .trim()
+  .min(2)
+  .max(80)
+  .refine((t) => !/(https?:|www[.]|:\/\/|@)/i.test(t));
+const emailValido = z
+  .string()
+  .trim()
+  .max(254)
+  .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
+const textoCurto = (max: number) => z.string().trim().max(max).optional();
 const corpoNovaConta = z.strictObject({
   codigo: z.string().min(8).max(40),
-  nome: z
-    .string()
-    .trim()
-    .min(2)
-    .max(80)
-    .refine((t) => !/(https?:|www[.]|:\/\/|@)/i.test(t)),
-  email: z
-    .string()
-    .trim()
-    .max(254)
-    .regex(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
+  nome: nomeDePessoa,
+  email: emailValido,
   senha: z.string().min(1).max(128),
+  nascimento: z.string().length(10),
+  cpf: textoCurto(20),
+  matricula: textoCurto(40),
+  escolas: textoCurto(200),
+  responsavel: z
+    .strictObject({
+      nome: nomeDePessoa,
+      cpf: z.string().trim().max(20),
+      nascimento: z.string().length(10),
+      email: emailValido,
+    })
+    .optional(),
+});
+const corpoToken = z.strictObject({ token: z.string().min(20).max(100) });
+const corpoConfirmar = z.strictObject({
+  token: z.string().min(20).max(100),
+  aceites: z.array(z.boolean()).length(3),
 });
 // Criar a instituição e a conta de Admin com o convite do Master (20c-3)
 const corpoNovaInstituicao = z.strictObject({
@@ -138,6 +171,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   });
   const limitador = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
   const relogio = opcoes.agora ?? (() => new Date());
+  const chavesCpf = opcoes.chaveCpf ? derivarChavesCpf(opcoes.chaveCpf) : undefined;
   const cookie = opcoes.cookieLocal ? COOKIE_LOCAL : COOKIE_PADRAO;
 
   // Só JSON é aceito: sem o parser de texto, formulário de outro site não chega às rotas (415)
@@ -224,13 +258,39 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     const corpo = corpoNovaConta.safeParse(requisicao.body);
     if (!corpo.success)
       return resposta.code(400).send({ erro: 'Confira o nome, o e-mail e o código do convite.' });
-    const c = await criarContaIndividual(banco, corpo.data);
-    if (c.tipo === 'senha_fraca') return resposta.code(400).send({ erro: c.motivo });
+    const c = await criarCadastroAluno(banco, chavesCpf, corpo.data, relogio());
+    if (c.tipo === 'senha_fraca' || c.tipo === 'dados')
+      return resposta.code(400).send({ erro: c.motivo });
+    if (c.tipo === 'sem_chave')
+      return resposta.code(503).send({ erro: 'O cadastro com CPF não está disponível agora.' });
     if (c.tipo === 'recusada')
       return resposta.code(400).send({
         erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
       });
+    // Menor de 18 anos: não entra. O responsável recebe o link (caixa de teste) e confirma
+    if (c.tipo === 'aguardando' && corpo.data.responsavel) {
+      const link = `${(opcoes.linkBase ?? 'http://localhost:18080').replace(/\/+$/, '')}/confirmar/responsavel#${c.token}`;
+      let emailEnviado = false;
+      try {
+        if (opcoes.enviarEmail) {
+          await opcoes.enviarEmail({
+            para: corpo.data.responsavel.email,
+            assunto: 'SIESAL: autorização do responsável',
+            texto: `Olá, ${corpo.data.responsavel.nome}.\n\n${corpo.data.nome} pediu para usar o SIESAL e precisa da sua autorização, porque tem menos de 18 anos.\n\nAbra este link, leia o termo e confirme. O link vale uma vez e por 7 dias:\n${link}\n\nSe você não conhece essa pessoa, ignore esta mensagem.\n`,
+          });
+          emailEnviado = true;
+        }
+      } catch (erro) {
+        app.log.error({ err: erro }, 'e-mail do responsável não enviado');
+      }
+      const expira = new Date(relogio().getTime() + 7 * 86_400_000).toISOString();
+      return resposta
+        .code(202)
+        .send({ aguardando_responsavel: true, email_enviado: emailEnviado, expira_em: expira });
+    }
     // Já entra: a conta foi criada agora, com a senha que a pessoa escolheu
+    if (c.tipo !== 'ok')
+      return resposta.code(400).send({ erro: 'Não foi possível criar a conta.' });
     const r = await auth.login({
       instituicaoId: c.instituicaoId,
       email: corpo.data.email,
@@ -242,6 +302,57 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       .header('set-cookie', serializarCookie(r.token, r.duracao, cookie))
       .send({ nivel: r.nivel, usuario: r.usuario });
   });
+
+  // Autorização do responsável (20c-2): o link do e-mail abre o termo; as 3 caixas confirmam. Link inválido, vencido
+  // ou já usado dá sempre a mesma resposta (404), sem dizer qual.
+  app.post('/auth/responsavel/consultar', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const corpo = corpoToken.safeParse(requisicao.body);
+    const pedido = corpo.success ? await consultarPedido(banco, corpo.data.token) : null;
+    if (!pedido) return resposta.code(404).send({ erro: 'Este link não vale mais.' });
+    return pedido;
+  });
+  app.post('/auth/responsavel/confirmar', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const corpo = corpoConfirmar.safeParse(requisicao.body);
+    const r = corpo.success
+      ? await confirmarPedido(banco, corpo.data.token, corpo.data.aceites)
+      : 'recusada';
+    if (r !== 'ok')
+      return resposta
+        .code(400)
+        .send({ erro: 'Não foi possível confirmar. Marque as 3 caixas ou peça um link novo.' });
+    return { confirmado: true };
+  });
+
+  // Dados do próprio cadastro, com o CPF sempre mascarado (só os 2 últimos dígitos)
+  app.get('/conta/dados-cadastro', async (requisicao, resposta) => {
+    const sessao = await exigirSessao(requisicao, resposta, ['completo']);
+    if (!sessao) return resposta;
+    return withTenant(banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+      const [d] = await tx.$queryRaw<
+        {
+          nascimento: Date;
+          cpf_final: string | null;
+          matricula: string | null;
+          escolas: string | null;
+        }[]
+      >`SELECT nascimento, cpf_final, matricula, escolas FROM aluno_dados WHERE usuario_id = ${sessao.usuarioId}::uuid`;
+      if (!d) return { cadastrado: false };
+      return {
+        cadastrado: true,
+        nascimento: d.nascimento.toISOString().slice(0, 10),
+        cpf: d.cpf_final ? mascararCpf(d.cpf_final) : null,
+        matricula: d.matricula,
+        escolas: d.escolas,
+      };
+    });
+  });
+
+  // Pedidos de responsável vencidos são apagados de hora em hora (e antes de cada uso)
+  const faxina = setInterval(() => void limparPedidosVencidos(banco).catch(() => 0), 3_600_000);
+  faxina.unref();
+  app.addHook('onClose', async () => clearInterval(faxina));
 
   app.post('/auth/criar-instituicao', async (requisicao, resposta) => {
     if (!limitar(requisicao, resposta)) return resposta;
@@ -299,6 +410,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarAvisos(app, { banco: opcoes.banco, exigirSessao });
   registrarAjuda(app, { banco: opcoes.banco, exigirSessao });
   registrarConta(app, { banco: opcoes.banco, exigirSessao, limitar });
+  registrarApoio(app, { banco: opcoes.banco, exigirSessao });
   registrarEscola(app, { banco: opcoes.banco, exigirSessao });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)

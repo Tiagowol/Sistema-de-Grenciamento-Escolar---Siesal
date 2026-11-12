@@ -1197,3 +1197,182 @@ fieldset {
 .disc-campo .btn {
   min-height: 44px;
 }
+
+/* 20d: dificuldade de 0 a 10 (11 posições, palavras nas pontas e no meio, alvo de toque de 44 px) */
+.dificuldade {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.dificuldade legend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.dif-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dif-opcao {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 2px 6px;
+  border: 1.5px solid #238a9a;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.1;
+}
+.dif-opcao input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.dif-opcao:focus-within {
+  outline: 3px solid #1a5f6b;
+  outline-offset: 2px;
+}
+.dif-opcao.marcada {
+  background: #238a9a;
+  color: #fff;
+}
+.dif-palavra {
+  font-size: 0.66rem;
+  max-width: 76px;
+}
+.dif-num {
+  font-weight: 700;
+}
+.dif-estado {
+  margin: 8px 0 2px;
+}
+.dif-barra {
+  display: inline-flex;
+  gap: 3px;
+}
+.dif-bloco {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1.5px solid #238a9a;
+  background: transparent;
+}
+.dif-bloco.cheio {
+  background: #238a9a;
+}
+.dif-leitura {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.sugestao-dificuldade {
+  border: 1.5px dashed #238a9a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+.sugestao-dificuldade .chip-row {
+  margin-top: 8px;
+}
+
+/* 20d: cards de resumo e modo Revisar */
+.cartao {
+  border: 1.5px solid var(--border, #c9d6e2);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.cartao-revisar {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
+.cartao-verso {
+  border-top: 2px solid #238a9a;
+  padding-top: 10px;
+}
+.contador-letras {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.passos-assistente {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  flex-wrap: wrap;
+}
+.passo-assistente {
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1.5px solid #238a9a;
+  font-size: 0.8rem;
+}
+.passo-assistente[aria-current="step"] {
+  background: #238a9a;
+  color: #fff;
+}
+
+/* 20d: grade do dia (06:00 a 23:00), parte do dia primeiro e hora exata como detalhe */
+.grade-dia {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.grade-parte {
+  margin-top: 12px;
+}
+.grade-parte > h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grade-hora {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px;
+  min-height: 48px;
+  border-top: 1px solid var(--border, #d7e0e9);
+  padding: 4px 0;
+}
+.grade-hora > button {
+  min-height: 44px;
+  text-align: left;
+}
+.grade-item {
+  border-left: 4px solid #238a9a;
+  background: rgba(35, 138, 154, 0.12);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+}
+.grade-item.curto {
+  min-height: 28px;
+}
+.grade-item.medio {
+  min-height: 48px;
+}
+.grade-item.longo {
+  min-height: 76px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartao-revisar,
+  .cartao-verso {
+    transition: none;
+    animation: none;
+  }
+}
