@@ -366,3 +366,12 @@ Pedido do autor em chat, em 12/11/2026 (noite): "Sim, aplicar agora. aceito as s
 - Feito (0026): backup antes `backups/siesal-20261112-171344.dump`; migração `0026_pessoa_login.sql` pelo job `migrate`; API e site reconstruídos e saudáveis. Conferido no banco do site: 26 migrações, 40 usuários, 40 em `pessoa_espaco`. Teste de ponta a ponta no site, com a caixa de teste: cadastro 202, login antes de confirmar 401, confirmar 200, login 200, `/auth/pessoa/eu` com lista de espaços vazia. **Ficou no banco do site 1 pessoa fictícia de teste: `teste-pessoa-l22@exemplo.invalid`** (cadastro de teste; pode ser desativada depois).
 - Não conferido: 360, 768 e 1280 px em navegador real; checagem humana.
 - **Propostas escritas** (`docs/PROPOSTA-L22A-1C-E-L22A-2.md`). Como o Code entendeu "comece nos lotes": **escrever as propostas**, porque a A-071 pede "ok proposta" antes do código e há 5 perguntas fechadas (Q1 a Q5) que são decisão do autor. **Nenhum código ou migração dos dois lotes foi feito.** Estado: Planejado.
+
+## A-080 — Respostas do autor a Q1 a Q5 (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026, respondendo às 5 perguntas da `docs/PROPOSTA-L22A-1C-E-L22A-2.md`. Resumo (texto completo na proposta, seção "Decisões do autor sobre Q1 a Q5"):
+- **Q1:** a tela diz "representante legal"; a pessoa se declara no aceite; o sistema não verifica e diz isso.
+- **Q2:** limite de 5 alunos por representante (inclui professor ou suporte pedagógico que represente uma turma), configurável no Master; no limite, mensagem para falar com o suporte.
+- **Q3:** o representante legal não perde o vínculo (só se o aluno pedir); professores, pedagógico, psicopedagogo e demais profissionais renovam a cada 12 meses ou pelo calendário escolar; avisos de 30, 15 e 1 dia; menor: o representante aprova; maior: ele ou o representante; vínculo de instituição: a instituição aprova em lote ou o aluno prorroga 30 dias.
+- **Q4:** instituição, aluno e/ou representante encerram a qualquer momento, com justificativa registrada e auditável.
+- **Q5:** acompanhante = professores, pedagógico e demais; o aviso diz quem controla o acesso em cada caso.
+- Como o Code entendeu: as respostas valem como **"ok proposta" com ajustes** para 1c e L22a-2; **nenhum código foi feito** (o autor disse "paramos por hoje" e há 1 dúvida aberta, sobre o perfil dos psicopedagogos). Estado: Planejado.

@@ -57,3 +57,21 @@ Estado: **Planejado (propostas escritas). Nenhum código ou migração feito.** 
 - **Feito:** as duas propostas escritas.
 - **Falta:** "ok proposta" para o 1c (e respostas Q1 e Q2) e depois para o L22a-2 (Q3 a Q5); só então código, teste, commit e aplicação, cada um com autorização.
 - **Sugestões:** aceitar as recomendações, executar o 1c amanhã (13/11) e o L22a-2 em outro dia.
+
+---
+
+## Decisões do autor sobre Q1 a Q5 (13/11/2026, A-080) — passam a valer nesta proposta
+
+- **Q1 (corrigida):** o texto e a tela dizem **"representante legal"**, não "Responsável". No aceite a pessoa **se declara** representante legal do aluno; **não há como verificar** se é verdade, e o sistema não finge que verifica (o termo diz isso). Sem exigir CPF. Vale para qualquer adulto de 18 anos ou mais com e-mail confirmado.
+- **Q2 (ajustada):** limite de **5 alunos por representante** (inclui professor ou suporte pedagógico que represente uma turma). O limite é **configurável pelo Master** (padrão 5). Ao chegar no limite, a tela mostra: "Você chegou ao limite de alunos. Entre em contato com o suporte." (texto literal).
+- **Q3 (reescrita), validade e renovação:**
+  - **Representante legal:** o vínculo **não vence**; só acaba se o **aluno pedir**.
+  - **Professores, pedagógico, psicopedagogo e demais profissionais da área:** o vínculo vale **12 meses ou até o fim do calendário escolar** (o que a instituição usar) e precisa ser renovado.
+  - **Avisos na tela** para o aluno, o representante e o profissional: faltam **30 dias, 15 dias e 1 dia**, com botão de renovar (palavra, data e forma visual; sem pressão).
+  - **Quem aprova a renovação:** aluno **menor**: o representante aprova. Aluno **maior**: ele mesmo ou o representante. **Vínculos feitos por instituição:** a instituição aprova **em lote**; o aluno pode aprovar **por mais 30 dias** (prorrogação curta).
+- **Q4 (ampliada):** **instituição, aluno e/ou representante** podem encerrar um vínculo **a qualquer momento**, com **justificativa obrigatória, registrada e auditável**. Leitura do Code (a confirmar): no aluno menor encerram o representante, o aluno e a instituição (nos vínculos dela); no aluno maior encerram o aluno e a instituição (nos vínculos dela); o representante **indicado** só vê e não encerra.
+- **Q5 (confirmada):** "acompanhante" = professor, pedagógico, psicopedagogo e demais profissionais. O aviso em texto literal diz quem controla o acesso, **em cada caso: o aluno, o representante e/ou a instituição**.
+
+**Efeitos no desenho (migrações 0027 e 0028):** coluna de limite por representante com valor padrão no Master; data de fim do vínculo (nula para o representante legal); avisos de 30, 15 e 1 dia (calculados no banco, sem envio de mensagem fora do sistema); renovação em lote pela instituição; prorrogação de 30 dias pelo aluno; encerramento com justificativa em tabela de auditoria; troca da palavra "Responsável" por "representante legal" nas telas novas (as antigas mudam no L25, com os documentos).
+
+**Dúvida única que falta (decisão sua):** "psicopedagogo e demais profissionais da área" entram como o perfil **Pedagógico** que já existe (recomendado, sem perfil novo) ou como **perfil novo**? Perfil novo muda o banco, a matriz de permissões e todas as telas; o recomendado cabe na Parte 1.
