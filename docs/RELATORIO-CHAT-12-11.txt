@@ -1,0 +1,144 @@
+SIESAL 4.0 - RELATORIO DO CHAT DE 12/11/2026
+Branch: claude/f053-l20-verification-itcpd9
+=====================================================================
+
+RESULTADO EM UMA LINHA
+O trabalho de 20c-2 e L20d foi salvo no GitHub (commit 93ec6d0). O plano
+dos proximos lotes esta escrito. NENHUM lote novo foi aprovado nem
+executado. Falta sua aprovacao do primeiro lote.
+
+---------------------------------------------------------------------
+1. O QUE VOCE PEDIU (e o que eu fiz)
+---------------------------------------------------------------------
+Pedido 1 - Salvar o trabalho aprovado
+  Pedido: commit de tudo que estava pendente e push, sem PR.
+  Feito: commit 93ec6d0 (migracoes 0022 e 0023, codigo, testes e
+  documentos de 20c-2 e L20d). Push no mesmo branch. Nao achei segredo
+  no diff. NAO rodei os testes de novo.
+
+Pedido 2 - Proposta de lotes para o painel do Master e o que falta
+  Pedido: tela do Master (Operacao.tsx), convites, login por codigo no
+  e-mail e pendencias do relatorio de 12/11.
+  Feito: mapa do estado anterior e proposta de lotes (secao 3).
+
+Pedido 3 - Separar por prioridade e recomendar o primeiro
+  Feito: seguranca e defeito primeiro, depois o que bloqueia a Parte 1,
+  depois melhoria. Recomendei comecar pelo L21a.
+
+Pedidos seguintes no chat (suas decisoes)
+  a) Calendario: o ALUNO escolhe entre grade e lista. As duas opcoes ficam.
+  b) Codigo temporario no e-mail: e ADICIONAL (2o fator), nao substitui
+     a senha.
+  c) Autenticacao por papel: no inicio, Master e Admin = e-mail +
+     autenticador + senha; os demais = so senha. O Master pode habilitar
+     2 fatores (codigo no e-mail ou autenticador) para outros.
+  d) Modo demonstracao: o sistema nao grava nada de verdade; o
+     responsavel de aluno menor nao precisa validar o cadastro; os dados
+     sao apagados depois da demonstracao.
+  e) Arvore do Master: ver todas as ramificacoes de uma instituicao
+     (admins, professores, pedagogos, alunos, responsaveis). Admin cria e
+     desativa so os da propria instituicao, sem acesso a outra.
+     Professores e pedagogos podem estar em varias instituicoes e em
+     alunos isolados.
+  f) D1: o projeto inteiro tera um botao "sair da demonstracao" (bancos
+     simulados, dados ficticios). Depois de sair, nao volta mais a ser
+     demonstracao. Nenhuma conta criada em demonstracao conta como real,
+     porque o banco dela e apagado.
+  g) D2: a demonstracao de aluno e a de instituicao ficam em banco
+     temporario, que pode ser apagado.
+  h) D3: professor e pedagogo veem so o que e do vinculo em que estao
+     (instituicao ou aluno). Os de aluno isolado NAO sao obrigados a ter
+     vinculo com instituicao.
+  i) D4: voce deixou a ordem dos lotes comigo.
+  j) D5 (lacuna que apareceu): professor e pedagogo sem instituicao
+     precisam de cadastro proprio. Quem vem de instituicao ja tem.
+     Voce concordou que e uma lacuna.
+
+---------------------------------------------------------------------
+2. O QUE EU ENTENDI (a confirmar por voce)
+---------------------------------------------------------------------
+- Demonstracao e um estado do projeto inteiro, em banco separado e
+  temporario. Sair dele e um caminho de mao unica.
+- Duvida ainda aberta: a chave do Master "por instituicao ou aluno
+  isolado" continua existindo, ou fica so o botao global? Vou perguntar
+  na proposta do L23b.
+- Como o cadastro proprio de professor/pedagogo isolado nasce (convite do
+  aluno ou responsavel, dados minimos, termo) fica para a proposta do
+  L22a.
+- Eu NAO tratei "crie o plano e execute" como aprovacao de lote, porque
+  a regra do projeto exige aprovacao explicita por lote e voce nao disse
+  qual. Por isso nada foi executado.
+
+---------------------------------------------------------------------
+3. O QUE EU DECIDI: ORDEM DOS LOTES
+---------------------------------------------------------------------
+Prioridade 1 - seguranca e defeito
+  L21a  HSTS (pronto, so liga com HTTPS); teste automatico de injecao de
+        SQL; causa raiz do F-056 (API responde antes do commit) e remocao
+        do contorno nos testes.
+  L21b  Calendario com grade e lista; preferencia do aluno.
+Prioridade 2 - bloqueia a entrega da Parte 1
+  L22a  Vinculo de professor e pedagogo a varias instituicoes e a alunos
+        isolados, com cadastro proprio. Mexe em banco e RLS.
+  L22b  Arvore do Master (so leitura) + menu das areas (Administradores,
+        Professores, Pedagogicos/NAPNE, Alunos, Responsaveis, Usuarios sem
+        vinculo) + indicador de ambiente teste/producao.
+  L22c  Admin cria e desativa so os da propria instituicao; revogar
+        convite; manual automatico por tipo de destinatario.
+  L23a  Politica de autenticacao por papel (Master configura) e 2o fator
+        por codigo de e-mail (uso unico, validade curta, limite de
+        tentativas, auditoria).
+  L23b  Modo demonstracao. Maior risco; proposta propria antes de codigo.
+  L24   Verificacao humana: contraste, leitor de tela e teclado nos
+        perfis Responsavel, Professor, Pedagogico e Admin, em 360, 768 e
+        1280 px.
+Prioridade 3 - melhoria
+  L25   Revisao do RIPD, da Politica e do Mapa de Riscos (inclui a
+        dificuldade vista pelo Pedagogico e o modo demonstracao). Sem
+        "em conformidade" antes de parecer juridico.
+Motivo da ordem: seguranca primeiro; a arvore depende do vinculo
+multiplo (L22a); a demonstracao fica por ultimo porque mexe em banco.
+
+---------------------------------------------------------------------
+4. O QUE FALTA PARA CONCLUIR A PARTE 1
+---------------------------------------------------------------------
+Datas: entrega 10/12/2026; pontos de controle 20/11 e 01/12.
+
+Falta decidir (sua parte)
+  - Aprovar o primeiro lote (pendente).
+  - Chave do Master: por instituicao/aluno ou so global? (L23b)
+  - Como nasce o cadastro de professor/pedagogo isolado. (L22a)
+  - Reservar datas para a verificacao humana (leitor de tela, teclado,
+    contraste, NAPNE) antes de 01/12.
+
+Falta fazer (codigo)
+  - L21a, L21b, L22a, L22b, L22c, L23a, L23b (secao 3).
+  - Pendencia antiga: no L20d, conferir em navegador real as telas novas
+    (Cards, Acompanhamento, grade do dia, dificuldade) em 360/768/1280.
+
+Falta verificar e documentar
+  - L24 (verificacao humana). Sem ela nada passa de "Implementado" para
+    "Verificado".
+  - L25 (documentos de privacidade) antes de qualquer dado real.
+  - Parecer juridico continua pendente.
+
+Nao verifiquei nesta sessao: o estado de L16d, L16e, L17c e do item 3 de
+L19 e L20 no roteiro (docs/ROTEIRO-L17A-A-L20.md). Preciso conferir antes
+de afirmar o que mais bloqueia a entrega.
+
+---------------------------------------------------------------------
+5. RISCOS E ESTIMATIVAS (estimativa minha, nao medida)
+---------------------------------------------------------------------
+- De L22a a L24 nao cabem todos com folga ate 10/12. Se apertar, adiar
+  primeiro L23b e L25, depois as configuracoes globais do Master.
+  Cortar escopo so com sua decisao.
+- L22a e L23b sao os mais arriscados (banco, RLS, dados de menores).
+  Cada um com proposta, backup antes e retorno descrito.
+
+---------------------------------------------------------------------
+FEITO / FALTA / SUGESTOES
+---------------------------------------------------------------------
+Feito: commit e push 93ec6d0; plano docs/PLANO-L21-A-L25.md; registros
+A-069 e A-070 em docs/REGISTRO-DE-APROVACOES.md (ainda sem commit).
+Falta: sua aprovacao do primeiro lote; conferir o roteiro da Parte 1.
+Sugestoes: pensar com calma e, quando decidir, aprovar o L21a.

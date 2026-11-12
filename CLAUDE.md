@@ -17,12 +17,15 @@ Sistema Inteligente de Estudos, Agenda e Aprendizagem. Sistema escolar inclusivo
 - Lotes de 1 a 3 itens. Escopo congelado por lote: pedido novo vai para o próximo lote, salvo defeito ou segurança.
 - Ciclo: solicitação, estado anterior, proposta, aprovação, execução, validação, entrega, merge, deploy. Merge e deploy exigem autorizações separadas.
 - Mesmo procedimento e mesma estrutura em todo lote (pedido do autor: "manter a recursividade"). Isso inclui manter o mesmo padrão visual e a mesma responsividade.
-- Numeração: lotes seguem L13 a L20. Variações usam letras: L13a, L13b, L13c etc. Um lote por vez; cada um precisa de aprovação própria.
+- Numeração: lotes seguem L13 a L27 (A-071). Variações usam letras: L13a, L13b, L13c etc. Um lote por vez; cada um precisa de aprovação própria. Plano atual: `docs/PLANO-FECHAMENTO-PARTE-1-2026-11-12.md` e os Adendos 1 a 4. Entrega da Parte 1: 20/12/2026.
 - Ambiguidade que muda o resultado: uma pergunta fechada, com a opção recomendada primeiro. Nunca adivinhe.
 - Discorde com motivo e alternativa em 1 ou 2 linhas. A decisão final é do autor.
 - Prioridade: segurança e defeito, depois o que bloqueia a entrega, depois melhoria.
 - Estados: Planejado, Prototipado, Implementado, Verificado, Aprovado para produção. Nunca declare "pronto" o que não foi testado. "Verificado" exige a checagem humana (leitor de tela, teclado, contraste, NAPNE) e nenhuma falha aberta.
 - Não faça commit, push, merge nem deploy. O autor faz o commit com a identidade dele. Nunca defina autor de commit.
+- Exceção (A-071): commit e push **só de arquivos em `docs/` e do `CLAUDE.md`** têm autorização permanente, ao fim de cada sessão. Código, migração, merge e deploy continuam com autorização separada.
+- Toda sessão termina com um diário em `docs/diario/AAAA-MM-DD-HHMM.md`: Feito, Falta, Sugestões e como voltar. Ação manual do autor (exemplo: troca de chave) vira 1 linha no diário, sem o segredo.
+- Use "Nível de dificuldade" (0 a 10), nunca "nota de dificuldade". "Nota" é só nota escolar.
 - Todo entregável termina com Feito, Falta e Sugestões.
 
 ## 4. Padrão de código

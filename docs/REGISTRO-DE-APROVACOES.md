@@ -291,3 +291,30 @@ Pedido do autor em chat, em 12/11/2026: "Aplicar agora".
 - Conferido: `/api/config`, `/` e `/confirmar/responsavel` respondem 200; `/api/cartoes-resumo`, `/api/apoio/alunos` e `/api/conta/dados-cadastro` sem sessão respondem 401; as 2 colunas `dificuldade` e a tabela `cartao_resumo` existem; nenhum erro nos registros da API.
 - Não conferido: uso real das telas novas no navegador (Cards, Acompanhamento, grade do dia, seletor de dificuldade), 360/768/1280 px e a checagem humana.
 - Retorno: `docs/RETORNO-0023.md`.
+
+## A-069 — Decisões do plano L21 a L25 (12/11/2026)
+Respostas do autor em chat, em 12/11/2026, ao plano `docs/PLANO-L21-A-L25.md`.
+- Calendário: o aluno escolhe entre grade e lista (as duas ficam). Código de e-mail é 2º fator adicional. Master e Admin começam com e-mail, autenticador e senha; os demais só senha; o Master pode habilitar 2 fatores.
+- D1 a D4 decididas (ver o plano). Ordem dos lotes escolhida pelo Code.
+- Commit e push de `93ec6d0` (20c-2 e L20d) autorizados pelo autor na abertura da sessão; feitos no branch `claude/f053-l20-verification-itcpd9`, sem PR.
+- Estado: Planejado. **Nenhum lote foi aprovado para execução ainda.**
+
+## A-070 — Professor e pedagogo de aluno isolado (12/11/2026)
+Autor em chat, em 12/11/2026: professor e pedagogo de vínculo isolado não são obrigados a ter vínculo com instituição, mas precisam de **cadastro próprio** quando não vêm de uma instituição. Entra no L22a (proposta define como o cadastro nasce). Estado: Planejado.
+
+## A-071 — Plano de fechamento da Parte 1 até 20/12, regra de registro e decisões de 12/11/2026 (tarde)
+Mensagens do autor ao Claude do chat (Projeto no claude.ai), em 12/11/2026, de 14:38 a 15:37. Registro feito pelo Claude do chat, a pedido do autor ("atualize tudo no git e no meu pc"). Documentos: `docs/PLANO-FECHAMENTO-PARTE-1-2026-11-12.md`, `docs/ADENDO-1` a `ADENDO-4` de 12/11 e `docs/TERMOS-DE-ACEITE-MINUTA-v0.1-2026-11-12.md`.
+1. **Entrega da Parte 1 em 20/12/2026** (antes 10/12). Pontos de controle: 20/11, 01/12 e 10/12. Código novo só até 16/12. Isto muda a A-031 e a A-046: a numeração passa do L20 (L21 a L27).
+2. **G0 aprovado:** levar ao GitHub o plano, os adendos, A-069, A-070 e o relatório; corrigir o `CLAUDE.md`. Não inclui merge em `siesal-4`.
+3. **Regra de registro aprovada:** diário de sessão em `docs/diario/AAAA-MM-DD-HHMM.md` (Feito, Falta, Sugestões, como voltar) e **autorização permanente de commit e push só para `docs/` e `CLAUDE.md`**. Código, migração, merge e deploy continuam com autorização separada.
+4. **Aprovada a execução do L21a, do L21c (sem o Norton) e do L21b.** Do L22a-1 em diante: proposta escrita antes do código; basta "ok proposta". (Leitura do Claude para "aprovo tudo, menos o norton"; ver Adendo 4.)
+5. **Entram todos os lotes**, inclusive L27a a L27e (núcleo de apoio ao aluno, Adendo 2). **SIGEduc e Norton (F-052)** ficam para o último lote (L26d), se sobrar tempo.
+6. **Integrações (SUAP, Google) entram na Parte 1 só como preparação desligada**, com dados fictícios. A tela informa que o SUAP não é a única integração pretendida, sem prometer data (texto no Adendo 4).
+7. **Nome "Nível de dificuldade"** no lugar de "nota de dificuldade". "Nota" fica só para nota escolar.
+8. **Acompanhamento do aluno isolado** por professor e por pedagógico/NAPNE, pelos dois caminhos: e-mail e código da instituição. O pedido sempre nasce do lado do aluno (Adendo 1).
+9. **Árvore do Master:** o Master vê os dados cadastrais (nome, papel, situação, vínculos) de instituições e de alunos isolados, para suporte, rastreio e auditoria. Não vê nem altera notas, nível de dificuldade, tarefas ou mensagens; não altera e-mail. O autor aceita o risco; deve constar no aceite de abertura de conta. A confirmar no parecer jurídico.
+10. **Responsável:** no aluno isolado menor, o Responsável cria a conta. Aluno maior pode indicar um Responsável (tipo "indicado"; o aluno pode retirar). Aceite com declaração de que os dados são verdadeiros e de responsabilidade de quem cadastrou.
+11. **L22a dividido** em L22a-1 e L22a-2. Lotes juntados pelo Claude: L21c com L21b; SUAP com Google (L26b). Total: 17 lotes.
+12. **`CPF_CHAVE`:** o autor informou que gerou uma chave nova e gravou no `.env`, à mão, depois da A-063, sem mostrar a ninguém. Substitui o aviso da A-063. **A conferir pelo Code:** se a API foi recriada depois da troca e quantos CPFs havia no banco.
+- **Estado:** Planejado. Nenhum código, migração, merge ou deploy foi feito neste registro.
+- **Pendente:** o que o Responsável indicado vê por padrão (pergunta aberta); confirmação de que 20/12 vale também para o professor; parecer jurídico dos termos.
