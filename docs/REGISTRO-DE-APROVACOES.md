@@ -343,3 +343,9 @@ Mensagem do autor em chat, em 12/11/2026: "n4 o aluno convida, o responsável ap
 Decisão do Code, avisada com motivo (CLAUDE.md, seção 6), sob o "siga com a proposta" do autor (A-074): **L22a-1a** = base de dados (migração 0025: pessoa, pessoa_id em usuario, tipo do Responsável); **L22a-1b** = login por pessoa, escolha de espaço, cadastro próprio, conta do Responsável. Motivo: o login atual (676 linhas) mexe em senha e TOTP; tudo junto passa do limite de risco. A tabela `participacao` da proposta foi dispensada: a participação é a linha de `usuario` ligada à pessoa.
 - **Estado do 1a: Implementado**, não aplicado no site, código sem commit. 327 testes de integração passam; ensaio em cópia dos dados reais ok. Retorno: `docs/RETORNO-0025.md`.
 - **Pendente:** autorização do commit do código e de aplicar no site; "ok" para o 1b.
+
+## A-076 — Migração 0025 aplicada no site (12/11/2026)
+Pedido do autor em chat, em 12/11/2026: "sim aplicar, concordo com a sugestão". Commit de código autorizado antes: `03a4db0`.
+- Feito: backup antes `backups/siesal-20261112-164955.dump`; migração `0025_pessoa.sql` pelo job `migrate`; API reconstruída e saudável (o site não mudou). Conferido no banco do site: 25 migrações, 40 usuários, 40 pessoas, 0 usuários sem pessoa, 6 vínculos de responsável todos "legal"; site 200 e `/api/saude` ok.
+- Não conferido: login real de cada perfil depois da migração (o login não foi alterado e os testes de integração passam); checagem humana.
+- Retorno: `docs/RETORNO-0025.md`. Estado do L22a-1a: Implementado e aplicado (não Verificado). L22a-1b aguarda "ok".
