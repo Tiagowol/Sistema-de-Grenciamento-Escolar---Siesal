@@ -349,3 +349,6 @@ Pedido do autor em chat, em 12/11/2026: "sim aplicar, concordo com a sugestão".
 - Feito: backup antes `backups/siesal-20261112-164955.dump`; migração `0025_pessoa.sql` pelo job `migrate`; API reconstruída e saudável (o site não mudou). Conferido no banco do site: 25 migrações, 40 usuários, 40 pessoas, 0 usuários sem pessoa, 6 vínculos de responsável todos "legal"; site 200 e `/api/saude` ok.
 - Não conferido: login real de cada perfil depois da migração (o login não foi alterado e os testes de integração passam); checagem humana.
 - Retorno: `docs/RETORNO-0025.md`. Estado do L22a-1a: Implementado e aplicado (não Verificado). L22a-1b aguarda "ok".
+
+## A-077 — L22a-1b: início e divisão (12/11/2026)
+Resposta do autor em chat, em 12/11/2026: "Começar agora" (L22a-1b, com proposta curta antes). Proposta: `docs/PROPOSTA-L22A-1B.md`. Achado: pessoa sem vínculo não tem `usuario`, então precisa de senha e sessão próprias. Divisão avisada: **1b** (cadastro próprio, login da pessoa, escolha de espaço), **1c** (conta do Responsável), L22a-2 (convites). Estado: Planejado; implementação iniciada.
