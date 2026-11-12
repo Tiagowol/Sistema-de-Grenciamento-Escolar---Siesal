@@ -318,3 +318,10 @@ Mensagens do autor ao Claude do chat (Projeto no claude.ai), em 12/11/2026, de 1
 12. **`CPF_CHAVE`:** o autor informou que gerou uma chave nova e gravou no `.env`, à mão, depois da A-063, sem mostrar a ninguém. Substitui o aviso da A-063. **A conferir pelo Code:** se a API foi recriada depois da troca e quantos CPFs havia no banco.
 - **Estado:** Planejado. Nenhum código, migração, merge ou deploy foi feito neste registro.
 - **Pendente:** o que o Responsável indicado vê por padrão (pergunta aberta); confirmação de que 20/12 vale também para o professor; parecer jurídico dos termos.
+
+## A-072 — L21a e L21b aplicados no site (12/11/2026)
+Pedidos do autor em chat, em 12/11/2026: "autorizar aplicar no site agora" (L21a) e "migração 0024 no site (backup, migrate, reconstruir): sim" (L21b). Commits de código autorizados: `aed8301` (L21a) e `6e9a2f6` (L21b).
+- Feito (L21a): API e site reconstruídos, sem migração; HSTS continua desligado de propósito.
+- Feito (L21b): backup antes `backups/siesal-20261112-161511.dump`; migração `0024_calendario_forma_dia.sql` pelo job `migrate`; API e site reconstruídos e saudáveis. Conferido: coluna `forma_dia` (padrão 'grade'), 24 migrações, 2 linhas de preferência em 'grade', `/api/preferencias` sem sessão responde 401.
+- Não conferido: uso real da escolha no navegador, 360/768/1280 px e a checagem humana.
+- Retorno: `docs/RETORNO-0024.md`. Estado: Implementado e aplicado (não Verificado).
