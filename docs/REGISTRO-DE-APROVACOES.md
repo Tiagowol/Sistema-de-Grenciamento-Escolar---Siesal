@@ -338,3 +338,8 @@ Mensagem do autor em chat, em 12/11/2026: "n4 o aluno convida, o responsável ap
 - **N5:** "siga com a proposta" lido como aceite da recomendação (dois espaços separados, dados não migram). Avisado na proposta; o autor pode corrigir.
 - **Escopo (aviso com motivo):** "Responsável vê tudo" vira o lote **L22a-3**; **mensagens push** viram o lote **L27f**. Ver `docs/PROPOSTA-L22A-1.md`, seção 3a.
 - **"Siga com a proposta"** lido como o "ok proposta" da A-071 para o L22a-1 (pessoa, participação, Responsável com conta). Estado: Planejado; código ainda não iniciado neste registro.
+
+## A-075 — L22a-1 dividido em 1a e 1b; 1a implementado (12/11/2026)
+Decisão do Code, avisada com motivo (CLAUDE.md, seção 6), sob o "siga com a proposta" do autor (A-074): **L22a-1a** = base de dados (migração 0025: pessoa, pessoa_id em usuario, tipo do Responsável); **L22a-1b** = login por pessoa, escolha de espaço, cadastro próprio, conta do Responsável. Motivo: o login atual (676 linhas) mexe em senha e TOTP; tudo junto passa do limite de risco. A tabela `participacao` da proposta foi dispensada: a participação é a linha de `usuario` ligada à pessoa.
+- **Estado do 1a: Implementado**, não aplicado no site, código sem commit. 327 testes de integração passam; ensaio em cópia dos dados reais ok. Retorno: `docs/RETORNO-0025.md`.
+- **Pendente:** autorização do commit do código e de aplicar no site; "ok" para o 1b.
