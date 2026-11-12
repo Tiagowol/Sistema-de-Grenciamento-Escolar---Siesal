@@ -386,3 +386,9 @@ Mensagem do autor em chat, em 13/11/2026:
 ## A-082 — L22a-1c implementado (13/11/2026)
 Sob o A-080 e o A-081. **Estado: Implementado**, não aplicado no site, código sem commit. Migração `0027_representante.sql`; `POST /auth/pessoa/aluno-menor`; tipo interno do Pedagógico; limite de alunos por representante (padrão 5, no Master); declaração literal de representante legal (não verificável). Verificação: 343 testes de integração, 1173 de unidade e tela, tipos e lint ok; ensaio da 0027 em cópia dos dados reais ok. Retorno: `docs/RETORNO-0027.md`.
 - **Não feito:** "ver tudo, só leitura" do representante (L22a-3); convites e "Quem pode ver meus dados" (L22a-2); tela do Master para o limite (L22c); conferência em navegador real; envio de e-mail real.
+
+## A-083 — Migração 0027 aplicada no site (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Sim, aplicar agora // aceito a sugestão". Commit de código autorizado antes: `3334eb4` (L22a-1c).
+- Feito: backup antes `backups/siesal-20261112-174256.dump`; migração `0027_representante.sql` pelo job `migrate`; API e site reconstruídos e saudáveis. Conferido no banco do site: 27 migrações, 40 usuários, 0 em `pessoa_espaco` sem papel, limite de alunos por representante = 5; site 200, `/api/saude` ok, `/api/auth/pessoa/aluno-menor` sem sessão responde 401.
+- Não conferido: a criação real de um aluno menor pelo representante no site (exige um convite do Master; fica para o teste do autor); 360, 768 e 1280 px; checagem humana.
+- Retorno: `docs/RETORNO-0027.md`. Estado do L22a-1c: Implementado e aplicado (não Verificado).
