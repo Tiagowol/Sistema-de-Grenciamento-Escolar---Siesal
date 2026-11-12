@@ -280,7 +280,7 @@ export function SinoMensagens({ aoIr }: { aoIr: (p: Pagina) => void }) {
         <p>Não foi possível carregar as mensagens. Tente de novo.</p>
       ) : !caixa ? (
         <Carregando />
-      ) : caixa.itens.length === 0 ? (
+      ) : !caixa.itens || caixa.itens.length === 0 ? (
         <p>Nenhuma mensagem por enquanto.</p>
       ) : (
         <ul className="sino-lista">
