@@ -22,6 +22,7 @@ export type Preferencias = {
   apelido: string | null; // nome de exibição (L17b); sem apelido, vale o primeiro nome
   cor: string | null; // cor de destaque (id da paleta); sem cor, vale a do tema
   telaInicial: 'meudia' | 'agenda' | 'calendario'; // tela que abre depois do login
+  formaDia: 'grade' | 'lista'; // como o calendário mostra o dia (L21b)
   blocos: MinutosDosBlocos; // minutos dos blocos curto, médio e longo (L20a)
 };
 
@@ -38,6 +39,7 @@ export const PREFERENCIAS_PADRAO: Preferencias = {
   apelido: null,
   cor: null,
   telaInicial: 'meudia',
+  formaDia: 'grade',
   blocos: { ...MINUTOS_PADRAO_DOS_BLOCOS },
 };
 
@@ -66,6 +68,7 @@ export function carregarPreferencias(
         bruto?.telaInicial === 'agenda' || bruto?.telaInicial === 'calendario'
           ? bruto.telaInicial
           : 'meudia',
+      formaDia: bruto?.formaDia === 'lista' ? 'lista' : 'grade',
       blocos: blocosGuardados(bruto?.blocos),
       escuro: bruto?.escuro === true,
       contraste: bruto?.contraste === true,
@@ -163,6 +166,7 @@ export function doServidor(s: PreferenciasServidor): Preferencias {
     apelido: s.apelido,
     cor: s.cor_destaque,
     telaInicial: s.tela_inicial,
+    formaDia: s.forma_dia === 'lista' ? 'lista' : 'grade',
     blocos: blocosGuardados({
       curto: s.minutos_curto,
       medio: s.minutos_medio,
@@ -183,6 +187,7 @@ export function paraServidor(p: Preferencias): PreferenciasServidor {
     linguagem_curta: p.linguagemCurta,
     escolha_agora: p.escolhaAgora,
     tela_inicial: p.telaInicial,
+    forma_dia: p.formaDia,
     minutos_curto: p.blocos.curto,
     minutos_medio: p.blocos.medio,
     minutos_longo: p.blocos.longo,

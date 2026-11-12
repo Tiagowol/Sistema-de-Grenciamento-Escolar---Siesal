@@ -149,6 +149,7 @@ describe('etapa e disciplinas gerais', () => {
       linguagem_curta: false,
       escolha_agora: true,
       tela_inicial: 'meudia',
+      forma_dia: 'grade',
       minutos_curto: 10,
       minutos_medio: 25,
       minutos_longo: 45,

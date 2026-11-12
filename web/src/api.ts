@@ -158,6 +158,7 @@ export type PreferenciasServidor = {
   linguagem_curta: boolean;
   escolha_agora: boolean;
   tela_inicial: 'meudia' | 'agenda' | 'calendario';
+  forma_dia: 'grade' | 'lista';
   minutos_curto: number;
   minutos_medio: number;
   minutos_longo: number;

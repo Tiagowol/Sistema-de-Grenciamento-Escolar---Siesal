@@ -462,12 +462,22 @@ describe('grade do dia', () => {
     });
   });
 
-  it('no mês, o botão "Ver as horas do dia" abre a visão Dia na grade', async () => {
+  it('no mês, o aluno escolhe grade ou lista e a escolha é avisada à conta', async () => {
     simular([]);
-    render(<Calendario />);
+    const mudou = vi.fn();
+    render(<Calendario forma="grade" aoMudarForma={mudou} />);
     const u = userEvent.setup();
-    await u.click(await screen.findByRole('button', { name: 'Ver as horas do dia' }));
-    expect(screen.getByRole('button', { name: 'Dia' }).getAttribute('aria-pressed')).toBe('true');
+    // a grade de horas aparece embaixo do mês, sem clique extra
     expect(await screen.findByRole('button', { name: 'Colocar algo às 06:00' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Grade de horas' }).getAttribute('aria-pressed')).toBe('true');
+    await u.click(screen.getByRole('button', { name: 'Lista do dia' }));
+    expect(mudou).toHaveBeenCalledWith('lista');
+  });
+
+  it('com a escolha "lista", o mês mostra a lista do dia e não a grade', async () => {
+    simular([]);
+    render(<Calendario forma="lista" aoMudarForma={() => undefined} />);
+    expect(await screen.findByRole('button', { name: 'Lista do dia' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Colocar algo às 06:00' })).toBeNull();
   });
 });

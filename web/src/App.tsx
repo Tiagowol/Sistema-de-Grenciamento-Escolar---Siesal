@@ -274,7 +274,10 @@ export function App() {
         ) : ehAluno && pagina === 'personalizar' ? (
           <Personalizar valor={prefs} aoMudar={mudarPrefs} aoPadrao={voltarAoPadrao} />
         ) : ehAluno && pagina === 'calendario' ? (
-          <Calendario />
+          <Calendario
+            forma={prefs.formaDia}
+            aoMudarForma={(formaDia) => mudarPrefs({ ...prefs, formaDia })}
+          />
         ) : ehAluno && pagina === 'foco' ? (
           <Foco key={focoTarefa} tarefaInicial={focoTarefa} />
         ) : ehAluno && pagina === 'notas' ? (

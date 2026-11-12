@@ -467,6 +467,8 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
       linguagem_curta: z.boolean(),
       escolha_agora: z.boolean(),
       tela_inicial: z.enum(['meudia', 'agenda', 'calendario']),
+      // L21b: como o aluno prefere ver o dia no calendário
+      forma_dia: z.enum(['grade', 'lista']),
       // Minutos dos 3 blocos (L20a): de 5 a 120, de 5 em 5, curto < médio < longo
       minutos_curto: minutosDoBloco,
       minutos_medio: minutosDoBloco,
@@ -487,6 +489,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     linguagem_curta: false,
     escolha_agora: true,
     tela_inicial: 'meudia',
+    forma_dia: 'grade',
     minutos_curto: 10,
     minutos_medio: 25,
     minutos_longo: 45,
@@ -501,19 +504,20 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
     const [linha] = await tx.$queryRaw<Linha[]>`
       INSERT INTO preferencia_usuario (instituicao_id, usuario_id, apelido, cor_destaque, tema, fonte, reduzir_movimento,
                                        leitura_facilitada, modo_simples, tempo_visual, linguagem_curta, escolha_agora, tela_inicial,
-                                       minutos_curto, minutos_medio, minutos_longo)
+                                       forma_dia, minutos_curto, minutos_medio, minutos_longo)
       VALUES (${sessao.instituicaoId}::uuid, ${sessao.usuarioId}::uuid, ${p.apelido}, ${p.cor_destaque}, ${p.tema}, ${p.fonte},
               ${p.reduzir_movimento}, ${p.leitura_facilitada}, ${p.modo_simples}, ${p.tempo_visual}, ${p.linguagem_curta},
-              ${p.escolha_agora}, ${p.tela_inicial}, ${p.minutos_curto}, ${p.minutos_medio}, ${p.minutos_longo})
+              ${p.escolha_agora}, ${p.tela_inicial}, ${p.forma_dia}, ${p.minutos_curto}, ${p.minutos_medio}, ${p.minutos_longo})
       ON CONFLICT (instituicao_id, usuario_id) DO UPDATE SET
         apelido = EXCLUDED.apelido, cor_destaque = EXCLUDED.cor_destaque, tema = EXCLUDED.tema, fonte = EXCLUDED.fonte,
         reduzir_movimento = EXCLUDED.reduzir_movimento, leitura_facilitada = EXCLUDED.leitura_facilitada,
         modo_simples = EXCLUDED.modo_simples, tempo_visual = EXCLUDED.tempo_visual, linguagem_curta = EXCLUDED.linguagem_curta,
         escolha_agora = EXCLUDED.escolha_agora, tela_inicial = EXCLUDED.tela_inicial,
+        forma_dia = EXCLUDED.forma_dia,
         minutos_curto = EXCLUDED.minutos_curto, minutos_medio = EXCLUDED.minutos_medio, minutos_longo = EXCLUDED.minutos_longo,
         atualizado_em = now()
       RETURNING apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
-                linguagem_curta, escolha_agora, tela_inicial, minutos_curto, minutos_medio, minutos_longo`;
+                linguagem_curta, escolha_agora, tela_inicial, forma_dia, minutos_curto, minutos_medio, minutos_longo`;
     await registrarAuditoria(tx, {
       instituicaoId: sessao.instituicaoId,
       ator: `usuario:${sessao.usuarioId}`,
@@ -527,7 +531,7 @@ export function registrarNucleo(app: FastifyInstance, opcoes: Opcoes): void {
   rota('get', '/preferencias', { preferencias: true }, async ({ tx, sessao }) => {
     const [p] = await tx.$queryRaw<Linha[]>`
       SELECT apelido, cor_destaque, tema, fonte, reduzir_movimento, leitura_facilitada, modo_simples, tempo_visual,
-             linguagem_curta, escolha_agora, tela_inicial, minutos_curto, minutos_medio, minutos_longo
+             linguagem_curta, escolha_agora, tela_inicial, forma_dia, minutos_curto, minutos_medio, minutos_longo
         FROM preferencia_usuario WHERE usuario_id = ${sessao.usuarioId}::uuid`;
     return { preferencias: p ?? null };
   });

@@ -87,6 +87,7 @@ const PREFS = {
   linguagem_curta: true,
   escolha_agora: true,
   tela_inicial: 'calendario',
+  forma_dia: 'lista',
   minutos_curto: 10,
   minutos_medio: 25,
   minutos_longo: 45,
@@ -176,6 +177,23 @@ describe('preferências por usuário', () => {
         ).toBe(200);
   });
 
+  it('a forma do dia no calendário (grade ou lista) fica salva por usuário e só aceita os 2 valores (L21b)', async () => {
+    const ok = await chamar('PUT', '/preferencias', 'b', { ...PREFS, forma_dia: 'lista' });
+    expect(ok.statusCode, ok.body).toBe(200);
+    expect(ok.json().preferencias.forma_dia).toBe('lista');
+    const lida = await chamar('GET', '/preferencias', 'b');
+    expect(lida.json().preferencias.forma_dia).toBe('lista');
+    // outro usuário guarda a escolha dele sem mudar a do 'b'
+    await chamar('PUT', '/preferencias', 'a', { ...PREFS, forma_dia: 'grade' });
+    expect((await chamar('GET', '/preferencias', 'a')).json().preferencias.forma_dia).toBe('grade');
+    expect((await chamar('GET', '/preferencias', 'b')).json().preferencias.forma_dia).toBe('lista');
+    for (const ruim of ['semana', '', null, 1])
+      expect((await chamar('PUT', '/preferencias', 'b', { ...PREFS, forma_dia: ruim })).statusCode).toBe(400);
+    const sem = { ...PREFS } as Record<string, unknown>;
+    sem.forma_dia = undefined;
+    expect((await chamar('PUT', '/preferencias', 'b', sem)).statusCode).toBe(400);
+  });
+
   it('os minutos dos 3 blocos: de 5 em 5, de 5 a 120 e curto < médio < longo (L20a)', async () => {
     const ok = await chamar('PUT', '/preferencias', 'b', {
       ...PREFS,
@@ -241,6 +259,7 @@ describe('preferências por usuário', () => {
       tema: 'claro',
       fonte: 100,
       tela_inicial: 'meudia',
+      forma_dia: 'grade',
       minutos_curto: 10,
       minutos_medio: 25,
       minutos_longo: 45,

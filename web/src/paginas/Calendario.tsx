@@ -111,7 +111,14 @@ type Rascunho = {
 
 const plural = (n: number) => (n === 1 ? 'entrada' : 'entradas');
 
-export function Calendario() {
+// A forma do dia (grade ou lista) é escolha do aluno e fica salva na conta (L21b)
+export function Calendario({
+  forma = 'grade',
+  aoMudarForma,
+}: {
+  forma?: 'grade' | 'lista';
+  aoMudarForma?: (forma: 'grade' | 'lista') => void;
+} = {}) {
   const hoje = paraTexto(new Date());
   const [visao, setVisao] = useState<Visao>('mes');
   const [base, setBase] = useState(hoje);
@@ -132,7 +139,12 @@ export function Calendario() {
   };
   const [rascunho, setRascunho] = useState<Rascunho>(vazio);
   // 20d: grade do dia (06:00 a 23:00). A lista simples continua disponível.
-  const [formaDia, setFormaDia] = useState<'grade' | 'lista'>('grade');
+  const [formaLocal, setFormaLocal] = useState<'grade' | 'lista'>(forma);
+  const formaDia = aoMudarForma ? forma : formaLocal;
+  const setFormaDia = (f: 'grade' | 'lista') => {
+    setFormaLocal(f);
+    aoMudarForma?.(f);
+  };
   const [horaEscolhida, setHoraEscolhida] = useState<string | null>(null);
   const [tarefasDaGrade, setTarefasDaGrade] = useState<Tarefa[] | null>(null);
   const [tarefaEscolhida, setTarefaEscolhida] = useState('');
@@ -461,6 +473,28 @@ export function Calendario() {
   const [ini, fim] = intervalo('mes', base);
   const diasMes: string[] = [];
   for (let d = ini; d <= fim; d = somarDias(d, 1)) diasMes.push(d);
+  // Escolha do aluno: ver o dia em grade de horas ou em lista (vale no dia e no mês)
+  const escolhaDaForma = (
+    <fieldset className="chip-row">
+      <legend className="sr-only">Como ver o dia</legend>
+      {(
+        [
+          ['grade', 'Grade de horas'],
+          ['lista', 'Lista do dia'],
+        ] as const
+      ).map(([id, nome]) => (
+        <button
+          key={id}
+          type="button"
+          className={`btn btn-sm ${formaDia === id ? 'btn-primary' : 'btn-outline'}`}
+          aria-pressed={formaDia === id}
+          onClick={() => setFormaDia(id)}
+        >
+          {nome}
+        </button>
+      ))}
+    </fieldset>
+  );
   const nomeVisao = VISOES.find((v) => v.id === visao)?.nome.toLowerCase();
 
   return (
@@ -521,25 +555,7 @@ export function Calendario() {
 
           {visao === 'dia' ? (
             <>
-              <fieldset className="chip-row">
-                <legend className="sr-only">Como ver o dia</legend>
-                {(
-                  [
-                    ['grade', 'Grade de horas'],
-                    ['lista', 'Lista do dia'],
-                  ] as const
-                ).map(([id, nome]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`btn btn-sm ${formaDia === id ? 'btn-primary' : 'btn-outline'}`}
-                    aria-pressed={formaDia === id}
-                    onClick={() => setFormaDia(id)}
-                  >
-                    {nome}
-                  </button>
-                ))}
-              </fieldset>
+              {escolhaDaForma}
               {formaDia === 'grade' ? gradeDoDia(base) : listaDoDia(base)}
             </>
           ) : null}
@@ -568,17 +584,8 @@ export function Calendario() {
                 {diasMes.map((d) => celula(d, d.slice(0, 7) !== base.slice(0, 7)))}
               </div>
               <h3 className="mt">{dataLonga(base)}</h3>
-              <button
-                type="button"
-                className="btn btn-soft btn-sm"
-                onClick={() => {
-                  setFormaDia('grade');
-                  setVisao('dia');
-                }}
-              >
-                Ver as horas do dia
-              </button>
-              {listaDoDia(base)}
+              {escolhaDaForma}
+              {formaDia === 'grade' ? gradeDoDia(base) : listaDoDia(base)}
             </>
           ) : null}
 
