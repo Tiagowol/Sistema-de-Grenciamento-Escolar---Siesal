@@ -37,3 +37,6 @@ _tmp_*
 
 # Cliente do Prisma gerado no build
 api/src/gerado/
+
+# Convites do Master e outros segredos locais (L21c): nunca no git
+segredos-locais/
