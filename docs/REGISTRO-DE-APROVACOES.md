@@ -464,3 +464,6 @@ Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migr
 - **Estado:** L22a-3 **Implementado e aplicado no site local**, ainda **não Verificado**. **Código sem commit** (precisa de autorização separada). Sem merge nem deploy.
 - **Não conferido:** a tela "Meu aluno" no navegador (360, 768 e 1280 px) e a checagem humana.
 - Retorno: restaurar o backup acima ou `docs/RETORNO-0030.md`.
+
+## A-095 — Commit de código do L22a-3 (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "autorizo o commit de código do L22a-3". Commit `cf31c50` (21 arquivos listados, sem `git add .`; autor do git do computador, sem definir autor). **Push de código não feito** (não autorizado): o commit existe só no ramo local `lote-21-22-fechamento`. Atenção: um `git push` do ramo leva este commit junto; só faça com autorização. Sem merge nem deploy.
