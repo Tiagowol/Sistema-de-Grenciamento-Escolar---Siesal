@@ -456,3 +456,11 @@ Sob a A-092 e com a autorização do autor em chat ("Começar hoje"), apesar de 
 - **Não feito:** "só a escola" por pedido de ajuda (risco anotado na proposta); mensagem fora do sistema para os avisos; conferência no navegador (360/768/1280 px); checagem humana; aplicar no site.
 - **Verificação:** integração 371 de 371 (10 novos); tipos ok; 1303 testes de unidade e tela (axe sem violação nas telas novas); lint dos arquivos do lote: 1 erro de formatação restante em trecho antigo de `pessoa-rotas.ts` (o formatador oscila; o lint do repositório inteiro já tinha 107 erros antes e não foi refeito). O formatador também reescreveu trechos antigos de `pessoa-rotas.ts`, `api.ts` e `Shell.tsx` (só formato).
 - **Retorno:** `docs/RETORNO-0030.md`.
+
+## A-094 — Backup, migração 0030 e reconstrução do site (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migração 0030 no site).
+- **Backup antes:** `backups/siesal-20261113-195212.dump` (com `.sha256`). **Migração** pelo job `migrate`: `0030_representante_ver_tudo.sql` aplicada (30 migrações no total).
+- **API e site reconstruídos** (`docker compose up -d --build`, como na A-088): site 200, `/api/saude` ok, `/api/representado` sem sessão responde 401; as 4 funções novas existem no banco e o pacote do site contém "Meu aluno".
+- **Estado:** L22a-3 **Implementado e aplicado no site local**, ainda **não Verificado**. **Código sem commit** (precisa de autorização separada). Sem merge nem deploy.
+- **Não conferido:** a tela "Meu aluno" no navegador (360, 768 e 1280 px) e a checagem humana.
+- Retorno: restaurar o backup acima ou `docs/RETORNO-0030.md`.
