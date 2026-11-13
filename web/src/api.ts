@@ -460,6 +460,76 @@ export class ErroApi extends Error {
   }
 }
 
+// L22a-2: acompanhamento ("Quem pode ver meus dados") e leitura pelo acompanhante
+export type ItensAcompanhamento = { tarefas: boolean; dificuldade: boolean; notas: boolean; mensagens: boolean };
+export type PapelAcompanhante = 'professor' | 'pedagogico' | 'responsavel';
+export type Acompanhante = {
+  id: string;
+  papel: PapelAcompanhante;
+  situacao: 'aguardando_aceite' | 'aguardando_representante' | 'ativo' | 'encerrado';
+  email_convidado: string | null;
+  origem: 'email' | 'codigo';
+  instituicao_nome: string | null;
+  ver_tarefas: boolean;
+  ver_dificuldade: boolean;
+  ver_notas: boolean;
+  ver_mensagens: boolean;
+  aprovado: boolean;
+  aceito: boolean;
+  fim_em: string | null;
+  dias_restantes: number | null;
+  justificativa: string | null;
+  aviso: 'trinta' | 'quinze' | 'um' | 'vencido' | null;
+};
+export type AcompanhamentoLista = {
+  acompanhantes: Acompanhante[];
+  menor: boolean;
+  ator: 'aluno' | 'representante';
+  pode_gerir: boolean;
+  limite: number;
+};
+export type AlunoAcompanhado = {
+  acompanhamento_id: string;
+  aluno_nome: string;
+  papel: PapelAcompanhante;
+  situacao: string;
+  fim_em: string | null;
+  vencido: boolean;
+  ver_tarefas: boolean;
+  ver_dificuldade: boolean;
+  ver_notas: boolean;
+  ver_mensagens: boolean;
+  aviso_pendente: boolean;
+};
+export type ItemAcompanhado = 'tarefas' | 'dificuldade' | 'notas' | 'mensagens';
+
+// L22a-2b: acompanhamento por código da instituição (lado da instituição)
+export type PedidoFila = {
+  acompanhamento_id: string;
+  aluno_nome: string;
+  ver_tarefas: boolean;
+  ver_dificuldade: boolean;
+  ver_notas: boolean;
+  ver_mensagens: boolean;
+  aprovado: boolean;
+};
+export type VinculoInstituicao = {
+  id: string;
+  aluno_nome: string;
+  acompanhante_nome: string;
+  meu: boolean;
+  situacao: string;
+  fim_em: string | null;
+  dias_restantes: number | null;
+  vencido: boolean;
+  aviso: 'trinta' | 'quinze' | 'um' | 'vencido' | null;
+  aviso_pendente: boolean;
+  ver_tarefas: boolean;
+  ver_dificuldade: boolean;
+  ver_notas: boolean;
+  ver_mensagens: boolean;
+};
+
 async function chamar<T>(
   metodo: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   caminho: string,
@@ -523,6 +593,42 @@ export const api = {
   pessoaEntrar: (instituicaoId: string) =>
     chamar<Eu>('POST', '/auth/pessoa/entrar', { instituicao_id: instituicaoId }),
   pessoaLogout: () => chamar<void>('POST', '/auth/pessoa/logout'),
+  // L22a-2: lado do aluno e do representante legal
+  acompanhamentoLista: () => chamar<AcompanhamentoLista>('GET', '/acompanhamento'),
+  acompanhamentoCriar: (d: { email: string; papel: PapelAcompanhante; itens: ItensAcompanhamento }) =>
+    chamar<{ id: string; aguarda_aprovacao: boolean }>('POST', '/acompanhamento', d),
+  acompanhamentoItens: (id: string, itens: ItensAcompanhamento) =>
+    chamar<{ ok: true }>('PATCH', `/acompanhamento/${id}/itens`, itens),
+  acompanhamentoAprovar: (id: string) => chamar<{ ok: true }>('POST', `/acompanhamento/${id}/aprovar`),
+  acompanhamentoEncerrar: (id: string, justificativa: string) =>
+    chamar<{ ok: true }>('POST', `/acompanhamento/${id}/encerrar`, { justificativa }),
+  acompanhamentoRenovar: (id: string) => chamar<{ ok: true }>('POST', `/acompanhamento/${id}/renovar`),
+  acompanhamentoPorCodigo: (d: { codigo: string; itens: ItensAcompanhamento }) =>
+    chamar<{ enviado: true; aguarda_aprovacao: boolean }>('POST', '/acompanhamento/instituicao', d),
+  acompanhamentoProrrogar: (id: string) => chamar<{ ok: true }>('POST', `/acompanhamento/${id}/prorrogar`),
+  // L22a-2b: lado da instituição (Admin e Pedagógico)
+  instCodigo: () => chamar<{ ativo: boolean; tem_codigo: boolean }>('GET', '/acompanhamento-instituicao/codigo'),
+  instCodigoAcao: (acao: 'gerar' | 'ligar' | 'desligar') =>
+    chamar<{ codigo?: string; ativo: boolean }>('POST', '/acompanhamento-instituicao/codigo', { acao }),
+  instFila: () => chamar<{ pedidos: PedidoFila[] }>('GET', '/acompanhamento-instituicao/fila'),
+  instAceitar: (id: string) => chamar<{ ok: true }>('POST', `/acompanhamento-instituicao/fila/${id}/aceitar`),
+  instRecusar: (id: string, justificativa: string) =>
+    chamar<{ ok: true }>('POST', `/acompanhamento-instituicao/fila/${id}/recusar`, { justificativa }),
+  instVinculos: () => chamar<{ vinculos: VinculoInstituicao[] }>('GET', '/acompanhamento-instituicao/vinculos'),
+  instRenovar: (ids: string[]) =>
+    chamar<{ renovados: number }>('POST', '/acompanhamento-instituicao/vinculos/renovar', { ids }),
+  instEncerrar: (id: string, justificativa: string) =>
+    chamar<{ ok: true }>('POST', `/acompanhamento-instituicao/vinculos/${id}/encerrar`, { justificativa }),
+  instAviso: (id: string) => chamar<{ ok: true }>('POST', `/acompanhamento-instituicao/vinculos/${id}/aviso`),
+  instLer: (id: string, item: ItemAcompanhado) =>
+    chamar<{ item: ItemAcompanhado; dados: Record<string, unknown>[] }>('GET', `/acompanhamento-instituicao/vinculos/${id}/${item}`),
+  // L22a-2: lado do acompanhante (a pessoa)
+  pessoaAceitarAcompanhamento: (token: string) =>
+    chamar<{ aceito: true }>('POST', '/auth/pessoa/acompanhamento/aceitar', { token }),
+  pessoaAcompanhando: () => chamar<{ alunos: AlunoAcompanhado[] }>('GET', '/auth/pessoa/acompanhando'),
+  pessoaAcompanhandoAviso: (id: string) => chamar<void>('POST', `/auth/pessoa/acompanhando/${id}/aviso`),
+  pessoaAcompanhandoLer: (id: string, item: ItemAcompanhado) =>
+    chamar<{ item: ItemAcompanhado; dados: Record<string, unknown>[] }>('GET', `/auth/pessoa/acompanhando/${id}/${item}`),
   criarInstituicao: (d: {
     codigo: string;
     instituicao: string;

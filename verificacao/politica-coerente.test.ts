@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   PERFIS_CADASTRAVEIS,
   podeAcompanharAlunos,
+  podeAcompanharPorInstituicao,
+  podeAdministrarAcompanhamento,
   podeAdministrarConta,
   podeAdministrarDificuldade,
   podeAdministrarEscola,
@@ -12,6 +14,8 @@ import {
   podeAtenderAjuda,
   podeAtenderSuporte,
   podeDecidirContaDeMenor,
+  podeGerirCodigoAcompanhamento,
+  podeGerirVinculosInstituicao,
   podeLancarNota,
   podeLerAjuda,
   podeLerAvisoEscolar,
@@ -192,5 +196,54 @@ describe('política da dificuldade e dos cards (20d) x matriz de permissões (v1
         perfil === 'aluno' ? 'proprio' : perfil === 'pedagogico' ? 'instituicao' : null,
       );
     }
+  });
+});
+
+describe('política do acompanhamento (L22a-2) x matriz de permissões (v19)', () => {
+  it.each(PERFIS)('perfil %s: acompanhamento bate com a matriz', (perfil) => {
+    expect(podeAdministrarAcompanhamento(perfil)).toBe(
+      permitido(perfil, 'acompanhamento', 'administrar') !== null,
+    );
+    expect(podeAdministrarAcompanhamento(perfil)).toBe(
+      permitido(perfil, 'acompanhamento', 'ler') !== null,
+    );
+  });
+  it('só o aluno (próprio) e o representante (vínculo) entram; professor, pedagógico e admin não', () => {
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'acompanhamento', 'administrar')).toBe(
+        perfil === 'aluno' ? 'proprio' : perfil === 'responsavel' ? 'vinculo' : null,
+      );
+    }
+  });
+});
+
+describe('política do acompanhamento por código da instituição (L22a-2b) x matriz de permissões (v20)', () => {
+  it.each(PERFIS)('perfil %s: código, vínculos e leitura batem com a matriz', (perfil) => {
+    expect(podeGerirCodigoAcompanhamento(perfil)).toBe(
+      permitido(perfil, 'acompanhamento_codigo', 'administrar') !== null,
+    );
+    expect(podeGerirVinculosInstituicao(perfil)).toBe(
+      permitido(perfil, 'acompanhamento_instituicao', 'administrar') !== null,
+    );
+    expect(podeGerirVinculosInstituicao(perfil)).toBe(
+      permitido(perfil, 'acompanhamento_instituicao', 'ler') !== null,
+    );
+    expect(podeAcompanharPorInstituicao(perfil)).toBe(
+      permitido(perfil, 'acompanhamento_externo', 'administrar') !== null,
+    );
+    expect(podeAcompanharPorInstituicao(perfil)).toBe(
+      permitido(perfil, 'acompanhamento_externo', 'ler') !== null,
+    );
+  });
+  it('só o Admin gera o código; só o Pedagógico lê, no escopo do vínculo; o professor não entra', () => {
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'acompanhamento_codigo', 'administrar')).toBe(
+        perfil === 'admin' ? 'instituicao' : null,
+      );
+      expect(permitido(perfil, 'acompanhamento_externo', 'ler')).toBe(
+        perfil === 'pedagogico' ? 'vinculo' : null,
+      );
+    }
+    expect(permitido('professor', 'acompanhamento_instituicao', 'ler')).toBeNull();
   });
 });

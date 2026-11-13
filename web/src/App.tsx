@@ -6,6 +6,7 @@ import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } 
 import { definirModulos } from './modulos';
 import { Acessibilidade } from './paginas/Acessibilidade';
 import { Acompanhamento } from './paginas/Acompanhamento';
+import { AcompanhamentoInstituicao } from './paginas/AcompanhamentoInstituicao';
 import { Agenda } from './paginas/Agenda';
 import { Ajuda } from './paginas/Ajuda';
 import { Atividades } from './paginas/Atividades';
@@ -25,6 +26,7 @@ import { Notas } from './paginas/Notas';
 import { NotasOficiais } from './paginas/NotasOficiais';
 import { NotasProfessor } from './paginas/NotasProfessor';
 import { Personalizar } from './paginas/Personalizar';
+import { QuemPodeVer } from './paginas/QuemPodeVer';
 import { RegrasNotas } from './paginas/RegrasNotas';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Turmas } from './paginas/Turmas';
@@ -269,6 +271,14 @@ export function App() {
           pagina === 'acompanhamento' &&
           eu.usuario.perfil === 'pedagogico' ? (
           <Acompanhamento />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'acompanhamentoinst' &&
+          ['admin', 'pedagogico'].includes(eu.usuario.perfil) ? (
+          <AcompanhamentoInstituicao perfil={eu.usuario.perfil} />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'acompanhantes' &&
+          ['aluno', 'responsavel'].includes(eu.usuario.perfil) ? (
+          <QuemPodeVer />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'personalizar' ? (

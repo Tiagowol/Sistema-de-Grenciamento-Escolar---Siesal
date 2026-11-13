@@ -250,6 +250,66 @@ export function registrarRotasPessoa(app: FastifyInstance, dep: Dependencias): v
     return res.code(201).send({ criado: true, instituicao_id: r.instituicao_id });
   });
 
+  // ---------- L22a-2: a pessoa como ACOMPANHANTE. Lê por funções do banco, um aluno por vez, só o que as caixas liberam ----------
+  const corpoAceitar = z.strictObject({ token: z.string().min(20).max(200) });
+  const idAcompanhamento = z.strictObject({ id: z.uuid() });
+  const itemLido = z.strictObject({ id: z.uuid(), item: z.enum(['tarefas', 'dificuldade', 'notas', 'mensagens']) });
+
+  app.post('/auth/pessoa/acompanhamento/aceitar', async (req, res) => {
+    const s = await sessaoDaPessoa(req);
+    if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    if (!dep.limitar(req, res)) return res;
+    const corpo = corpoAceitar.safeParse(req.body);
+    const [r] = corpo.success
+      ? await dep.banco.$queryRaw<{ r: string }[]>`
+          SELECT acompanhamento_aceitar(${s.pessoaId}::uuid, ${hashToken(corpo.data.token)}) AS r`
+      : [{ r: 'invalido' }];
+    if (r?.r === 'papel')
+      return res.code(409).send({ erro: 'O seu cadastro é de outro tipo de profissional. Use o cadastro certo com o e-mail do convite.' });
+    if (r?.r !== 'ok') return res.code(400).send({ erro: 'Este link não vale mais, ou não é para o e-mail desta conta.' });
+    return { aceito: true };
+  });
+
+  // Quem esta pessoa acompanha. Só o nome do aluno e o que foi liberado; nenhum dado do aluno.
+  app.get('/auth/pessoa/acompanhando', async (req, res) => {
+    const s = await sessaoDaPessoa(req);
+    if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    const lista = await dep.banco.$queryRaw<Record<string, unknown>[]>`SELECT * FROM acompanhando_listar(${s.pessoaId}::uuid)`;
+    return { alunos: lista };
+  });
+
+  app.post('/auth/pessoa/acompanhando/:id/aviso', async (req, res) => {
+    const s = await sessaoDaPessoa(req);
+    if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    const p = idAcompanhamento.safeParse(req.params);
+    if (!p.success) return res.code(400).send({ erro: 'Dados inválidos.' });
+    const [r] = await dep.banco.$queryRaw<{ ok: boolean }[]>`
+      SELECT acompanhando_aviso_visto(${s.pessoaId}::uuid, ${p.data.id}::uuid) AS ok`;
+    return r?.ok ? res.code(204).send() : res.code(404).send({ erro: 'Não encontrado.' });
+  });
+
+  // Leitura de UM item de UM aluno. Sem lista com valores de vários alunos, sem média, sem ordem, sem comparação.
+  app.get('/auth/pessoa/acompanhando/:id/:item', async (req, res) => {
+    const s = await sessaoDaPessoa(req);
+    if (!s) return res.code(401).send({ erro: 'Sessão inválida ou vencida.' });
+    const p = itemLido.safeParse(req.params);
+    if (!p.success) return res.code(400).send({ erro: 'Dados inválidos.' });
+    const [r] = await dep.banco.$queryRaw<{ instituicao_id: string; dados: unknown }[]>`
+      SELECT * FROM acompanhando_ler(${s.pessoaId}::uuid, ${p.data.id}::uuid, ${p.data.item})`;
+    if (!r) return res.code(403).send({ erro: 'Você não tem acesso a este item.' });
+    // Cada leitura fica na auditoria do espaço do aluno, sem o valor lido
+    await withTenant(dep.banco, { instituicaoId: r.instituicao_id }, (tx) =>
+      registrarAuditoria(tx, {
+        instituicaoId: r.instituicao_id,
+        ator: `pessoa:${s.pessoaId}`,
+        acao: 'acompanhamento.leitura',
+        alvo: `acompanhamento:${p.data.id}`,
+        depois: { item: p.data.item },
+      }),
+    );
+    return { item: p.data.item, dados: r.dados };
+  });
+
   app.post('/auth/pessoa/logout', async (req, res) => {
     const s = await sessaoDaPessoa(req);
     if (s) await dep.banco.$executeRaw`SELECT pessoa_sessao_encerrar(${s.hash})`;

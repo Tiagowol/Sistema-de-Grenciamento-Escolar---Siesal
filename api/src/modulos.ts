@@ -47,6 +47,7 @@ const PREFIXOS_DO_ESPACO_INDIVIDUAL = [
   '/meu-dia',
   '/notificacoes',
   '/conta',
+  '/acompanhamento', // L22a-2: quem pode ver os dados do aluno (só existe no espaço individual)
 ];
 export function rotaDoEspacoIndividual(url: string): boolean {
   const caminho = url.split('?')[0] ?? '';

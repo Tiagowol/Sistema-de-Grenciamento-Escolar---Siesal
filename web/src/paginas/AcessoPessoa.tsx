@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api, ErroApi, type Eu, type PessoaEu } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { AlunosAcompanhados } from './AlunosAcompanhados';
 
 // L22a-1b: acesso de professor e pedagogo SEM instituição (/pessoa). Três etapas: cadastro, entrada e escolha de espaço.
 // Texto literal, sem pressão. Quem ainda não tem espaço vê uma explicação e nada escolar.
@@ -222,6 +223,7 @@ export function AcessoPessoa({ aoEntrar }: { aoEntrar: (eu: Eu) => void }) {
               ))}
             </ul>
           )}
+          <AlunosAcompanhados />
           {eu.representante ? (
             <section className="stack" aria-label="Aluno menor">
               <h2 style={{ fontSize: 18 }}>Aluno menor de idade</h2>

@@ -27,7 +27,9 @@ export type Pagina =
   | 'regrasnotas'
   | 'identidade'
   | 'cartoes'
-  | 'acompanhamento';
+  | 'acompanhamento'
+  | 'acompanhantes'
+  | 'acompanhamentoinst';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -44,6 +46,7 @@ type Item = {
   so?: string[];
   palavras?: string[];
   modulo?: Modulo; // L20: some do menu quando o Master desliga o módulo nesta escola
+  soIndividual?: boolean; // L22a-2: só existe no espaço individual do aluno
   soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
   moduloNaEscola?: Modulo; // 20d: some se o Master desligar o módulo na escola; no espaço individual fica sempre
 };
@@ -138,6 +141,22 @@ const ITENS: Item[] = [
     so: ['pedagogico'],
     soEscola: true,
     palavras: ['dificuldade', 'nota de dificuldade', 'napne', 'aluno', 'apoio', 'ajudar'],
+  },
+  {
+    id: 'acompanhantes',
+    rotulo: 'Quem pode ver meus dados',
+    icone: 'users',
+    so: ['aluno', 'responsavel'],
+    soIndividual: true,
+    palavras: ['privacidade', 'convidar', 'professor', 'pedagogo', 'acompanhar', 'compartilhar', 'encerrar'],
+  },
+  {
+    id: 'acompanhamentoinst',
+    rotulo: 'Pedidos de acompanhamento',
+    icone: 'users',
+    so: ['admin', 'pedagogico'],
+    soEscola: true,
+    palavras: ['codigo', 'fila', 'aluno', 'acompanhar', 'pedidos', 'renovar', 'encerrar', 'vinculos'],
   },
   {
     id: 'notasprof',
@@ -272,7 +291,8 @@ export function Shell({
       (!i.so || i.so.includes(eu.usuario.perfil)) &&
       ligado(i.modulo) &&
       ligadoNaEscola(i.moduloNaEscola) &&
-      !(individual && i.soEscola),
+      !(individual && i.soEscola) &&
+      !(!individual && i.soIndividual),
   );
   const atual = itens.find((i) => i.id === pagina);
   const achados = buscarNoMenu(itens, busca, 'acessibilidade');

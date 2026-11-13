@@ -90,3 +90,16 @@ export const podeLerDificuldade = (perfil: string): boolean =>
 export const podeUsarCartoes = (perfil: string): boolean => perfil === 'aluno';
 // Visão da equipe: só o Pedagógico/NAPNE lê a dificuldade de um aluno (escopo da instituição na matriz).
 export const podeAcompanharAlunos = (perfil: string): boolean => perfil === 'pedagogico';
+
+// Acompanhamento (L22a-2, matriz v19): quem libera ou encerra o acesso de professor, pedagógico e representante indicado
+// aos dados do aluno. O aluno (no próprio espaço) e o representante legal (vínculo com o aluno). Quem é acompanhado entra
+// pela pessoa, fora desta matriz: lê por funções do banco, um aluno por vez.
+export const podeAdministrarAcompanhamento = (perfil: string): boolean =>
+  perfil === 'aluno' || perfil === 'responsavel';
+
+// Acompanhamento por código da instituição (L22a-2b, matriz v20). O Admin liga e gera o código; o Pedagógico aceita o pedido e lê
+// (só o que o aluno liberou, um aluno por vez); Admin e Pedagógico encerram e renovam os vínculos da instituição.
+export const podeGerirCodigoAcompanhamento = (perfil: string): boolean => perfil === 'admin';
+export const podeGerirVinculosInstituicao = (perfil: string): boolean =>
+  perfil === 'admin' || perfil === 'pedagogico';
+export const podeAcompanharPorInstituicao = (perfil: string): boolean => perfil === 'pedagogico';

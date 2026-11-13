@@ -6,8 +6,9 @@ import { Campo } from '../componentes/Campo';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { paraTexto } from '../datas';
 import { lerCodigoDoLink } from '../linkCadastro';
-import { CadastroInstituicao } from './CadastroInstituicao';
+import { AceitarAcompanhamento } from './AceitarAcompanhamento';
 import { AcessoPessoa } from './AcessoPessoa';
+import { CadastroInstituicao } from './CadastroInstituicao';
 import { ConfirmarEmail } from './ConfirmarEmail';
 import { ConfirmarResponsavel } from './ConfirmarResponsavel';
 
@@ -34,6 +35,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   const [dosLinkResponsavel] = useState(() => lerCodigoDoLink('/confirmar/responsavel'));
   // L22a-1b: link do e-mail do cadastro próprio (/confirmar/email#LINK) e a página /pessoa
   const [dosLinkEmail] = useState(() => lerCodigoDoLink('/confirmar/email'));
+  // L22a-2: link do convite de acompanhamento (/acompanhar#LINK)
+  const [dosLinkAcompanhar] = useState(() => lerCodigoDoLink('/acompanhar'));
   const [paginaPessoa] = useState(() => window.location.pathname.replace(/\/+$/, '') === '/pessoa');
   const [modo, setModo] = useState<'instituicao' | 'individual'>(
     dosLink ? 'individual' : 'instituicao',
@@ -134,6 +137,7 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
     return <CadastroInstituicao codigoInicial={dosLinkInstituicao} aoEntrar={aoEntrar} />;
   if (dosLinkResponsavel !== null) return <ConfirmarResponsavel token={dosLinkResponsavel} />;
   if (dosLinkEmail !== null) return <ConfirmarEmail token={dosLinkEmail} />;
+  if (dosLinkAcompanhar !== null) return <AceitarAcompanhamento token={dosLinkAcompanhar} />;
   if (paginaPessoa) return <AcessoPessoa aoEntrar={aoEntrar} />;
   if (aguardando)
     return (
