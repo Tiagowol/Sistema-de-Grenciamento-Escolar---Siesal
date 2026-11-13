@@ -483,3 +483,15 @@ Mensagem do autor em chat, em 13/11/2026: "Aprovo", sobre `docs/PROPOSTA-L22B.md
 - **Estado: Planejado, aprovado para implementar.** Nenhum código nem migração feito até este registro.
 - **Ritmo (Adendo 4):** hoje (13/11) já houve 3 lotes grandes; início do código em 14/11 ou depois, **salvo o autor mandar começar hoje** (como na A-093).
 - Seguem separadas, cada uma com autorização própria: backup e aplicação da 0031 no site, commit de código, merge e deploy.
+
+## A-099 — Início do código do L22b hoje (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "Começar hoje", respondendo à pergunta sobre o ritmo do Adendo 4 (4º lote grande no mesmo dia; o autor decidiu, como na A-093). Código do L22b sob a A-098. Seguem separadas: backup e aplicação da 0031 no site, commit de código, merge e deploy.
+
+## A-100 — L22b implementado (13/11/2026)
+Sob a A-098 e a A-099. **Estado: Implementado**, **não aplicado no site**, **código sem commit**.
+- **Item 1 (árvore):** 3 rotas só GET em `/operacao/arvore/*` (escola, espaços individuais, sem vínculo); migração `0031_arvore_master.sql` (só 3 funções de leitura, `EXECUTE` só para `siesal_ops`); devolvem só nome, e-mail, área, situação e menor/maior (Q1 = B, A-097); cada abertura vai para a trilha do Master sem os nomes lidos; matriz v22 (`arvore_master`, só `ler`, só `master`).
+- **Item 2 (menu):** menu "Áreas da gestão" no console do Master (Instituições; Administradores, Professores, Pedagógicos e NAPNE, Alunos, Responsáveis, Usuários sem vínculo); a página de Instituições não mudou.
+- **Item 3 (ambiente):** faixa em todas as telas (texto + ícone + cor); `SIESAL_AMBIENTE` (padrão "teste", só `producao` vale produção); `/config` devolve `ambiente`; entra em `compose.yaml` e `.env.example`.
+- **Verificação por máquina:** integração 381 de 381 (11 novos, incluindo `arvore.integracao.test.ts` e o `/config`); 1268 testes de unidade e tela (axe sem violação nas telas novas); tipos ok; lint dos 13 arquivos do lote ok. O lint do repositório inteiro não foi refeito.
+- **Não feito:** aplicar a 0031 e reconstruir o site (precisa de backup e autorização); conferência no navegador (360/768/1280 px); checagem humana; as conferências herdadas do L22a-3 ("Meu aluno", "Pedidos de acompanhamento") dependem do site rebuilt; o erro de formatação em `pessoa-rotas.ts` não foi tratado (arquivo fora deste lote); "Sair" só aparece na página Instituições do console.
+- **Retorno:** `docs/RETORNO-0031.md`.
