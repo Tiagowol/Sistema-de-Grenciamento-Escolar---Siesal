@@ -434,3 +434,8 @@ Mensagem do autor em chat, em 13/11/2026, 19:28 (fechamento da sessão; sem cód
 - **Decisão:** a seção "Aluno menor de idade" (criar conta de aluno menor) deve aparecer **só para quem se cadastrou como representante legal**, e não para qualquer adulto com conta. Isso **muda o que o guia de testes (T6) descrevia como esperado** (T6 dizia que a seção aparece para toda pessoa com conta, regra Q1). **Não implementado agora:** vira **item de escopo do próximo lote (L22a-3)**, que será proposto em chat novo. Hoje a seção ainda aparece para qualquer adulto com conta (conferido em 13/11).
 - **Pendência aberta (sem prazo):** a tela "Pedidos de acompanhamento" (Admin e Pedagógico) **ainda não foi vista no navegador** (exige Admin com segundo fator e um Pedagógico de teste). Coberta só por testes de tela e de integração.
 - **Continuam pendentes, por conta do autor, fora desta sessão:** T1 a T4 do guia e a checagem humana.
+
+## A-091 — Resposta à Q1 da proposta do L22a-3 (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "Sim (A)", respondendo à Q1 de `docs/PROPOSTA-L22A-3.md`: aos 18 anos do aluno, o representante legal (e o indicado) passa a ver **só as caixas liberadas pelo aluno**; aluno menor: o representante legal vê tudo, só leitura.
+- **Não é o "aprovo" da proposta.** O L22a-3 segue **Planejado**: sem código, sem migração. Falta o "aprovo" explícito.
+- **Ritmo (Adendo 4):** hoje já houve lote grande; código só a partir de 14/11.
