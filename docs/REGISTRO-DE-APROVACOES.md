@@ -439,3 +439,9 @@ Mensagem do autor em chat, em 13/11/2026, 19:28 (fechamento da sessão; sem cód
 Mensagem do autor em chat, em 13/11/2026: "Sim (A)", respondendo à Q1 de `docs/PROPOSTA-L22A-3.md`: aos 18 anos do aluno, o representante legal (e o indicado) passa a ver **só as caixas liberadas pelo aluno**; aluno menor: o representante legal vê tudo, só leitura.
 - **Não é o "aprovo" da proposta.** O L22a-3 segue **Planejado**: sem código, sem migração. Falta o "aprovo" explícito.
 - **Ritmo (Adendo 4):** hoje já houve lote grande; código só a partir de 14/11.
+
+## A-092 — "Aprovo" da proposta do L22a-3 (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "aprovo", sobre `docs/PROPOSTA-L22A-3.md` (3 itens, migração 0030, matriz v21, Q1 = A conforme A-091).
+- **Estado: Planejado, aprovado para implementar.** Nenhum código nem migração feito até este registro.
+- **Ritmo (Adendo 4):** hoje (13/11) já houve lote grande; início do código em 14/11 ou depois, salvo o autor mandar começar hoje.
+- Seguem separadas: aplicar no site (com backup antes da 0030), commit de código, merge e deploy.
