@@ -3,6 +3,7 @@ import { type AlunoAcompanhado, api, ErroApi, type ItemAcompanhado } from '../ap
 import { Aviso } from '../componentes/Aviso';
 import { Vazio } from '../componentes/Basicos';
 import { useCarregar } from '../componentes/useCarregar';
+import { paraTexto, relativo } from '../datas';
 
 // L22a-2: o que a pessoa acompanha. Um aluno por vez, um item por vez, só o que foi liberado.
 // Não há lista com valores de vários alunos, média, ordem por dificuldade nem comparação. Não é diagnóstico.
@@ -13,6 +14,11 @@ const ITENS: { item: ItemAcompanhado; rotulo: string; campo: keyof AlunoAcompanh
   { item: 'mensagens', rotulo: 'Mensagens', campo: 'ver_mensagens' },
 ];
 const texto = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+// Prazo em palavra e data (hoje, amanhã, em 3 dias), nunca só o número
+const prazo = (v: unknown) =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
+    ? `${relativo(v.slice(0, 10), paraTexto(new Date()))} (${v.slice(8, 10)}/${v.slice(5, 7)})`
+    : '—';
 const dia = (v: unknown) =>
   typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
     ? `${v.slice(8, 10)}/${v.slice(5, 7)}`
@@ -27,8 +33,9 @@ function Linhas({ item, dados }: { item: ItemAcompanhado; dados: Record<string, 
         <li key={i} className="card small">
           {item === 'tarefas' ? (
             <>
-              <strong>{texto(d.titulo)}</strong> — {texto(d.disciplina)}. Prazo: {dia(d.prazo)}.
-              Situação: {texto(d.situacao)}.
+              <strong>{texto(d.titulo)}</strong>
+              {d.disciplina ? ` — ${String(d.disciplina)}` : ''}. Prazo: {prazo(d.prazo)}. Situação:{' '}
+              {texto(d.situacao)}.
             </>
           ) : null}
           {item === 'dificuldade' ? (

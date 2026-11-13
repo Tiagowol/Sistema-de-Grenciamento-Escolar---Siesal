@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { paraTexto } from './datas';
 import { AcompanhamentoInstituicao } from './paginas/AcompanhamentoInstituicao';
 import { QuemPodeVer } from './paginas/QuemPodeVer';
 
@@ -105,7 +106,7 @@ describe('Pedagógico: fila e alunos acompanhados', () => {
           {
             titulo: 'Trabalho de ciências',
             disciplina: 'Ciências',
-            prazo: '2026-11-20',
+            prazo: paraTexto(new Date()),
             situacao: 'pendente',
           },
         ],
@@ -120,6 +121,8 @@ describe('Pedagógico: fila e alunos acompanhados', () => {
     expect(screen.getByText(/Quem controla o acesso é o aluno/)).toBeTruthy();
     await u.click(screen.getByRole('button', { name: 'Tarefas e plano' }));
     expect(await screen.findByText('Trabalho de ciências')).toBeTruthy();
+    // prazo em palavra e data, não só número
+    expect(screen.getByText(/Prazo: hoje \(\d{2}\/\d{2}\)/)).toBeTruthy();
     await u.click(screen.getByRole('button', { name: 'Li o aviso' }));
     await waitFor(() =>
       expect(f.mock.calls.some((c) => String(c[0]).endsWith('/vinculos/v1/aviso'))).toBe(true),

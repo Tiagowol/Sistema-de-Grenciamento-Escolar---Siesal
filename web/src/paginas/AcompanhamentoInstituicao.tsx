@@ -11,6 +11,7 @@ import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
 import { useCarregar } from '../componentes/useCarregar';
+import { paraTexto, relativo } from '../datas';
 
 // L22a-2b: acompanhamento por código da instituição (Admin e Pedagógico). Texto literal, sem pressão.
 // A fila mostra só o nome do aluno e as caixas pedidas. Leitura: um aluno e um item por vez, só o que o aluno liberou.
@@ -31,6 +32,11 @@ const AVISO: Record<string, string> = {
   vencido: 'Venceu. O Pedagógico não vê nada até renovar.',
 };
 const texto = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
+// Prazo em palavra e data (hoje, amanhã, em 3 dias), nunca só o número
+const prazo = (v: unknown) =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
+    ? `${relativo(v.slice(0, 10), paraTexto(new Date()))} (${v.slice(8, 10)}/${v.slice(5, 7)})`
+    : '—';
 const dia = (v: unknown) =>
   typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
     ? `${v.slice(8, 10)}/${v.slice(5, 7)}`
@@ -278,8 +284,9 @@ function Leitura({ item, dados }: { item: ItemAcompanhado; dados: Record<string,
         <li key={i} className="card small">
           {item === 'tarefas' ? (
             <>
-              <strong>{texto(d.titulo)}</strong> — {texto(d.disciplina)}. Prazo: {dia(d.prazo)}.
-              Situação: {texto(d.situacao)}.
+              <strong>{texto(d.titulo)}</strong>
+              {d.disciplina ? ` — ${String(d.disciplina)}` : ''}. Prazo: {prazo(d.prazo)}. Situação:{' '}
+              {texto(d.situacao)}.
             </>
           ) : null}
           {item === 'dificuldade' ? (
