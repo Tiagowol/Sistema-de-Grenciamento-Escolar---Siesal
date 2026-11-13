@@ -27,7 +27,7 @@ type Saida = { codigo: number; corpo?: unknown };
 const idParam = z.strictObject({ id: z.uuid() });
 const itemParam = z.strictObject({
   id: z.uuid(),
-  item: z.enum(['tarefas', 'dificuldade', 'notas', 'mensagens']),
+  item: z.enum(['tarefas', 'agenda', 'disciplinas', 'dificuldade', 'notas', 'mensagens']),
 });
 const corpoCodigo = z.strictObject({ acao: z.enum(['gerar', 'ligar', 'desligar']) });
 const justificativa = z

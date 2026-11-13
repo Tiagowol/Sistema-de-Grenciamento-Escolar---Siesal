@@ -376,3 +376,14 @@ describe('matriz v12 (L20: painel Master real)', () => {
       expect(permitido(perfil, 'instituicoes', 'criar_suspender')).toBeNull();
   });
 });
+
+describe('matriz v21 (L22a-3: representante vê tudo, só leitura)', () => {
+  it('o recurso "representado" só tem leitura, do responsável, no escopo do vínculo', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(21);
+    expect(Object.keys(MATRIZ.recursos.representado ?? {})).toEqual(['ler']);
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'representado', 'ler'), perfil).toBe(
+        perfil === 'responsavel' ? 'vinculo' : null,
+      );
+  });
+});

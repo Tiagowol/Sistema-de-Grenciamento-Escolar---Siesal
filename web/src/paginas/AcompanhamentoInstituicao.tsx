@@ -10,8 +10,8 @@ import {
 import { Aviso } from '../componentes/Aviso';
 import { Titulo, Vazio } from '../componentes/Basicos';
 import { Campo } from '../componentes/Campo';
+import { LeituraAluno } from '../componentes/LeituraAluno';
 import { useCarregar } from '../componentes/useCarregar';
-import { paraTexto, relativo } from '../datas';
 
 // L22a-2b: acompanhamento por código da instituição (Admin e Pedagógico). Texto literal, sem pressão.
 // A fila mostra só o nome do aluno e as caixas pedidas. Leitura: um aluno e um item por vez, só o que o aluno liberou.
@@ -20,10 +20,21 @@ const CAIXAS: {
   item: ItemAcompanhado;
   rotulo: string;
 }[] = [
-  { campo: 'ver_tarefas', item: 'tarefas', rotulo: 'Tarefas e plano' },
+  { campo: 'ver_tarefas', item: 'tarefas', rotulo: 'Tarefas, plano e agenda' },
   { campo: 'ver_dificuldade', item: 'dificuldade', rotulo: 'Nível de dificuldade' },
   { campo: 'ver_notas', item: 'notas', rotulo: 'Notas' },
   { campo: 'ver_mensagens', item: 'mensagens', rotulo: 'Mensagens' },
+];
+// Botões de leitura: Agenda e Disciplinas seguem a caixa "Tarefas, plano e agenda" (L22a-3)
+const LEITURAS: {
+  campo: (typeof CAIXAS)[number]['campo'];
+  item: ItemAcompanhado;
+  rotulo: string;
+}[] = [
+  { campo: 'ver_tarefas', item: 'tarefas', rotulo: 'Tarefas e plano' },
+  { campo: 'ver_tarefas', item: 'agenda', rotulo: 'Agenda' },
+  { campo: 'ver_tarefas', item: 'disciplinas', rotulo: 'Disciplinas' },
+  ...CAIXAS.filter((c) => c.campo !== 'ver_tarefas'),
 ];
 const AVISO: Record<string, string> = {
   trinta: 'Falta cerca de 1 mês para vencer.',
@@ -31,16 +42,6 @@ const AVISO: Record<string, string> = {
   um: 'Vence amanhã ou hoje.',
   vencido: 'Venceu. O Pedagógico não vê nada até renovar.',
 };
-const texto = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
-// Prazo em palavra e data (hoje, amanhã, em 3 dias), nunca só o número
-const prazo = (v: unknown) =>
-  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
-    ? `${relativo(v.slice(0, 10), paraTexto(new Date()))} (${v.slice(8, 10)}/${v.slice(5, 7)})`
-    : '—';
-const dia = (v: unknown) =>
-  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
-    ? `${v.slice(8, 10)}/${v.slice(5, 7)}`
-    : texto(v);
 const listaDeCaixas = (c: Record<string, boolean>) =>
   CAIXAS.filter((i) => c[i.campo])
     .map((i) => i.rotulo)
@@ -275,44 +276,6 @@ function FilaDoPedagogico({ aoMudar }: { aoMudar: () => void }) {
   );
 }
 
-function Leitura({ item, dados }: { item: ItemAcompanhado; dados: Record<string, unknown>[] }) {
-  if (dados.length === 0) return <Vazio>Nada para mostrar neste item.</Vazio>;
-  return (
-    <ul className="stack" style={{ padding: 0, listStyle: 'none' }}>
-      {dados.map((d, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: lista só de leitura, sem identificador
-        <li key={i} className="card small">
-          {item === 'tarefas' ? (
-            <>
-              <strong>{texto(d.titulo)}</strong>
-              {d.disciplina ? ` — ${String(d.disciplina)}` : ''}. Prazo: {prazo(d.prazo)}. Situação:{' '}
-              {texto(d.situacao)}.
-            </>
-          ) : null}
-          {item === 'dificuldade' ? (
-            <>
-              <strong>{texto(d.nome)}</strong> ({d.origem === 'tarefa' ? 'tarefa' : 'disciplina'}):
-              nível {texto(d.dificuldade)} de 10. É a percepção do aluno.
-            </>
-          ) : null}
-          {item === 'notas' ? (
-            <>
-              <strong>{texto(d.disciplina)}</strong>: {texto(d.valor)} em {dia(d.dia)}.{' '}
-              {texto(d.descricao) === '—' ? '' : texto(d.descricao)}
-            </>
-          ) : null}
-          {item === 'mensagens' ? (
-            <>
-              Pedido de ajuda ({texto(d.motivo)}), {dia(d.criado_em)}: {texto(d.texto)}
-              {d.resposta ? <> Resposta: {texto(d.resposta)}</> : null}
-            </>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function Vinculos({ ehAdmin, ehPedagogico }: { ehAdmin: boolean; ehPedagogico: boolean }) {
   const { dados, erro, recarregar } = useCarregar(api.instVinculos);
   const [marcados, setMarcados] = useState<string[]>([]);
@@ -401,7 +364,7 @@ function Vinculos({ ehAdmin, ehPedagogico }: { ehAdmin: boolean; ehPedagogico: b
                 ) : null}
                 {ehPedagogico && v.meu && v.situacao === 'ativo' && !v.vencido ? (
                   <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-                    {CAIXAS.filter((i) => v[i.campo]).map((i) => (
+                    {LEITURAS.filter((i) => v[i.campo]).map((i) => (
                       <button
                         key={i.item}
                         type="button"
@@ -415,7 +378,7 @@ function Vinculos({ ehAdmin, ehPedagogico }: { ehAdmin: boolean; ehPedagogico: b
                   </div>
                 ) : null}
                 {aberto && aberto.id === v.id ? (
-                  <Leitura item={aberto.item} dados={aberto.dados} />
+                  <LeituraAluno item={aberto.item} dados={aberto.dados} />
                 ) : null}
                 {encerrando === v.id ? (
                   <Motivo

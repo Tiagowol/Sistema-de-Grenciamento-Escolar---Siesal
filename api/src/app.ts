@@ -1,6 +1,7 @@
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { registrarAcompanhamentoInstituicao } from './acompanhamento/instituicao.js';
+import { registrarRepresentado } from './acompanhamento/representado.js';
 import { registrarAcompanhamento } from './acompanhamento/rotas.js';
 import { registrarAjuda } from './ajuda/rotas.js';
 import { registrarApoio } from './apoio/rotas.js';
@@ -439,6 +440,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     linkBase: opcoes.linkBase,
   });
   registrarAcompanhamentoInstituicao(app, { banco: opcoes.banco, exigirSessao });
+  registrarRepresentado(app, { banco: opcoes.banco, exigirSessao });
   registrarEscola(app, { banco: opcoes.banco, exigirSessao });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)

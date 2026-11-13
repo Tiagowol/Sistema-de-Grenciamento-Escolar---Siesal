@@ -80,7 +80,7 @@ describe('Pedagógico: fila e alunos acompanhados', () => {
     const { container } = render(<AcompanhamentoInstituicao perfil="pedagogico" />);
     expect(await screen.findByText('Aluno Pedinte')).toBeTruthy();
     expect(
-      screen.getByText(/Pediu para liberar: Tarefas e plano, Nível de dificuldade/),
+      screen.getByText(/Pediu para liberar: Tarefas, plano e agenda, Nível de dificuldade/),
     ).toBeTruthy();
     expect(screen.getByText(/representante legal ainda precisa aprovar/)).toBeTruthy();
     expect(screen.queryByText('Código da instituição')).toBeNull(); // o código é do Admin

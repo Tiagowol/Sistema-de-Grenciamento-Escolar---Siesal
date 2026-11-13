@@ -103,3 +103,6 @@ export const podeGerirCodigoAcompanhamento = (perfil: string): boolean => perfil
 export const podeGerirVinculosInstituicao = (perfil: string): boolean =>
   perfil === 'admin' || perfil === 'pedagogico';
 export const podeAcompanharPorInstituicao = (perfil: string): boolean => perfil === 'pedagogico';
+
+// "Meu aluno" (L22a-3, matriz v21): o representante legal lê tudo do aluno menor, só leitura. O vínculo legal é conferido no banco.
+export const podeVerComoRepresentante = (perfil: string): boolean => perfil === 'responsavel';

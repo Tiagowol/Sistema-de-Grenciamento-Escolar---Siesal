@@ -33,6 +33,7 @@ import {
   podeUsarCartoes,
   podeUsarNucleo,
   podeUsarTiposAtividade,
+  podeVerComoRepresentante,
   podeVerHistoricoNotas,
 } from '../api/src/auth/politica.js';
 import { PERFIS } from '../shared/src/perfis.js';
@@ -245,5 +246,20 @@ describe('política do acompanhamento por código da instituição (L22a-2b) x m
       );
     }
     expect(permitido('professor', 'acompanhamento_instituicao', 'ler')).toBeNull();
+  });
+});
+
+describe('política "Meu aluno" (L22a-3) x matriz de permissões (v21)', () => {
+  it('só o representante (responsável) lê, no escopo do vínculo; nenhum perfil escreve', () => {
+    for (const perfil of PERFIS) {
+      expect(podeVerComoRepresentante(perfil), perfil).toBe(
+        permitido(perfil, 'representado', 'ler') !== null,
+      );
+      expect(permitido(perfil, 'representado', 'ler'), perfil).toBe(
+        perfil === 'responsavel' ? 'vinculo' : null,
+      );
+      for (const acao of ['administrar', 'escrever', 'criar', 'alterar', 'apagar'])
+        expect(permitido(perfil, 'representado', acao), `${perfil}/${acao}`).toBeNull();
+    }
   });
 });

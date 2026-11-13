@@ -29,7 +29,8 @@ export type Pagina =
   | 'cartoes'
   | 'acompanhamento'
   | 'acompanhantes'
-  | 'acompanhamentoinst';
+  | 'acompanhamentoinst'
+  | 'meualuno';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -143,12 +144,38 @@ const ITENS: Item[] = [
     palavras: ['dificuldade', 'nota de dificuldade', 'napne', 'aluno', 'apoio', 'ajudar'],
   },
   {
+    id: 'meualuno',
+    rotulo: 'Meu aluno',
+    icone: 'users',
+    so: ['responsavel'],
+    soIndividual: true,
+    palavras: [
+      'filho',
+      'filha',
+      'tarefas',
+      'notas',
+      'agenda',
+      'mensagens',
+      'disciplinas',
+      'ver',
+      'ler',
+    ],
+  },
+  {
     id: 'acompanhantes',
     rotulo: 'Quem pode ver meus dados',
     icone: 'users',
     so: ['aluno', 'responsavel'],
     soIndividual: true,
-    palavras: ['privacidade', 'convidar', 'professor', 'pedagogo', 'acompanhar', 'compartilhar', 'encerrar'],
+    palavras: [
+      'privacidade',
+      'convidar',
+      'professor',
+      'pedagogo',
+      'acompanhar',
+      'compartilhar',
+      'encerrar',
+    ],
   },
   {
     id: 'acompanhamentoinst',
@@ -156,7 +183,16 @@ const ITENS: Item[] = [
     icone: 'users',
     so: ['admin', 'pedagogico'],
     soEscola: true,
-    palavras: ['codigo', 'fila', 'aluno', 'acompanhar', 'pedidos', 'renovar', 'encerrar', 'vinculos'],
+    palavras: [
+      'codigo',
+      'fila',
+      'aluno',
+      'acompanhar',
+      'pedidos',
+      'renovar',
+      'encerrar',
+      'vinculos',
+    ],
   },
   {
     id: 'notasprof',

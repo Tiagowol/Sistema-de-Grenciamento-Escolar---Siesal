@@ -21,6 +21,7 @@ import { Foco } from './paginas/Foco';
 import { IdentidadeEscola } from './paginas/IdentidadeEscola';
 import { Inicio } from './paginas/Inicio';
 import { Login } from './paginas/Login';
+import { MeuAluno } from './paginas/MeuAluno';
 import { MeuDia } from './paginas/MeuDia';
 import { Notas } from './paginas/Notas';
 import { NotasOficiais } from './paginas/NotasOficiais';
@@ -279,6 +280,10 @@ export function App() {
           pagina === 'acompanhantes' &&
           ['aluno', 'responsavel'].includes(eu.usuario.perfil) ? (
           <QuemPodeVer />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'meualuno' &&
+          eu.usuario.perfil === 'responsavel' ? (
+          <MeuAluno />
         ) : ehAluno && pagina === 'agenda' ? (
           <Agenda />
         ) : ehAluno && pagina === 'personalizar' ? (

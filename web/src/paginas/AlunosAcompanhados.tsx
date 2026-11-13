@@ -1,66 +1,20 @@
 import { useState } from 'react';
 import { type AlunoAcompanhado, api, ErroApi, type ItemAcompanhado } from '../api';
 import { Aviso } from '../componentes/Aviso';
-import { Vazio } from '../componentes/Basicos';
+import { LeituraAluno } from '../componentes/LeituraAluno';
 import { useCarregar } from '../componentes/useCarregar';
-import { paraTexto, relativo } from '../datas';
 
 // L22a-2: o que a pessoa acompanha. Um aluno por vez, um item por vez, só o que foi liberado.
 // Não há lista com valores de vários alunos, média, ordem por dificuldade nem comparação. Não é diagnóstico.
+// L22a-3: Agenda e Disciplinas seguem a caixa "Tarefas e plano".
 const ITENS: { item: ItemAcompanhado; rotulo: string; campo: keyof AlunoAcompanhado }[] = [
   { item: 'tarefas', rotulo: 'Tarefas e plano', campo: 'ver_tarefas' },
+  { item: 'agenda', rotulo: 'Agenda', campo: 'ver_tarefas' },
+  { item: 'disciplinas', rotulo: 'Disciplinas', campo: 'ver_tarefas' },
   { item: 'dificuldade', rotulo: 'Nível de dificuldade', campo: 'ver_dificuldade' },
   { item: 'notas', rotulo: 'Notas', campo: 'ver_notas' },
   { item: 'mensagens', rotulo: 'Mensagens', campo: 'ver_mensagens' },
 ];
-const texto = (v: unknown) => (v === null || v === undefined || v === '' ? '—' : String(v));
-// Prazo em palavra e data (hoje, amanhã, em 3 dias), nunca só o número
-const prazo = (v: unknown) =>
-  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
-    ? `${relativo(v.slice(0, 10), paraTexto(new Date()))} (${v.slice(8, 10)}/${v.slice(5, 7)})`
-    : '—';
-const dia = (v: unknown) =>
-  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
-    ? `${v.slice(8, 10)}/${v.slice(5, 7)}`
-    : texto(v);
-
-function Linhas({ item, dados }: { item: ItemAcompanhado; dados: Record<string, unknown>[] }) {
-  if (dados.length === 0) return <Vazio>Nada para mostrar neste item.</Vazio>;
-  return (
-    <ul className="stack" style={{ padding: 0, listStyle: 'none' }}>
-      {dados.map((d, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: lista só de leitura, sem identificador
-        <li key={i} className="card small">
-          {item === 'tarefas' ? (
-            <>
-              <strong>{texto(d.titulo)}</strong>
-              {d.disciplina ? ` — ${String(d.disciplina)}` : ''}. Prazo: {prazo(d.prazo)}. Situação:{' '}
-              {texto(d.situacao)}.
-            </>
-          ) : null}
-          {item === 'dificuldade' ? (
-            <>
-              <strong>{texto(d.nome)}</strong> ({d.origem === 'tarefa' ? 'tarefa' : 'disciplina'}):
-              nível {texto(d.dificuldade)} de 10. É a percepção do aluno.
-            </>
-          ) : null}
-          {item === 'notas' ? (
-            <>
-              <strong>{texto(d.disciplina)}</strong>: {texto(d.valor)} em {dia(d.dia)}.{' '}
-              {texto(d.descricao) === '—' ? '' : texto(d.descricao)}
-            </>
-          ) : null}
-          {item === 'mensagens' ? (
-            <>
-              Pedido de ajuda ({texto(d.motivo)}), {dia(d.criado_em)}: {texto(d.texto)}
-              {d.resposta ? <> Resposta: {texto(d.resposta)}</> : null}
-            </>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export function AlunosAcompanhados() {
   const { dados, recarregar } = useCarregar(api.pessoaAcompanhando);
@@ -141,7 +95,7 @@ export function AlunosAcompanhados() {
               </div>
             )}
             {aberto && aberto.id === a.acompanhamento_id ? (
-              <Linhas item={aberto.item} dados={aberto.dados} />
+              <LeituraAluno item={aberto.item} dados={aberto.dados} />
             ) : null}
           </li>
         ))}

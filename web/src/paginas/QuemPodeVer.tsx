@@ -20,7 +20,11 @@ const PAPEL: Record<PapelAcompanhante, string> = {
   responsavel: 'Representante indicado',
 };
 const ITENS: { chave: keyof ItensAcompanhamento; rotulo: string; dica: string }[] = [
-  { chave: 'tarefas', rotulo: 'Tarefas e plano', dica: 'As tarefas, os prazos e as etapas.' },
+  {
+    chave: 'tarefas',
+    rotulo: 'Tarefas, plano e agenda',
+    dica: 'As tarefas, os prazos, as etapas, a agenda e as disciplinas.',
+  },
   {
     chave: 'dificuldade',
     rotulo: 'Nível de dificuldade',
