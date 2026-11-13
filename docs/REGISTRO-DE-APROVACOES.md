@@ -513,3 +513,9 @@ Pedido do autor em chat: "Conferir telas". Durante a conferência o autor avisou
 - **Verificação por máquina após o ajuste:** testes de tela 270/270 (axe sem violação), tipos ok, lint dos arquivos ok.
 - **Não conferido:** o console com **dados reais do banco** (exige login de Master com segundo fator, que é do autor); "Meu aluno" e "Pedidos de acompanhamento"; checagem humana. Estado do L22b: Implementado e aplicado, **não Verificado**.
 - **Código sem commit:** o ajuste (`Operacao.tsx`, `extra.css`, teste) está na árvore de trabalho, depois do commit `a6af13c`; commit exige autorização separada.
+
+## A-104 — Pedido de padrão único de menu e topo e proposta do L22d (13/11/2026)
+Mensagens do autor em chat, em 13/11/2026: "faltou no menu a opção de auditoria, busca no menu, ajuda, versão, suporte, e no topo avisos (sinos)"; "faça uma varredura em todos os perfis e deixe todos os usuários com o mesmo padrão do aluno, levando em conta o que deve aparecer em cada usuário"; "22D, 22C já existe"; "todos os perfis têm que atender o mesmo padrão".
+- **Numeração:** o L22c já existe no plano (Admin cria e desativa, revogar convite, manual por destinatário). O pedido novo é o **L22d** e **não altera** o L22c.
+- **Escopo congelado:** o L22b não recebe os itens novos; eles vão para o L22d (CLAUDE.md, seção 3).
+- **Proposta escrita:** `docs/PROPOSTA-L22D.md` (3 itens: Master no mesmo `Shell`; padrão comum com teste de contrato; varredura no navegador com relatório; Q1 = Suporte e Avisos do Master, recomendada A; Q2 = Auditoria do Admin da escola, para depois). **Estado: Planejado.** Sem código e sem migração. Falta o "aprovo" explícito. Código só a partir de 14/11 (Adendo 4), salvo ordem do autor.
