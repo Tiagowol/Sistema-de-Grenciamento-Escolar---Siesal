@@ -477,3 +477,9 @@ Pedido do autor em chat, em 13/11/2026: "registre em diário e onde for necessá
 ## A-097 — Resposta à Q1 da proposta do L22b (13/11/2026)
 Mensagem do autor em chat, em 13/11/2026: "Sim (B)", respondendo à Q1 de `docs/PROPOSTA-L22B.md`: a árvore do Master **mostra o e-mail** das pessoas, só leitura (o Master continua sem alterar e-mail; nunca CPF, nascimento, nota ou conteúdo). Proposta atualizada (item 1, testes e riscos).
 - **Não é o "aprovo" do L22b.** Segue **Planejado**: sem código, sem migração. Falta o "aprovo" explícito e a confirmação de que "menu das áreas" é o do console do Master. Ritmo (Adendo 4): código só a partir de 14/11.
+
+## A-098 — "Aprovo" da proposta do L22b (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "Aprovo", sobre `docs/PROPOSTA-L22B.md` (3 itens: árvore do Master só leitura com e-mail conforme A-097; menu das áreas no console do Master; indicador teste/produção; migração 0031; matriz v22; conferência das pendências do L22a-3).
+- **Estado: Planejado, aprovado para implementar.** Nenhum código nem migração feito até este registro.
+- **Ritmo (Adendo 4):** hoje (13/11) já houve 3 lotes grandes; início do código em 14/11 ou depois, **salvo o autor mandar começar hoje** (como na A-093).
+- Seguem separadas, cada uma com autorização própria: backup e aplicação da 0031 no site, commit de código, merge e deploy.
