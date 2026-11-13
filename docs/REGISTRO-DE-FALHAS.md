@@ -289,3 +289,11 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - **Esclarecida em 12/11/2026 (L22a-1b):** os 6 testes passam quando o `vitest` roda **pela raiz do projeto** (`pnpm exec vitest run`: 36 arquivos, 1169 testes, 0 falhas). Falham só quando rodados de dentro da pasta `web` (o arquivo de configuração da raiz não é lido e `extra.css?raw` não resolve). Foi o jeito de rodar do Code, não defeito do sistema. Falta o autor confirmar com `pnpm verificar`.
 - Correção: nenhuma necessária no código.
 - Como voltar atrás: não se aplica.
+
+## F-058 — 13/11/2026 — Acesso externo (Tailscale Funnel) deu 502 depois de reconstruir o site
+- O que falhou: `https://siesal.tail378cb5.ts.net` respondia 502. O Funnel aponta para o proxy (`127.0.0.1:18081`), e o proxy (nginx) tinha guardado o endereço antigo do contêiner `web`, que mudou quando o `docker compose up -d --build` recriou o `web` (aplicação das migrações 0024 a 0027).
+- Causa: o nginx do proxy resolve o nome do `web` só ao iniciar; depois de recriar o `web`, o endereço guardado ficou velho (conexão recusada).
+- Correção: `docker compose restart proxy`. Conferido: `/`, `/pessoa` e `/api/config` respondem 200 pelo endereço do Tailscale.
+- Como evitar: depois de `docker compose up -d --build`, reiniciar o proxy (`docker compose restart proxy`). Proposta para depois: resolver o nome do `web` a cada pedido no `proxy/nginx.conf` (precisa de código e de autorização).
+- Como voltar atrás: não se aplica.
+- Observação: por engano o Code ligou um túnel Cloudflare (`siesal-tunel`) por não saber que o Tailscale já existia; foi removido, a tarefa agendada de encerramento também, e o `.env` não foi alterado (cópia em `backups/env.antes-acesso-publico`).
