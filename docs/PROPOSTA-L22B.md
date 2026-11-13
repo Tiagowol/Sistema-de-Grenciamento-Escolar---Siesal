@@ -23,7 +23,8 @@ O L22a-3 **não está pendente**. Está **Implementado e aplicado no site local*
    - Duas rotas novas, **só GET**, no console do Master (nível "completo"): `/operacao/arvore/instituicao/:id` e `/operacao/arvore/espacos`.
    - **Instituição:** pessoas agrupadas por área (Administradores, Professores, Pedagógicos/NAPNE, Alunos, Responsáveis), com **nome**, situação (ativa ou desativada) e, para aluno, "menor" ou "maior".
    - **Espaço individual:** o aluno; e, se for menor, o Responsável legal. Aluno maior: só o aluno.
-   - **Nunca aparece:** nota, tarefa, agenda, mensagem, dificuldade, CPF, data de nascimento, e-mail (ver Q1), senha. Nenhuma rota de escrita. O Master continua sem alterar nota nem e-mail.
+   - **Aparece também o e-mail** (Q1 = B, A-097), só leitura. Para o aluno menor, aparece o e-mail do Responsável legal; se o aluno não tiver e-mail, o campo fica em branco.
+   - **Nunca aparece:** nota, tarefa, agenda, mensagem, dificuldade, CPF, data de nascimento, senha. Nenhuma rota de escrita. O Master continua sem alterar nota nem e-mail.
    - **Banco:** **migração 0031**, só funções `SECURITY DEFINER` de leitura (`arvore_instituicao`, `arvore_espacos_individuais`), com `EXECUTE` só para `siesal_ops`. O `siesal_ops` continua sem ler tabela escolar. **Backup antes** (`bash scripts/backup.sh`), aplicação pelo job `migrate`, retorno em `docs/RETORNO-0031.md` (restaurar o backup, ou `DROP FUNCTION` das duas funções).
    - **Auditoria:** cada abertura de um nó vai para a trilha do Master (quem, qual instituição ou espaço, quando), **sem os nomes lidos**.
    - Sem busca por nome de aluno: o Master navega pela árvore, não procura pessoas.
@@ -41,12 +42,8 @@ O L22a-3 **não está pendente**. Está **Implementado e aplicado no site local*
    - **Ação manual do autor (1 linha no diário, sem segredo):** `SIESAL_AMBIENTE=teste` no `.env` do site local. Sem a linha, o padrão já é "teste".
    - Sem banco.
 
-## Decisão que depende do autor (uma pergunta fechada)
-**Q1. A árvore mostra o e-mail das pessoas?**
-- **A (recomendada):** **não.** Só nome, área e situação. O suporte acha a pessoa pela instituição e pelo nome; e-mail é dado a mais, e a A-074 diz que o Master não altera e-mail.
-- **B:** sim, só leitura. Ajuda o atendimento, mas expõe e-mail de pessoa (e de responsável de menor) ao Master.
-
-> Se você responder só "aprovo", **vale a A**.
+## Decisão já tomada (Q1, A-097)
+**Q1. A árvore mostra o e-mail das pessoas?** Resposta do autor em 13/11/2026: **"Sim (B)"**. O e-mail aparece, só leitura (ajuda o atendimento; expõe e-mail de pessoa e de responsável de menor ao Master, risco aceito pelo proprietário). Isso **não é o "aprovo"** do lote.
 
 ## Padrões que valem sem nova pergunta (vetáveis no "aprovo")
 - Texto literal e sem pressão. Aviso fixo na árvore: "Você está só lendo. Nota, tarefa e mensagem não aparecem aqui." Datas, quando houver, em palavra e dia/mês.
@@ -56,7 +53,7 @@ O L22a-3 **não está pendente**. Está **Implementado e aplicado no site local*
 ## Testes (previstos)
 - Master com segundo fator lê a árvore; Master sem segundo fator recebe 403; sessão escolar recebe 401 (o cookie da escola não vale).
 - Nenhuma escrita: POST, PATCH e DELETE em `/operacao/arvore/*` não existem (404 ou 405).
-- A resposta nunca contém e-mail, CPF, nascimento, nota ou conteúdo (teste de formato fechado).
+- A resposta contém só nome, área, situação, menor/maior e e-mail; nunca CPF, nascimento, nota ou conteúdo (teste de formato fechado). Nenhuma rota altera e-mail.
 - Aluno maior no espaço individual aparece sozinho; aluno menor aparece com o Responsável legal; conta desativada aparece como desativada.
 - Isolamento: instituição A não mostra pessoa da B.
 - `siesal_ops` continua sem `SELECT` em tabela escolar (teste de permissão do banco).
@@ -65,7 +62,7 @@ O L22a-3 **não está pendente**. Está **Implementado e aplicado no site local*
 - Lint, tipos e testes de integração e de tela passando antes de entregar; conferência em 360/768/1280 px.
 
 ## Riscos
-- **Alto:** o Master passa a ver **nome de aluno menor** (dado pessoal). Decisão do proprietário (A-074), já com risco aceito; precisa constar no aceite do contrato de abertura de conta (L25) e no parecer jurídico. Só dados fictícios na Parte 1. O sistema diz "projetado para atender", nunca "em conformidade".
+- **Alto:** o Master passa a ver **nome de aluno menor e e-mail** de pessoas, inclusive de responsável (dado pessoal; Q1 = B). Decisão do proprietário (A-074), já com risco aceito; precisa constar no aceite do contrato de abertura de conta (L25) e no parecer jurídico. Só dados fictícios na Parte 1. O sistema diz "projetado para atender", nunca "em conformidade".
 - **Médio:** as funções `SECURITY DEFINER` são o ponto sensível. Mitigação: devolvem só as colunas listadas, `EXECUTE` só para `siesal_ops`, `search_path` fixo, e teste de formato fechado.
 - **Baixo:** o indicador depende de a variável estar certa. O padrão "teste" erra para o lado seguro, mas em produção real é preciso escrever `producao`; fica na lista do L24/L25.
 - **Ritmo (Adendo 4):** **lote grande** (migração e leitura de dado pessoal). Hoje (13/11) já houve 3 lotes grandes; **o código só começa em 14/11 ou depois**. O Adendo 3 prevê o L22b entre 23/11 e 29/11. A proposta pode ser aprovada hoje.
@@ -75,5 +72,5 @@ Backup antes da 0031; `docs/RETORNO-0031.md`; `git revert` do commit do lote. O 
 
 ## Feito, Falta, Sugestões
 - **Feito:** proposta escrita; estado anterior conferido no código; pendências do L22a-3 reunidas.
-- **Falta:** sua resposta à Q1 (ou só "aprovo") e a confirmação do que é "menu das áreas"; depois código, testes e autorizações separadas (aplicar no site, commit de código). T1 a T4 e a checagem humana seguem por sua conta.
+- **Falta:** o "aprovo" explícito (Q1 já respondida: B) e a confirmação do que é "menu das áreas"; depois código, testes e autorizações separadas (aplicar no site, commit de código). T1 a T4 e a checagem humana seguem por sua conta.
 - **Sugestões:** começar o código em 14/11 ou depois; no mesmo dia da conferência no navegador, ver "Meu aluno" e "Pedidos de acompanhamento".
