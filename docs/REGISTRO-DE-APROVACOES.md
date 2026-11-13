@@ -519,3 +519,9 @@ Mensagens do autor em chat, em 13/11/2026: "faltou no menu a opção de auditori
 - **Numeração:** o L22c já existe no plano (Admin cria e desativa, revogar convite, manual por destinatário). O pedido novo é o **L22d** e **não altera** o L22c.
 - **Escopo congelado:** o L22b não recebe os itens novos; eles vão para o L22d (CLAUDE.md, seção 3).
 - **Proposta escrita:** `docs/PROPOSTA-L22D.md` (3 itens: Master no mesmo `Shell`; padrão comum com teste de contrato; varredura no navegador com relatório; Q1 = Suporte e Avisos do Master, recomendada A; Q2 = Auditoria do Admin da escola, para depois). **Estado: Planejado.** Sem código e sem migração. Falta o "aprovo" explícito. Código só a partir de 14/11 (Adendo 4), salvo ordem do autor.
+
+## A-105 — "Aprovo" da proposta do L22d (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "Aprovo", sobre `docs/PROPOSTA-L22D.md` (3 itens: Master no mesmo `Shell`; padrão comum aos 6 perfis com teste de contrato; varredura no navegador com relatório; Q1 = A, conforme a proposta; Q2 fica para depois).
+- **Estado: Planejado, aprovado para implementar.** Nenhum código feito até este registro.
+- **Ritmo (Adendo 4):** hoje (13/11) já houve 4 lotes grandes; início do código em 14/11 ou depois, **salvo o autor mandar começar hoje** (como nas A-093 e A-099).
+- Seguem separadas, cada uma com autorização própria: commit de código (inclui o ajuste de menu do Master da A-103, ainda sem commit), merge e deploy.
