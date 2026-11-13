@@ -505,3 +505,11 @@ Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migr
 
 ## A-102 — Commit de código do L22b (13/11/2026)
 Pedido do autor em chat, em 13/11/2026: "Autorizo o commit". Commit `a6af13c` (17 arquivos listados, sem `git add .`; autor do git do computador, sem definir autor). **Push de código não feito** (não autorizado): o commit existe só no ramo local `lote-21-22-fechamento`, junto com o `cf31c50` (L22a-3), que também não foi enviado. Um `git push` do ramo leva os dois; só faça com autorização. Sem merge nem deploy.
+
+## A-103 — Conferência no navegador do L22b e ajuste do menu do console do Master (13/11/2026)
+Pedido do autor em chat: "Conferir telas". Durante a conferência o autor avisou: "esse menu não está no padrão dos outros menus".
+- **Ajuste (defeito de padrão visual, dentro do L22b):** o console do Master agora usa o **mesmo menu lateral do sistema** (barra azul, ícones, seção "Navegação" e "Árvore (só leitura)", topo com botão de menu no celular, nome e "Sair" no topo). O botão "Sair" saiu do meio da página Instituições e ficou no topo. Site (só o contêiner `web`) reconstruído com `docker compose up -d --build web`; sem migração nova.
+- **Conferido no navegador do app** (login e API do Master **simulados** no navegador, sem conta real e sem tocar no banco): faixa "Ambiente de teste. Dados fictícios." na tela de login e no console; menu e área "Alunos" com nome, e-mail e situação; em **1280, 768 e 360 px: sem rolagem horizontal**, alvos de 44 px (menu, topo, Sair, faixa), menu lateral abre no celular.
+- **Verificação por máquina após o ajuste:** testes de tela 270/270 (axe sem violação), tipos ok, lint dos arquivos ok.
+- **Não conferido:** o console com **dados reais do banco** (exige login de Master com segundo fator, que é do autor); "Meu aluno" e "Pedidos de acompanhamento"; checagem humana. Estado do L22b: Implementado e aplicado, **não Verificado**.
+- **Código sem commit:** o ajuste (`Operacao.tsx`, `extra.css`, teste) está na árvore de trabalho, depois do commit `a6af13c`; commit exige autorização separada.
