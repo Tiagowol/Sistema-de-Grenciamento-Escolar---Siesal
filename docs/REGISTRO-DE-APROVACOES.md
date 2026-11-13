@@ -428,3 +428,9 @@ Pedido do autor em chat, em 13/11/2026: "Autorizo o commit (2 commits: L22a-2 e 
 
 ## A-089 — Correção do prazo: commit e reconstrução do site (13/11/2026)
 Pedido do autor em chat, em 13/11/2026: "Autorizo" (commitar a correção do prazo e reconstruir o site). Commit `b3e475e` (só 3 arquivos: prazo em palavra e data nas telas de leitura; sem "— —" quando a disciplina está vazia). Site reconstruído (`docker compose up -d --build`): site 200, saúde ok, texto novo presente no pacote. **Push do código não feito** (não autorizado); este registro fica só no commit local de `docs/`.
+
+## A-090 — Decisão sobre "Aluno menor de idade" e pendência da tela "Pedidos de acompanhamento" (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026, 19:28 (fechamento da sessão; sem código novo):
+- **Decisão:** a seção "Aluno menor de idade" (criar conta de aluno menor) deve aparecer **só para quem se cadastrou como representante legal**, e não para qualquer adulto com conta. Isso **muda o que o guia de testes (T6) descrevia como esperado** (T6 dizia que a seção aparece para toda pessoa com conta, regra Q1). **Não implementado agora:** vira **item de escopo do próximo lote (L22a-3)**, que será proposto em chat novo. Hoje a seção ainda aparece para qualquer adulto com conta (conferido em 13/11).
+- **Pendência aberta (sem prazo):** a tela "Pedidos de acompanhamento" (Admin e Pedagógico) **ainda não foi vista no navegador** (exige Admin com segundo fator e um Pedagógico de teste). Coberta só por testes de tela e de integração.
+- **Continuam pendentes, por conta do autor, fora desta sessão:** T1 a T4 do guia e a checagem humana.
