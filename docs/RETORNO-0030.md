@@ -3,7 +3,7 @@
 Migração: `api/migracoes/0030_representante_ver_tudo.sql`. Depende da 0029 (aplicar a 0029 antes).
 Só funções e um `UPDATE` de data. **Nenhuma tabela nem coluna nova.**
 
-- Cria 5 funções: `aluno_ler_item` (leitura interna, sem permissão para o app), `representado_ler`, `representado_ficha`, `pessoa_papel`.
+- Cria 4 funções: `aluno_ler_item` (leitura interna, sem permissão para o app), `representado_ler`, `representado_ficha`, `pessoa_papel`.
 - Substitui 2 funções (`CREATE OR REPLACE`): `acompanhando_ler` (0028) e `acompanhamento_instituicao_ler` (0029). Agora aceitam os itens `agenda` e `disciplinas`, que seguem a caixa "Tarefas e plano" (`ver_tarefas`).
 - `UPDATE acompanhamento SET itens_alterados_em = now() WHERE ver_tarefas AND situacao <> 'encerrado'`: o acompanhante vê o aviso de novo e o aluno vê o novo rótulo.
 
