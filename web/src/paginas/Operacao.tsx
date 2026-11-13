@@ -5,9 +5,12 @@ import {
   ErroApi,
   type EuOperacao,
   type EventoMaster,
+  type InstituicaoLista,
   type InstituicaoPainel,
   type Modulo,
   type Perfil,
+  type PessoaArvore,
+  type PessoaSemVinculo,
   type Situacao,
 } from '../api';
 import { Aviso } from '../componentes/Aviso';
@@ -597,6 +600,202 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
   );
 }
 
+// L22b: menu das áreas e árvore do Master (só leitura: nome, e-mail, situação; nunca nota nem conteúdo)
+type Area =
+  | 'instituicoes'
+  | 'administradores'
+  | 'professores'
+  | 'pedagogicos'
+  | 'alunos'
+  | 'responsaveis'
+  | 'sem_vinculo';
+const AREAS: { id: Exclude<Area, 'instituicoes'>; rotulo: string; perfil?: Perfil }[] = [
+  { id: 'administradores', rotulo: 'Administradores', perfil: 'admin' },
+  { id: 'professores', rotulo: 'Professores', perfil: 'professor' },
+  { id: 'pedagogicos', rotulo: 'Pedagógicos e NAPNE', perfil: 'pedagogico' },
+  { id: 'alunos', rotulo: 'Alunos', perfil: 'aluno' },
+  { id: 'responsaveis', rotulo: 'Responsáveis', perfil: 'responsavel' },
+  { id: 'sem_vinculo', rotulo: 'Usuários sem vínculo' },
+];
+const ESPACOS = 'espacos';
+
+function LinhaPessoa({ p }: { p: PessoaArvore }) {
+  return (
+    <li className="ops-pessoa">
+      <strong>{p.nome}</strong>
+      <br />
+      <span className="small">{p.email}</span>
+      <br />
+      <span className="small muted">
+        {p.ativo ? 'Conta ativa' : 'Conta desativada'}
+        {p.perfil === 'aluno' && p.menor !== null
+          ? p.menor
+            ? ' · Aluno menor de 18 anos'
+            : ' · Aluno com 18 anos ou mais'
+          : ''}
+      </span>
+    </li>
+  );
+}
+
+function Arvore({ area }: { area: (typeof AREAS)[number] }) {
+  const [escolas, setEscolas] = useState<InstituicaoLista[]>([]);
+  const [onde, setOnde] = useState('');
+  const [pessoas, setPessoas] = useState<PessoaArvore[] | null>(null);
+  const [espacos, setEspacos] = useState<{ espaco_id: string; pessoas: PessoaArvore[] }[] | null>(
+    null,
+  );
+  const [semVinculo, setSemVinculo] = useState<PessoaSemVinculo[] | null>(null);
+  const [erro, setErro] = useState('');
+  const semOnde = area.id === 'sem_vinculo';
+
+  // Troca de área: limpa a leitura anterior (cada abertura é lida de novo e fica na trilha do Master)
+  useEffect(() => {
+    setOnde('');
+    setPessoas(null);
+    setEspacos(null);
+    setSemVinculo(null);
+    setErro('');
+    if (area.id === 'sem_vinculo') {
+      apiOperacao.arvoreSemVinculo().then(
+        (r) => setSemVinculo(r.pessoas),
+        (x) => setErro(mensagem(x, 'Falha ao ler.')),
+      );
+    } else {
+      apiOperacao.instituicoes().then(
+        (r) => setEscolas(r.instituicoes),
+        (x) => setErro(mensagem(x, 'Falha ao listar.')),
+      );
+    }
+  }, [area.id]);
+
+  async function abrir(valor: string) {
+    setOnde(valor);
+    setPessoas(null);
+    setEspacos(null);
+    setErro('');
+    if (!valor) return;
+    try {
+      if (valor === ESPACOS) setEspacos((await apiOperacao.arvoreEspacos()).espacos);
+      else setPessoas((await apiOperacao.arvoreInstituicao(valor)).pessoas);
+    } catch (x) {
+      setErro(mensagem(x, 'Falha ao ler.'));
+    }
+  }
+
+  const doPerfil = (l: PessoaArvore[]) => l.filter((p) => p.perfil === area.perfil);
+  return (
+    <section className="card" aria-labelledby="ops-arvore-titulo">
+      <div className="card-head">
+        <h1 id="ops-arvore-titulo" style={{ fontSize: 22 }}>
+          {area.rotulo}
+        </h1>
+      </div>
+      <p className="small muted">Você está só lendo. Nota, tarefa e mensagem não aparecem aqui.</p>
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {semOnde ? (
+        semVinculo === null ? (
+          <p role="status">Carregando…</p>
+        ) : semVinculo.length === 0 ? (
+          <p>Nenhuma conta sem vínculo.</p>
+        ) : (
+          <ul className="ops-pessoas">
+            {semVinculo.map((p) => (
+              <li key={p.pessoa_id} className="ops-pessoa">
+                <strong>{p.nome}</strong>
+                <br />
+                <span className="small">{p.email}</span>
+                <br />
+                <span className="small muted">
+                  Sem instituição ou espaço ativo
+                  {p.papel_desejado ? ` · Pediu para ser ${p.papel_desejado}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : (
+        <>
+          <Campo rotulo="Onde olhar" dica="Escolha uma instituição ou os espaços individuais.">
+            {({ id, descricao }) => (
+              <select
+                id={id}
+                aria-describedby={descricao}
+                value={onde}
+                onChange={(e) => void abrir(e.target.value)}
+              >
+                <option value="">Escolha…</option>
+                {escolas.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.nome}
+                  </option>
+                ))}
+                <option value={ESPACOS}>Espaços individuais</option>
+              </select>
+            )}
+          </Campo>
+          {pessoas ? (
+            doPerfil(pessoas).length === 0 ? (
+              <p className="mt-sm">Nenhuma pessoa nesta área.</p>
+            ) : (
+              <ul className="ops-pessoas mt-sm">
+                {doPerfil(pessoas).map((p) => (
+                  <LinhaPessoa key={p.usuario_id} p={p} />
+                ))}
+              </ul>
+            )
+          ) : null}
+          {espacos ? (
+            espacos.filter((e) => doPerfil(e.pessoas).length > 0).length === 0 ? (
+              <p className="mt-sm">Nenhuma pessoa nesta área.</p>
+            ) : (
+              espacos
+                .filter((e) => doPerfil(e.pessoas).length > 0)
+                .map((e) => (
+                  <div key={e.espaco_id} className="mt-sm">
+                    <h2 style={{ fontSize: 16 }}>Espaço individual {espacos.indexOf(e) + 1}</h2>
+                    <ul className="ops-pessoas">
+                      {doPerfil(e.pessoas).map((p) => (
+                        <LinhaPessoa key={p.usuario_id} p={p} />
+                      ))}
+                    </ul>
+                  </div>
+                ))
+            )
+          ) : null}
+        </>
+      )}
+    </section>
+  );
+}
+
+// Menu das áreas à esquerda (em cima, no celular) e a página escolhida ao lado
+function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
+  const [area, setArea] = useState<Area>('instituicoes');
+  const atual = AREAS.find((a) => a.id === area);
+  const botao = (id: Area, rotulo: string) => (
+    <button
+      type="button"
+      aria-current={area === id ? 'page' : undefined}
+      onClick={() => setArea(id)}
+    >
+      {rotulo}
+    </button>
+  );
+  return (
+    <div className="ops-layout">
+      <nav className="ops-menu" aria-label="Áreas da gestão">
+        {botao('instituicoes', 'Instituições')}
+        <h2>Árvore (só leitura)</h2>
+        {AREAS.map((a) => (
+          <span key={a.id}>{botao(a.id, a.rotulo)}</span>
+        ))}
+      </nav>
+      <div>{atual ? <Arvore area={atual} /> : <Painel eu={eu} aoSair={aoSair} />}</div>
+    </div>
+  );
+}
+
 export function Operacao() {
   const [pronto, setPronto] = useState(false);
   const [eu, setEu] = useState<EuOperacao | null>(null);
@@ -628,7 +827,7 @@ export function Operacao() {
       ) : eu.nivel === 'configurar_totp' ? (
         <Totp aoConcluir={() => void atualizar()} />
       ) : (
-        <Painel eu={eu} aoSair={sair} />
+        <Gestao eu={eu} aoSair={sair} />
       )}
     </Moldura>
   );

@@ -31,6 +31,22 @@ export type PainelInstituicao = InstituicaoLista & {
   modulos: EstadoModulos;
   contagem: Record<string, number>; // perfil -> usuários ativos (só números)
 };
+// L22b: só estes campos chegam ao Master (nunca CPF, nascimento, nota ou conteúdo)
+export type PessoaArvore = {
+  usuario_id: string;
+  perfil: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  menor: boolean | null; // só para aluno
+};
+export type EspacoArvore = { espaco_id: string; pessoas: PessoaArvore[] };
+export type PessoaSemVinculo = {
+  pessoa_id: string;
+  nome: string;
+  email: string;
+  papel_desejado: string | null;
+};
 type Entrada =
   | { tipo: 'ok'; token: string; duracao: number; nivel: NivelOperacao; usuario: string }
   | { tipo: 'falha' };
@@ -478,6 +494,44 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
+  // L22b: árvore do Master, só leitura. Cada abertura vai para a trilha (quem e onde, nunca os nomes lidos).
+  async function arvoreInstituicao(
+    sessao: SessaoOperacao,
+    id: string,
+  ): Promise<{ nome: string; pessoas: PessoaArvore[] } | 'nao_encontrada'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [inst] = await tx.$queryRaw<{ nome: string }[]>`
+        SELECT nome FROM instituicao WHERE id = ${id}::uuid AND tipo = 'escola'`;
+      if (!inst) return 'nao_encontrada';
+      const pessoas = await tx.$queryRaw<
+        PessoaArvore[]
+      >`SELECT * FROM arvore_instituicao(${id}::uuid)`;
+      await auditar(tx, `master:${sessao.usuario}`, 'arvore.instituicao', `instituicao:${id}`);
+      return { nome: inst.nome, pessoas };
+    });
+  }
+
+  async function arvoreEspacos(sessao: SessaoOperacao): Promise<EspacoArvore[]> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const linhas = await tx.$queryRaw<(PessoaArvore & { espaco_id: string })[]>`
+        SELECT * FROM arvore_espacos_individuais()`;
+      await auditar(tx, `master:${sessao.usuario}`, 'arvore.espacos', 'espacos_individuais');
+      const porEspaco = new Map<string, PessoaArvore[]>();
+      for (const { espaco_id, ...pessoa } of linhas) {
+        porEspaco.set(espaco_id, [...(porEspaco.get(espaco_id) ?? []), pessoa]);
+      }
+      return [...porEspaco].map(([espaco_id, pessoas]) => ({ espaco_id, pessoas }));
+    });
+  }
+
+  async function arvoreSemVinculo(sessao: SessaoOperacao): Promise<PessoaSemVinculo[]> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const pessoas = await tx.$queryRaw<PessoaSemVinculo[]>`SELECT * FROM arvore_sem_vinculo()`;
+      await auditar(tx, `master:${sessao.usuario}`, 'arvore.sem_vinculo', 'pessoas_sem_vinculo');
+      return pessoas;
+    });
+  }
+
   // Trilha do Master (últimos 100 eventos) e conferência da cadeia de hash
   async function trilha() {
     return comoOperacao(dep.banco, async (tx) => ({
@@ -507,6 +561,9 @@ export function criarOperacao(dep: DependenciasOperacao) {
     mudarSituacao,
     painel,
     mudarModulo,
+    arvoreInstituicao,
+    arvoreEspacos,
+    arvoreSemVinculo,
     trilha,
   };
 }

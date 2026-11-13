@@ -564,9 +564,16 @@ async function chamar<T>(
   return dados as T;
 }
 
+// L22b: ambiente mostrado na faixa de todas as telas
+export type Ambiente = 'teste' | 'producao';
+
 export const api = {
   config: () =>
-    chamar<{ instituicao_padrao: string | null; modo_local: boolean }>('GET', '/config'),
+    chamar<{
+      instituicao_padrao: string | null;
+      modo_local: boolean;
+      ambiente?: Ambiente;
+    }>('GET', '/config'),
   eu: () => chamar<Eu>('GET', '/auth/eu'),
   login: (
     d:
@@ -923,6 +930,22 @@ export type EventoMaster = {
   alvo: string;
   criado_em: string;
 };
+// L22b: árvore do Master, só leitura. Só nome, e-mail, área, situação e menor/maior; nunca nota nem conteúdo.
+export type PessoaArvore = {
+  usuario_id: string;
+  perfil: Perfil;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  menor: boolean | null;
+};
+export type EspacoArvore = { espaco_id: string; pessoas: PessoaArvore[] };
+export type PessoaSemVinculo = {
+  pessoa_id: string;
+  nome: string;
+  email: string;
+  papel_desejado: string | null;
+};
 export const apiOperacao = {
   eu: () => chamar<EuOperacao>('GET', '/operacao/eu'),
   login: (d: { usuario: string; senha: string; codigo?: string }) =>
@@ -962,4 +985,9 @@ export const apiOperacao = {
   mudarModulo: (id: string, modulo: Modulo, ligado: boolean) =>
     chamar<void>('POST', `/operacao/instituicoes/${id}/modulos`, { modulo, ligado }),
   trilha: () => chamar<{ integra: boolean; eventos: EventoMaster[] }>('GET', '/operacao/auditoria'),
+  arvoreInstituicao: (id: string) =>
+    chamar<{ nome: string; pessoas: PessoaArvore[] }>('GET', `/operacao/arvore/instituicao/${id}`),
+  arvoreEspacos: () => chamar<{ espacos: EspacoArvore[] }>('GET', '/operacao/arvore/espacos'),
+  arvoreSemVinculo: () =>
+    chamar<{ pessoas: PessoaSemVinculo[] }>('GET', '/operacao/arvore/sem-vinculo'),
 };

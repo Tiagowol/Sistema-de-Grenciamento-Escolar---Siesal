@@ -21,6 +21,7 @@ const app = criarApp({
       )
     : undefined,
   linkBase: process.env.LINK_BASE || undefined,
+  ambiente: process.env.SIESAL_AMBIENTE,
 });
 
 // Porta interna fixa; a publicação no host é feita pelo compose.yaml

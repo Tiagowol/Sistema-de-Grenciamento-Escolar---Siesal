@@ -191,6 +191,28 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     };
   });
 
+  // L22b: árvore do Master, só GET. Nenhuma rota de escrita e nenhuma busca por nome.
+  app.get('/operacao/arvore/instituicao/:id', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const parametros = parametroId.safeParse(requisicao.params);
+    if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await ops.arvoreInstituicao(sessao, parametros.data.id);
+    if (r === 'nao_encontrada')
+      return resposta.code(404).send({ erro: 'Instituição não encontrada.' });
+    return r;
+  });
+  app.get('/operacao/arvore/espacos', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { espacos: await ops.arvoreEspacos(sessao) };
+  });
+  app.get('/operacao/arvore/sem-vinculo', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { pessoas: await ops.arvoreSemVinculo(sessao) };
+  });
+
   app.post('/operacao/instituicoes/:id/situacao', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;

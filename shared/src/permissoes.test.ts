@@ -387,3 +387,14 @@ describe('matriz v21 (L22a-3: representante vê tudo, só leitura)', () => {
       );
   });
 });
+
+describe('matriz v22 (L22b: árvore do Master, só leitura)', () => {
+  it('o recurso "arvore_master" só tem leitura, e só do master, na plataforma', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(22);
+    expect(Object.keys(MATRIZ.recursos.arvore_master ?? {})).toEqual(['ler']);
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'arvore_master', 'ler'), perfil).toBe(
+        perfil === 'master' ? 'plataforma' : null,
+      );
+  });
+});

@@ -274,7 +274,25 @@ describe('listagem e configuração pública', () => {
       cookieLocal: true,
     });
     const r = await outro.inject({ method: 'GET', url: '/config' });
-    expect(r.json()).toEqual({ instituicao_padrao: amb.instA, modo_local: true });
+    // L22b: sem SIESAL_AMBIENTE o ambiente é "teste"; só o texto exato "producao" vale produção
+    expect(r.json()).toEqual({
+      instituicao_padrao: amb.instA,
+      modo_local: true,
+      ambiente: 'teste',
+    });
     await outro.close();
+    for (const [valor, esperado] of [
+      ['producao', 'producao'],
+      ['PRODUCAO', 'teste'],
+      ['qualquer', 'teste'],
+    ] as const) {
+      const c = criarApp({
+        banco: amb.bancoApp,
+        authSecret: 'segredo-de-teste-com-mais-de-32-caracteres!',
+        ambiente: valor,
+      });
+      expect((await c.inject({ method: 'GET', url: '/config' })).json().ambiente).toBe(esperado);
+      await c.close();
+    }
   });
 });

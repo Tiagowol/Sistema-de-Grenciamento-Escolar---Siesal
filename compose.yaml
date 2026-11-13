@@ -40,6 +40,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-}
       # Só demonstração em http (localhost/IP/porta): cookie sem Secure. Em produção use https e "nao".
       AUTH_MODO_LOCAL: ${AUTH_MODO_LOCAL:-nao}
+      # L22b: faixa de ambiente em todas as telas. Só "producao" vale produção; sem valor, vale "teste"
+      SIESAL_AMBIENTE: ${SIESAL_AMBIENTE:-teste}
       # Atrás do nginx, a API lê o IP real do cabeçalho X-Forwarded-For
       TRUST_PROXY: ${TRUST_PROXY:-sim}
       INSTITUICAO_PADRAO_ID: ${INSTITUICAO_PADRAO_ID:-}

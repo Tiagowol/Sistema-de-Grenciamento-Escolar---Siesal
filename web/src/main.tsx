@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { FaixaAmbiente } from './componentes/FaixaAmbiente';
 import { Operacao } from './paginas/Operacao';
 import './estilos/prototipo.css';
 import './estilos/extra.css';
@@ -19,6 +20,7 @@ const raiz = document.getElementById('raiz');
 if (raiz) {
   createRoot(raiz).render(
     <StrictMode>
+      <FaixaAmbiente />
       {/* /gestao é a entrada separada dos Masters (/operacao continua e leva para /gestao); /cadastro/master leva
           ao primeiro acesso; o resto é o aplicativo da escola (/cadastro/aluno abre o cadastro por convite) */}
       {ehGestao ? <Operacao /> : <App />}

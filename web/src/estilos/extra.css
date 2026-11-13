@@ -1376,3 +1376,75 @@ fieldset {
     animation: none;
   }
 }
+
+/* L22b: faixa de ambiente (todas as telas) e menu das áreas do console do Master */
+.faixa-ambiente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 16px;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid currentColor;
+}
+.faixa-ambiente.teste {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+.faixa-ambiente.producao {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.ops-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .ops-layout {
+    grid-template-columns: 240px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.ops-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ops-menu h2 {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.ops-menu button {
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.ops-menu button[aria-current="page"] {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+.ops-pessoas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ops-pessoas li.ops-pessoa {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}

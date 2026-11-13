@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FaixaAmbiente } from './componentes/FaixaAmbiente';
 import { Operacao } from './paginas/Operacao';
 
 // L18 e L20: entrada dos Masters (/operacao): entrar, primeiro acesso, TOTP e painel de instituições. Dados fictícios.
@@ -217,5 +218,177 @@ describe('tela /operacao', () => {
     render(<Operacao />);
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Sair' }));
     await screen.findByRole('heading', { name: 'Entrar na gestão' });
+  });
+
+  // L22b: menu das áreas e árvore do Master (só leitura)
+  const baseGestao = {
+    'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
+    'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+    'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
+    'GET /operacao/auditoria': { corpo: TRILHA },
+    'GET /operacao/instituicoes': { corpo: { instituicoes } },
+  };
+  const gente = [
+    {
+      usuario_id: 'u1',
+      perfil: 'professor',
+      nome: 'Professora Fictícia',
+      email: 'prof@x.exemplo',
+      ativo: true,
+      menor: null,
+    },
+    {
+      usuario_id: 'u2',
+      perfil: 'aluno',
+      nome: 'Aluno Fictício',
+      email: 'al@x.exemplo',
+      ativo: true,
+      menor: true,
+    },
+    {
+      usuario_id: 'u3',
+      perfil: 'aluno',
+      nome: 'Aluna Maior Fictícia',
+      email: 'am@x.exemplo',
+      ativo: false,
+      menor: false,
+    },
+  ];
+
+  it('L22b: o menu tem as 6 áreas e a página das instituições continua a mesma', async () => {
+    simular(baseGestao);
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const menu = screen.getByRole('navigation', { name: 'Áreas da gestão' });
+    for (const rotulo of [
+      'Instituições',
+      'Administradores',
+      'Professores',
+      'Pedagógicos e NAPNE',
+      'Alunos',
+      'Responsáveis',
+      'Usuários sem vínculo',
+    ])
+      expect(within(menu).getByRole('button', { name: rotulo })).toBeTruthy();
+    expect(
+      within(menu).getByRole('button', { name: 'Instituições' }).getAttribute('aria-current'),
+    ).toBe('page');
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('L22b: a área mostra nome, e-mail e situação da escola escolhida, só leitura', async () => {
+    const chamadas = simular({
+      ...baseGestao,
+      'GET /operacao/arvore/instituicao/i1': {
+        corpo: { nome: 'Escola A (fictícia)', pessoas: gente },
+      },
+    });
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await u.click(
+      within(screen.getByRole('navigation', { name: 'Áreas da gestão' })).getByRole('button', {
+        name: 'Alunos',
+      }),
+    );
+    await screen.findByRole('heading', { name: 'Alunos' });
+    expect(
+      screen.getByText(/Você está só lendo\. Nota, tarefa e mensagem não aparecem aqui\./),
+    ).toBeTruthy();
+    await u.selectOptions(await screen.findByLabelText('Onde olhar'), 'i1');
+    await screen.findByText('Aluno Fictício');
+    expect(screen.getByText('al@x.exemplo')).toBeTruthy();
+    expect(screen.getByText(/Aluno menor de 18 anos/)).toBeTruthy();
+    expect(screen.getByText(/Conta desativada · Aluno com 18 anos ou mais/)).toBeTruthy();
+    expect(screen.queryByText('Professora Fictícia')).toBeNull();
+    // Nenhum botão de escrita na área; a leitura foi um GET
+    expect(
+      chamadas.filter((c) => c.url.startsWith('/operacao/arvore')).every((c) => c.metodo === 'GET'),
+    ).toBe(true);
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('L22b: espaços individuais e usuários sem vínculo', async () => {
+    simular({
+      ...baseGestao,
+      'GET /operacao/arvore/espacos': {
+        corpo: {
+          espacos: [
+            {
+              espaco_id: 'e1',
+              pessoas: [
+                gente[1],
+                {
+                  usuario_id: 'u9',
+                  perfil: 'responsavel',
+                  nome: 'Responsável Fictício',
+                  email: 'r@x.exemplo',
+                  ativo: true,
+                  menor: null,
+                },
+              ],
+            },
+          ],
+        },
+      },
+      'GET /operacao/arvore/sem-vinculo': {
+        corpo: {
+          pessoas: [
+            {
+              pessoa_id: 'p1',
+              nome: 'Pessoa Solta Fictícia',
+              email: 's@x.exemplo',
+              papel_desejado: 'professor',
+            },
+          ],
+        },
+      },
+    });
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    const menu = screen.getByRole('navigation', { name: 'Áreas da gestão' });
+    await u.click(within(menu).getByRole('button', { name: 'Responsáveis' }));
+    await u.selectOptions(await screen.findByLabelText('Onde olhar'), 'espacos');
+    await screen.findByText('Responsável Fictício');
+    expect(screen.getByText('Espaço individual 1')).toBeTruthy();
+    expect(screen.queryByText('Aluno Fictício')).toBeNull();
+    await u.click(within(menu).getByRole('button', { name: 'Usuários sem vínculo' }));
+    await screen.findByText('Pessoa Solta Fictícia');
+    expect(screen.getByText(/Pediu para ser professor/)).toBeTruthy();
+  });
+});
+
+describe('faixa de ambiente (L22b)', () => {
+  it('mostra "teste" por padrão e "produção" só quando a API diz producao', async () => {
+    simular({ 'GET /config': { corpo: { instituicao_padrao: null, modo_local: true } } });
+    const { unmount } = render(<FaixaAmbiente />);
+    expect(screen.getByText('Ambiente de teste. Dados fictícios.')).toBeTruthy();
+    unmount();
+    simular({
+      'GET /config': {
+        corpo: { instituicao_padrao: null, modo_local: true, ambiente: 'qualquer' },
+      },
+    });
+    const r2 = render(<FaixaAmbiente />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByText('Ambiente de teste. Dados fictícios.')).toBeTruthy();
+    r2.unmount();
+    simular({
+      'GET /config': {
+        corpo: { instituicao_padrao: null, modo_local: false, ambiente: 'producao' },
+      },
+    });
+    const { container } = render(<FaixaAmbiente />);
+    await screen.findByText('Ambiente de produção.');
+    expect(screen.queryByText(/Dados fictícios/)).toBeNull();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('sem resposta da API continua "teste"', async () => {
+    simular({});
+    render(<FaixaAmbiente />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByText('Ambiente de teste. Dados fictícios.')).toBeTruthy();
   });
 });

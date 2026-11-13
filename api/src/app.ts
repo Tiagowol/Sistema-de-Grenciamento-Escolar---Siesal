@@ -63,6 +63,7 @@ export type OpcoesApp = {
   chaveCpf?: string; // CPF_CHAVE: segredo próprio do CPF (20c-2). Sem ela, cadastro com CPF é recusado (503)
   enviarEmail?: EnviarEmail; // caixa de teste (Mailpit) na Parte 1; sem ela o e-mail do responsável não sai
   linkBase?: string; // endereço do site, para o link enviado ao responsável
+  ambiente?: string; // L22b: SIESAL_AMBIENTE. Só "producao" vale produção; qualquer outra coisa (ou falta) vira "teste"
 };
 
 // Duas entradas (20c-1): "Vinculado a uma instituição" (com o código) e "Sem instituição" (só e-mail e senha)
@@ -172,6 +173,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   app.get('/config', async () => ({
     instituicao_padrao: opcoes.instituicaoPadrao ?? null,
     modo_local: Boolean(opcoes.cookieLocal),
+    ambiente: opcoes.ambiente === 'producao' ? 'producao' : 'teste',
   }));
 
   const auth: Autenticacao = criarAutenticacao({
