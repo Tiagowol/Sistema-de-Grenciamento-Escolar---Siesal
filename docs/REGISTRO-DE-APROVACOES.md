@@ -495,3 +495,10 @@ Sob a A-098 e a A-099. **Estado: Implementado**, **não aplicado no site**, **c�
 - **Verificação por máquina:** integração 381 de 381 (11 novos, incluindo `arvore.integracao.test.ts` e o `/config`); 1268 testes de unidade e tela (axe sem violação nas telas novas); tipos ok; lint dos 13 arquivos do lote ok. O lint do repositório inteiro não foi refeito.
 - **Não feito:** aplicar a 0031 e reconstruir o site (precisa de backup e autorização); conferência no navegador (360/768/1280 px); checagem humana; as conferências herdadas do L22a-3 ("Meu aluno", "Pedidos de acompanhamento") dependem do site rebuilt; o erro de formatação em `pessoa-rotas.ts` não foi tratado (arquivo fora deste lote); "Sair" só aparece na página Instituições do console.
 - **Retorno:** `docs/RETORNO-0031.md`.
+
+## A-101 — Backup, migração 0031 e reconstrução do site (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migração 0031 com reconstrução do site).
+- **Backup antes:** `backups/siesal-20261113-203928.dump` (com `.sha256`). **Migração** pelo job `migrate`: `0031_arvore_master.sql` aplicada (31 migrações).
+- **API e site reconstruídos** (`docker compose up -d --build`): site 200, `/api/saude` ok, `/api/config` devolve `ambiente: "teste"`, `/api/operacao/arvore/espacos` sem sessão responde 401.
+- **Estado:** L22b **Implementado e aplicado no site local**, ainda **não Verificado**. **Código sem commit** (autorização separada). Sem merge nem deploy.
+- **Não conferido:** telas no navegador (360, 768, 1280 px) e a checagem humana. Retorno: restaurar o backup acima ou `docs/RETORNO-0031.md`.
