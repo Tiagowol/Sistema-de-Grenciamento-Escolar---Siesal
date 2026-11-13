@@ -18,9 +18,10 @@
 - **Tela "Pedidos de acompanhamento"** (Admin e Pedagógico): nunca vista no navegador. Pendência aberta, sem prazo.
 - Envio de e-mail real, validade pelo calendário escolar real da instituição (só testes), parecer jurídico (L25).
 
-## Decisão registrada para o próximo lote (L22a-3, a propor em chat novo)
-- A seção "Aluno menor de idade" só para quem se cadastrou como representante legal (A-090). Muda o T6 do guia.
-- Também em aberto para o L22a-3: "representante vê tudo, só leitura" e o vínculo do representante indicado.
+## Atualização (13/11/2026, noite): o L22a-3 JÁ FOI FEITO
+- Este trecho dizia "L22a-3 a propor em chat novo". **Está desatualizado.** O L22a-3 foi proposto, aprovado (A-092), implementado (A-093), aplicado no site com a migração 0030 e backup `backups/siesal-20261113-195212.dump` (A-094) e commitado (`cf31c50`, só local, sem push; A-095). Estado: **Implementado e aplicado, não Verificado**. Sem merge nem deploy. São 30 migrações.
+- Inclui: seção "Aluno menor de idade" só do representante legal (A-090), tela "Meu aluno" (só leitura) e agenda e disciplinas nas caixas.
+- O que sobrou (conferir "Meu aluno" no navegador em 360/768/1280 px, ver "Pedidos de acompanhamento", 1 erro de formatação em `pessoa-rotas.ts`) foi juntado à proposta do **L22b** (`docs/PROPOSTA-L22B.md`, A-096), que aguarda "aprovo".
 
 ## Resíduo no banco do site (dados fictícios)
 - Contas do guia (`rep.ficticio`, `prof.ficticio`, `ped.ficticio`) e 3 convites de teste (válidos até 19/11/2026); contas `conf.rep.*`, `conf.prof.*`, `conf.aluno.*` de conferência, um espaço individual de conferência e um convite (`criado_por = conferencia-layout-13-11`). Podem ser desativados depois (`desativada_em`).
