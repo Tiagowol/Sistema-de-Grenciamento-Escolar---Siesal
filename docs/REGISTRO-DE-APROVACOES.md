@@ -546,3 +546,8 @@ Pedido do autor em chat, em 13/11/2026: "Backup atual, novo ramo e atualizar o s
 - **Novo ramo:** `lote-22c-admin-convites`, criado a partir do `9dbc69c` (local, sem push). O ramo `lote-21-22-fechamento` fica como estava (3 commits de código sem push: `cf31c50`, `a6af13c`, `9dbc69c`). O nome é meu (próximo lote do plano, L22c); o autor pode pedir outro.
 - **Site:** `docker compose up -d --build`: API e web já estavam com o código atual (nada precisou ser recriado). Site 200, `/api/saude` ok, `ambiente: "teste"`, 31 migrações.
 - Sem push, merge nem deploy.
+
+## A-110 — Push dos ramos (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Fazer o push".
+- Enviados ao GitHub (`origin`): `lote-21-22-fechamento` (4953bee..0b5feec, com os commits de código `cf31c50`, `a6af13c` e `9dbc69c`) e `lote-22c-admin-convites` (ramo novo, a partir do `9dbc69c`, mais o commit de docs A-109). Os dois passam a acompanhar o ramo remoto.
+- Sem merge em `siesal-4` nem em `main`, sem deploy. Nada foi enviado para `main` (v3).
