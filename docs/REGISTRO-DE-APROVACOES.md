@@ -584,3 +584,9 @@ Pedido do autor em chat, em 13/11/2026: "Faça o commit, atualize o site, atuali
 3. **Git:** push do ramo `lote-22c-admin-convites` (`41ee214..dbf1d4b`). Sem merge, sem deploy, sem push para `main`.
 4. **Documentação:** `docs/ESTADO-REAL-2026-11-14.md` (novo), linha de estado do `README.md` atualizada, este registro e o diário `docs/diario/2026-11-14-0400.md`.
 - Estado do L22c: **Implementado e aplicado no site local, não Verificado.**
+
+## A-116 — Conferência das telas do L22c pelo Code e pedido de explicação do L22e e do L22f (14/11/2026, 19:06)
+Mensagem do autor em chat, em 14/11/2026, 19:06. Decisões: (1) a conferência das telas do L22c em 360, 768 e 1280 px é feita pelo Code, nesta sessão; (2) antes de propor L22e e L22f, o Code explica o que cada um cobre, por que surgiram e se somam ou substituem lotes previstos. Sem código novo.
+- **Feito:** conferência por máquina em `docs/VERIFICACAO-L22C.md` (1 falha de responsividade antiga, F-059, e 3 observações; sem conta real: servidor temporário com o código real e API simulada). Explicação de L22e e L22f entregue em chat.
+- **Estado do L22c:** continua **Implementado e aplicado no site local, não Verificado** (falta a checagem humana do autor).
+- **Não feito:** propostas de L22e e L22f; correção da F-059.

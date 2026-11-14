@@ -297,3 +297,10 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Como evitar: depois de `docker compose up -d --build`, reiniciar o proxy (`docker compose restart proxy`). Proposta para depois: resolver o nome do `web` a cada pedido no `proxy/nginx.conf` (precisa de código e de autorização).
 - Como voltar atrás: não se aplica.
 - Observação: por engano o Code ligou um túnel Cloudflare (`siesal-tunel`) por não saber que o Tailscale já existia; foi removido, a tarefa agendada de encerramento também, e o `.env` não foi alterado (cópia em `backups/env.antes-acesso-publico`).
+
+## F-059 — 14/11/2026 — Em 360 px a página de Usuários alarga para cerca de 690 px (não resolvida)
+- O que falhou: na conferência do L22c (`docs/VERIFICACAO-L22C.md`), com a tabela de Usuários visível em 360 px de largura, o navegador alarga a página para cerca de 690 px e diminui o zoom. Em 768 px a tabela rola 23 px por dentro. Regra violada: CLAUDE.md, seção 4 (sem rolagem horizontal em 360, 768 e 1280 px).
+- Causa: a tabela tem largura mínima de cerca de 704 px. **Já existia antes do L22c**: com o `Usuarios.tsx` do commit anterior (`dbf1d4b^`) a medida foi 687 px. O L22c acrescentou o botão Desativar/Reativar na coluna Ação.
+- Correção: nenhuma feita (esta sessão não escreve código). Proposta para um lote pequeno de defeito: lista em cartões em telas estreitas.
+- Como voltar atrás: não se aplica (nada foi alterado).
+- Observação: medido em servidor temporário com o código real do commit e API simulada; o servidor foi removido.
