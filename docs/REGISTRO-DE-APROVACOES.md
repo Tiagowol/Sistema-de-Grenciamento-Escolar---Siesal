@@ -619,3 +619,9 @@ Mensagem do autor ao Code, em 14/11/2026, 19:43: autoriza o commit e o push do c
 
 ## A-123 — Q1 do L22g respondida: A (14/11/2026, noite)
 Resposta do autor em chat, em 14/11/2026: "A: os 3 itens". O L22g inclui a barra de rolagem do menu (some, a rolagem continua, com sombra no pé), o ícone próprio por item e o item de duas linhas alinhado; agrupar em seções fica fora (L22h, só com decisão do autor). `docs/PROPOSTA-L22G.md` atualizada. **Esta resposta não é o "aprovo"** (CLAUDE.md, seção 3, e o 19:43 do autor): o L22g continua **Planejado**, sem código. Falta o "aprovo" explícito (Q2).
+
+## A-124 — "Aprovo" do L22g e código implementado (14/11/2026, noite)
+Mensagem do autor em chat, em 14/11/2026: "Aprovo" (respondendo à pergunta "Posso começar o código do L22g como está na proposta?", Q1 = A). Código sob a A-121 e a A-123.
+- **Feito:** barra de rolagem do menu lateral some (a rolagem continua) com sombra suave no pé quando há itens abaixo; ícone próprio por item (8 ícones novos; nenhum repetido no menu de cada perfil, incluindo o Master); item de duas linhas alinhado. Só CSS, ícones, um efeito do `Shell` e testes. **Sem API, sem banco, sem migração, sem mudança de matriz.**
+- **Verificação por máquina:** testes de tela e shared 1433 de 1433 (15 novos), tipos ok, lint dos 5 arquivos ok. Conferência em 360, 768 e 1280 px e por teclado em `docs/VERIFICACAO-L22G.md` (código real, API simulada). Integração da API não refeita (a API não mudou).
+- **Estado do L22g: Implementado, não aplicado no site, não Verificado.** Código **sem commit** (a autorização de commit de 19:43 foi só do L22e). Seguem separados: commit de código, reconstrução do site, merge e deploy.
