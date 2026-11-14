@@ -593,3 +593,6 @@ Mensagem do autor em chat, em 14/11/2026, 19:06. Decisões: (1) a conferência d
 
 ## A-117 — "Seguir L22e" e proposta do L22e (14/11/2026, noite)
 Resposta do autor em chat, em 14/11/2026: "Não, seguir L22e" (sem lote de defeito antes). Proposta escrita em `docs/PROPOSTA-L22E.md` (1 item: tela "Auditoria" do Admin, só leitura, só ações administrativas da própria instituição; sem migração; sem mudança de matriz; Q1 = quais eventos entram, recomendada A). **Estado do L22e: Planejado.** Sem código e sem migração. Falta a resposta à Q1 e o "aprovo" explícito. F-059 e contraste 4,42:1 seguem abertos, fora deste lote.
+
+## A-118 — Q1 do L22e respondida: B (14/11/2026, noite)
+Resposta do autor em chat, em 14/11/2026: "B: A + logins da equipe". O Admin verá as ações administrativas **e** os logins e bloqueios de login da equipe (Admin, Professor, Pedagógico), nunca de aluno, responsável, pessoa nem `anonimo`; sem `antes`/`depois`. `docs/PROPOSTA-L22E.md` atualizada. **Esta resposta não é o "aprovo"** (CLAUDE.md, seção 3): o L22e continua **Planejado**, sem código e sem migração. Falta o "aprovo" explícito (Q2).
