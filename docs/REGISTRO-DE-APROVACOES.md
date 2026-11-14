@@ -551,3 +551,9 @@ Pedido do autor em chat, em 13/11/2026: "Backup atual, novo ramo e atualizar o s
 Pedido do autor em chat, em 13/11/2026: "Fazer o push".
 - Enviados ao GitHub (`origin`): `lote-21-22-fechamento` (4953bee..0b5feec, com os commits de código `cf31c50`, `a6af13c` e `9dbc69c`) e `lote-22c-admin-convites` (ramo novo, a partir do `9dbc69c`, mais o commit de docs A-109). Os dois passam a acompanhar o ramo remoto.
 - Sem merge em `siesal-4` nem em `main`, sem deploy. Nada foi enviado para `main` (v3).
+
+## A-111 — Decisões do autor sobre Suporte, Auditoria do Admin e L22c, e proposta do L22c (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026:
+- **Quem atende o Suporte no espaço individual:** "Master ou um Admin que o Master indicar". Vira o lote **L22f** (Planejado; precisa de proposta própria e migração).
+- **Auditoria para o Admin da escola (Q2 da proposta do L22d):** "sim". Vira o lote **L22e** (Planejado; proposta própria, depois do L22c).
+- **"O próximo lote do plano é o L22c. Agora."** Proposta escrita em `docs/PROPOSTA-L22C.md` (3 itens: Admin desativa e reativa, com Termo 6; Master revoga convite e tem tela do limite de alunos; Primeiros passos; migração 0032; matriz v23; Q1 = onde guardar "já vi", recomendada A). **Estado do L22c: Planejado.** Sem código e sem migração. Falta o "aprovo" explícito. Ordem proposta: L22c, L22e, L22f. Ritmo (Adendo 4): código só a partir de 14/11, salvo ordem do autor.
