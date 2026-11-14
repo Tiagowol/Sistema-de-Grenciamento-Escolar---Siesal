@@ -628,3 +628,6 @@ Mensagem do autor em chat, em 14/11/2026: "Aprovo" (respondendo à pergunta "Pos
 
 ## A-125 — Reconstrução do site com o L22g (14/11/2026, noite)
 Resposta do autor em chat, em 14/11/2026: "Sim, reconstruir" (à pergunta sobre reconstruir o site para ver o menu novo). Executado: `docker compose up -d --build` (só o `web` foi recriado; a API não mudou; **sem migração**) e `docker compose restart proxy` (F-058). Conferido: `/` e `/pessoa` 200, `/api/saude` ok (site e banco), `/api/auditoria` sem sessão 401; o CSS do site tem a barra escondida e a sombra do pé, e o JS tem os ícones novos. **Estado do L22g: Implementado e aplicado no site local, não Verificado.** Código ainda sem commit. Sem merge e sem deploy fora do computador do autor.
+
+## A-126 — Commit do código do L22g (14/11/2026, noite)
+Resposta do autor em chat, em 14/11/2026: "Sim, commitar" (à pergunta "Posso commitar o código do L22g agora?"). Executado: commit de código do L22g (5 arquivos listados um a um, sem `git add .`, identidade do git do computador) e push do ramo `lote-22c-admin-convites`. Os arquivos são os de `docs/VERIFICACAO-L22G.md`. Sem merge e sem deploy fora do computador. **Estado do L22g: Implementado, commitado e aplicado no site local, não Verificado.**
