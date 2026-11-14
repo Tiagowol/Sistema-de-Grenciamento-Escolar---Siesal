@@ -603,3 +603,6 @@ Mensagem do autor em chat, em 14/11/2026: "Aprovo" (respondendo à pergunta "Pos
 - **Estreitamento em relação à proposta:** `responsavel.autorizou`, `representante.aluno_criado` e `conta.criada_aguardando_responsavel` não aparecem (quem faz é o responsável ou o aluno). Mostrá-los pede outra decisão do autor.
 - **Verificação por máquina:** integração 400 de 400 (7 novos), telas e shared 1418 de 1418, tipos ok, lint dos 13 arquivos ok. Conferência em 360, 768 e 1280 px em `docs/VERIFICACAO-L22E.md` (código real, API simulada).
 - **Estado do L22e: Implementado, não aplicado no site, não Verificado.** Código **sem commit** (o autor faz o commit). Seguem separados: commit de código, merge e deploy.
+
+## A-120 — Reconstrução do site com o L22e (14/11/2026, noite)
+Resposta do autor em chat, em 14/11/2026: "Sim, reconstruir" (à pergunta sobre reconstruir o site para ver a Auditoria). Executado: `docker compose up -d --build` (api e web recriados; **sem migração**, banco intacto) e `docker compose restart proxy` (F-058). Conferido: `/` 200, `/api/saude` com status ok e banco ok, `/api/auditoria` sem sessão responde 401 (a rota existe), o código novo está no site. Todos os contêineres Up (api healthy). **Estado do L22e: Implementado e aplicado no site local, não Verificado.** Código ainda sem commit. Sem merge e sem deploy fora do computador do autor.
