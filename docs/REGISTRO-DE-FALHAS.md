@@ -310,3 +310,11 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: medido de novo em 15/11, a tabela já rola dentro de `.table-wrap` (288 px). Quem alarga a página são os textos `sr-only` (`position: absolute`) dos botões da coluna Ação, que vazam para fora da área rolável (página com 606 px).
 - Correção: nenhuma no código (decisão do autor). Causa e formas de corrigir em `docs/LEVANTAMENTO-F059-E-CONTRASTE-2026-11-15.md`.
 - Como voltar atrás: não se aplica (só texto).
+
+## 15/11/2026 — F-059 e contraste 4,43:1: correção aplicada (`7bc6174`)
+- O que falhou: página "Usuários" com 606 px em 360 px de largura; texto de apoio com 4,43:1 sobre o fundo (pedido: 4,5:1).
+- Causa: textos `sr-only` (`position: absolute`) da tabela vazavam da `.table-wrap`; `--muted: #64748b` sobre `#f4f7fb`.
+- Correção: `.table-wrap { position: relative }` e `--muted: #5d6b80` (5,04:1) no tema claro, em `web/src/estilos/prototipo.css`. Os outros temas têm `--muted` próprio e não mudaram.
+- Medido de novo no site reconstruído: largura da página 360, 768 e 1280 px (era 606 em 360 px); axe de contraste na tela Usuários: 0 violações.
+- Como voltar atrás: `git revert 7bc6174`, depois `docker compose up -d --build web` e `docker compose restart proxy`.
+- Observação (já existia, não é desta correção): `web/src/l22g.test.tsx` termina com 1 erro não tratado do vitest (`SinoPrazos`, `Sinos.tsx:361`, dado de teste sem `atrasadas`), com os 1433 testes passando. Confirmado igual sem a correção. Fica para um lote de defeito de teste, se o autor quiser.
