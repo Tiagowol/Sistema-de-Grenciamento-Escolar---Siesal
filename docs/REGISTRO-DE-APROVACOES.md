@@ -596,3 +596,10 @@ Resposta do autor em chat, em 14/11/2026: "Não, seguir L22e" (sem lote de defei
 
 ## A-118 — Q1 do L22e respondida: B (14/11/2026, noite)
 Resposta do autor em chat, em 14/11/2026: "B: A + logins da equipe". O Admin verá as ações administrativas **e** os logins e bloqueios de login da equipe (Admin, Professor, Pedagógico), nunca de aluno, responsável, pessoa nem `anonimo`; sem `antes`/`depois`. `docs/PROPOSTA-L22E.md` atualizada. **Esta resposta não é o "aprovo"** (CLAUDE.md, seção 3): o L22e continua **Planejado**, sem código e sem migração. Falta o "aprovo" explícito (Q2).
+
+## A-119 — "Aprovo" do L22e e código implementado (14/11/2026, noite)
+Mensagem do autor em chat, em 14/11/2026: "Aprovo" (respondendo à pergunta "Posso começar o código do L22e como está na proposta?", Q1 = B). Código sob a A-117 e a A-118.
+- **Feito:** `GET /auditoria` (só Admin, sessão completa, própria instituição, 50 por página, sem `antes`/`depois`); lista permitida de ações administrativas e entradas da equipe, só quando quem fez é Admin, Professor ou Pedagógico; leitura registrada (`auditoria.leitura`) na primeira página; tela "Auditoria" no menu do Admin; tópico na Ajuda; versão L22e. **Sem migração e sem mudança na matriz.**
+- **Estreitamento em relação à proposta:** `responsavel.autorizou`, `representante.aluno_criado` e `conta.criada_aguardando_responsavel` não aparecem (quem faz é o responsável ou o aluno). Mostrá-los pede outra decisão do autor.
+- **Verificação por máquina:** integração 400 de 400 (7 novos), telas e shared 1418 de 1418, tipos ok, lint dos 13 arquivos ok. Conferência em 360, 768 e 1280 px em `docs/VERIFICACAO-L22E.md` (código real, API simulada).
+- **Estado do L22e: Implementado, não aplicado no site, não Verificado.** Código **sem commit** (o autor faz o commit). Seguem separados: commit de código, merge e deploy.
