@@ -525,3 +525,14 @@ Mensagem do autor em chat, em 13/11/2026: "Aprovo", sobre `docs/PROPOSTA-L22D.md
 - **Estado: Planejado, aprovado para implementar.** Nenhum código feito até este registro.
 - **Ritmo (Adendo 4):** hoje (13/11) já houve 4 lotes grandes; início do código em 14/11 ou depois, **salvo o autor mandar começar hoje** (como nas A-093 e A-099).
 - Seguem separadas, cada uma com autorização própria: commit de código (inclui o ajuste de menu do Master da A-103, ainda sem commit), merge e deploy.
+
+## A-106 — Início do código do L22d hoje (13/11/2026)
+Mensagem do autor em chat, em 13/11/2026: "Começar hoje", respondendo à pergunta sobre o ritmo do Adendo 4 (5º lote grande no mesmo dia; o autor decidiu, como nas A-093 e A-099). Código do L22d sob a A-105. Seguem separadas: commit de código, merge e deploy.
+
+## A-107 — L22d implementado e aplicado no site (13/11/2026)
+Sob a A-105 e a A-106. **Estado: Implementado e aplicado no site local (só o contêiner `web`, `docker compose up -d --build web`), não Verificado. Código sem commit** (inclui o ajuste de menu do Master da A-103, que o L22d absorveu).
+- **Item 1 (Master no Shell):** o console usa o mesmo `Shell`: busca no menu, Ajuda no topo, Versão, sino "Avisos da plataforma" (Q1 = A: calculado dos dados que o Master já lê, sem migração), Auditoria em página própria, Suporte (texto) e Acessibilidade (só neste aparelho). O botão Sair fica no topo.
+- **Item 2 (padrão comum):** item Suporte e Versão (`web/src/versao.ts`) em todos os perfis; teste de contrato `web/src/padrao-perfis.test.tsx`; o responsável do espaço individual deixou de ver Notas oficiais e Calendário da escola. Sem migração e sem mudança na API.
+- **Item 3 (varredura):** relatório em `docs/VARREDURA-PERFIS-L22D.md`; conferido em 360, 768 e 1280 px (entrada simulada no navegador, sem conta real): sem rolagem horizontal e alvos de 44 px.
+- **Verificação por máquina:** testes de tela 1289/1289, axe sem violação, tipos ok.
+- **Não feito:** conferência com conta real de cada perfil e com Master real; checagem humana; Q2 (Auditoria do Admin) e o Suporte do espaço individual ficam para decisão.
