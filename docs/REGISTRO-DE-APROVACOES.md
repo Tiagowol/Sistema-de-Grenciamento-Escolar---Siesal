@@ -576,3 +576,11 @@ Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migr
 - **API e site reconstruídos** (`docker compose up -d --build`): site 200, `/api/saude` ok, rotas novas do Master sem sessão respondem 401, colunas `revogado_em` e `revogado_por` e a função de 6 parâmetros existem no banco.
 - **Estado:** L22c **Implementado e aplicado no site local**, ainda **não Verificado**. **Código sem commit** (autorização separada). Sem merge nem deploy.
 - **Não conferido:** telas no navegador (360, 768, 1280 px) e a checagem humana. Retorno: restaurar o backup acima ou `docs/RETORNO-0032.md`.
+
+## A-115 — Commit de código do L22c, site, git e documentação (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Faça o commit, atualize o site, atualize o git, atualize a documentação, na ordem certa". Ordem seguida:
+1. **Commit de código:** `dbf1d4b` (26 arquivos listados, sem `git add .`; autor do git do computador). Inclui a migração `0032` e os testes.
+2. **Site:** `docker compose up -d --build`: API e web já estavam com este código; 200, saúde ok, 32 migrações.
+3. **Git:** push do ramo `lote-22c-admin-convites` (`41ee214..dbf1d4b`). Sem merge, sem deploy, sem push para `main`.
+4. **Documentação:** `docs/ESTADO-REAL-2026-11-14.md` (novo), linha de estado do `README.md` atualizada, este registro e o diário `docs/diario/2026-11-14-0400.md`.
+- Estado do L22c: **Implementado e aplicado no site local, não Verificado.**

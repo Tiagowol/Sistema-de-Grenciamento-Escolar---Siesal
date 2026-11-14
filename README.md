@@ -2,7 +2,7 @@
 
 Sistema Inteligente de Estudos, Agenda e Aprendizagem: sistema escolar inclusivo e multi-instituição, feito como TCC (IFRN Canguaretama) e simulado como SaaS.
 
-Estado (10/11/2026, noite): lotes L1 a L20 **Implementados** — a Parte 1 está completa. Além das telas anteriores, entraram: rótulos ícone/texto, chave do menu, ajuda "?" e VLibras com aviso (L17d); calendário da escola, regras de notas versionadas e identidade visual da escola (L19); situações da instituição, módulos por escola, contagens só numéricas, trilha do Master e a página pública `/status` (L20). Migrações até a `0017`, aplicadas no banco do site com backup antes; matriz de permissões na versão 12. O ramo `siesal-4` contém tudo e está igual no GitHub. Nada é "Verificado": faltam as checagens humanas (leitor de tela, teclado, contraste real, zoom de 200%, NAPNE, retorno de 12/11/2026) e o parecer jurídico. Planos: `docs/PLANO-L17D.md`, `docs/PLANO-L19.md` e `docs/PLANO-L20.md`; roteiro em `docs/ROTEIRO-L17A-A-L20.md`; próximos passos em `docs/PROXIMOS-PASSOS.md`.
+Estado (13/11/2026, noite): além dos lotes L1 a L20, estão **Implementados e aplicados no site local** os lotes L21a a L21c, L22a (pessoa, representante legal, convites e "Quem pode ver meus dados"), L22a-3, L22b (árvore do Master, só leitura), L22c (Admin desativa e reativa, Termo 6, revogar convite, limite de alunos, Primeiros passos) e L22d (mesmo menu e topo para todos os perfis, incluindo o Master). Migrações até a `0032`, aplicadas com backup antes; matriz de permissões na versão 23. Ramo de trabalho: `lote-22c-admin-convites` (no GitHub); sem merge e sem deploy. Nada é "Verificado": faltam as checagens humanas (leitor de tela, teclado, contraste, NAPNE), os testes T1 a T4 e o parecer jurídico. Estado detalhado: `docs/ESTADO-REAL-2026-11-14.md`; aprovações: `docs/REGISTRO-DE-APROVACOES.md`; próximos lotes: L22e (Auditoria do Admin) e L22f (Suporte do espaço individual).
 
 Como ver o sistema:
 - Site local: http://localhost:18080 (`WEB_PORTA=18080` no `.env`). Subir ou refazer: `docker compose up -d --build`.
@@ -77,7 +77,7 @@ MASTER_USUARIO=nome docker compose --profile release run --rm convite-master
 - Falhas corrigidas ficam em `docs/REGISTRO-DE-FALHAS.md`.
 
 ## Documentos
-A documentação de planejamento (Visão, ADRs, matriz de permissões, modelo de dados, riscos, privacidade) está no projeto de trabalho e será copiada para `docs/` em lote próprio. Em `docs/` estão o roteiro, o registro de aprovações, o registro de falhas, os planos e os retornos de cada migração (`RETORNO-0008` a `RETORNO-0014`).
+A documentação de planejamento (Visão, ADRs, matriz de permissões, modelo de dados, riscos, privacidade) está no projeto de trabalho e será copiada para `docs/` em lote próprio. Em `docs/` estão o roteiro, o registro de aprovações, o registro de falhas, os planos e os retornos de cada migração (`RETORNO-0008` a `RETORNO-0032`).
 
 ## Conformidade
 Projetado para atender LGPD, ECA Digital (Lei 15.211/2025), WCAG 2.2 AA e eMAG. Sem parecer jurídico até o momento; não afirmamos "em conformidade".
