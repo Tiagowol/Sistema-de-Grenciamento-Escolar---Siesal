@@ -536,3 +536,6 @@ Sob a A-105 e a A-106. **Estado: Implementado e aplicado no site local (só o co
 - **Item 3 (varredura):** relatório em `docs/VARREDURA-PERFIS-L22D.md`; conferido em 360, 768 e 1280 px (entrada simulada no navegador, sem conta real): sem rolagem horizontal e alvos de 44 px.
 - **Verificação por máquina:** testes de tela 1289/1289, axe sem violação, tipos ok.
 - **Não feito:** conferência com conta real de cada perfil e com Master real; checagem humana; Q2 (Auditoria do Admin) e o Suporte do espaço individual ficam para decisão.
+
+## A-108 — Commit de código do L22d (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Autorizo o commit". Commit `9dbc69c` (11 arquivos listados, sem `git add .`; autor do git do computador, sem definir autor). Inclui o ajuste de menu do Master da A-103. **Push de código não feito** (não autorizado): o ramo `lote-21-22-fechamento` tem 3 commits de código sem push (`cf31c50` L22a-3, `a6af13c` L22b e este). Um `git push` leva os três. Sem merge nem deploy.
