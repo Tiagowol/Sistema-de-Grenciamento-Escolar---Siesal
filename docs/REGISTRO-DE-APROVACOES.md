@@ -616,3 +616,6 @@ Mensagem do autor ao Code, em 14/11/2026, 19:43: autoriza o commit e o push do c
 - **Registros do L22e:** A-111 (decisão), A-117 (proposta), A-118 (Q1 = B), A-119 (aprovo e implementação), A-120 (site reconstruído), A-122 (este). Nada faltava.
 - **Estado do L22e:** Implementado, commitado e aplicado no site local, **não Verificado**.
 - **Em aberto:** Q1 e "aprovo" do L22g; checagem humana do L22c e do L22e; T1 a T4; tela Auditoria como Admin; decisão sobre F-059 e o contraste 4,42:1; proposta do L22f (do Code, a partir de 15/11).
+
+## A-123 — Q1 do L22g respondida: A (14/11/2026, noite)
+Resposta do autor em chat, em 14/11/2026: "A: os 3 itens". O L22g inclui a barra de rolagem do menu (some, a rolagem continua, com sombra no pé), o ícone próprio por item e o item de duas linhas alinhado; agrupar em seções fica fora (L22h, só com decisão do autor). `docs/PROPOSTA-L22G.md` atualizada. **Esta resposta não é o "aprovo"** (CLAUDE.md, seção 3, e o 19:43 do autor): o L22g continua **Planejado**, sem código. Falta o "aprovo" explícito (Q2).

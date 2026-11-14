@@ -1,6 +1,6 @@
 # PROPOSTA L22g — Menu lateral: sem barra de rolagem feia e itens consistentes — 14/11/2026
 
-Estado: **Planejado (proposta escrita). Nenhum código feito.** Pedido do autor em chat, em 14/11/2026 (com uma captura de tela do menu do Admin): "corrija em um lote os menus, e tire essa barra de rolagem, muito feia e fora do padrão. Caso não tenha o lote 22g, faça ele". **O L22g não existia** (conferido nos documentos): este é ele. Ordem dos lotes: L22e (feito, falta o commit), **L22g (este)**, L22f (planejado, ainda sem proposta). Pela A-071 e pelo CLAUDE.md (seção 3), só há código depois de "aprovo" explícito; a pergunta Q1 abaixo fecha o que "corrigir os menus" inclui.
+Estado: **Planejado (proposta escrita). Nenhum código feito.** Pedido do autor em chat, em 14/11/2026 (com uma captura de tela do menu do Admin): "corrija em um lote os menus, e tire essa barra de rolagem, muito feia e fora do padrão. Caso não tenha o lote 22g, faça ele". **O L22g não existia** (conferido nos documentos): este é ele. Ordem dos lotes: L22e (feito, falta o commit), **L22g (este)**, L22f (planejado, ainda sem proposta). Pela A-071 e pelo CLAUDE.md (seção 3), só há código depois de "aprovo" explícito; a Q1 fechou o que "corrigir os menus" inclui (A, 14/11).
 
 ## Estado anterior (medido no navegador, 1280×720, menu do Admin, código atual)
 - O menu lateral (`.sidebar`, `web/src/estilos/prototipo.css`) tem `overflow-y: auto`. O conteúdo do Admin mede **1051 px** e a janela **720 px**, então aparece a **barra de rolagem nativa** do navegador: cinza, 15 px de largura, **fora do tema escuro do menu**. É a barra da captura do autor. Aparece em todo perfil cujo menu não cabe na altura da janela, e também na gaveta do celular (mesma classe).
@@ -36,13 +36,13 @@ Estado: **Planejado (proposta escrita). Nenhum código feito.** Pedido do autor 
 - **[Estimativa]** Meio dia ou menos, com a conferência.
 - **Risco principal:** esconder a barra faz algumas pessoas não perceberem que há mais itens. Mitigação: a sombra do pé do menu (item 1) e o fato de o Admin, que tem o menu mais longo, ver os itens mais usados no alto.
 
+## Decisão registrada (Q1 respondida)
+**Q1 = A (autor, 14/11/2026):** o L22g inclui os 3 itens (barra de rolagem do menu some mantendo a rolagem, ícone próprio por item, item de duas linhas alinhado). Não foram escolhidas: B (só a barra) e C (agrupar em seções com nome; fica fora, só com decisão sua, como L22h).
+
 ## Pergunta (1, fechada)
-**Q1 — O que "corrigir os menus" inclui neste lote?**
-- **A (recomendada):** os 3 itens acima (barra, ícones próprios, item de duas linhas alinhado).
-- B: só a barra de rolagem (item 1).
-- C: A e também agrupar os itens em seções com nome (por exemplo, "Pessoas", "Escola", "Registro"). **Não recomendo agora:** mexe na estrutura dos 6 perfis, precisa de decisão por perfil e passa de 3 itens.
+**Q2 — Posso começar o código do L22g como está nesta proposta (Q1 = A)?** Sim = "aprovo" explícito do autor. Sem isso, o L22g continua Planejado.
 
 ## Feito, Falta, Sugestões
 - **Feito:** estado anterior medido no navegador; causa da barra identificada (`overflow-y: auto` com menu mais alto que a janela); proposta escrita.
-- **Falta:** resposta do autor à Q1 e "aprovo" explícito. Depois, código, testes e conferência nas 3 larguras. Merge e deploy só com autorizações separadas.
-- **Sugestões:** aprovar com a A; começar o código só amanhã (15/11), por causa do ritmo do Adendo 4 (hoje já foram 2 lotes grandes), a não ser que você mande começar hoje.
+- **Falta:** "aprovo" explícito do autor (Q2). Depois, código, testes e conferência nas 3 larguras. Merge e deploy só com autorizações separadas.
+- **Sugestões:** aprovar; começar o código só amanhã (15/11), por causa do ritmo do Adendo 4 (hoje já foram 2 lotes grandes), a não ser que você mande começar hoje.
