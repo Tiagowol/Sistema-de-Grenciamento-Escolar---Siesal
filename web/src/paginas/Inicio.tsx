@@ -1,4 +1,5 @@
 import type { Eu } from '../api';
+import { PrimeirosPassos } from '../componentes/PrimeirosPassos';
 import type { Pagina } from '../componentes/Shell';
 import { Icone } from '../icones';
 
@@ -14,6 +15,7 @@ export function Inicio({ eu, aoIr }: { eu: Eu; aoIr: (p: Pagina) => void }) {
           <p>Você entrou com segurança. Escolha o que fazer agora.</p>
         </div>
       </div>
+      <PrimeirosPassos perfil={eu.usuario.perfil} aoIr={aoIr} />
       <div className="grid cols-2">
         <section className="card">
           <div className="card-head">

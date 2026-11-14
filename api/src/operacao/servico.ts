@@ -40,6 +40,8 @@ export type PessoaArvore = {
   ativo: boolean;
   menor: boolean | null; // só para aluno
 };
+// L22c: só id, tipo e datas (o código só aparece uma vez, na criação)
+export type ConvitePendente = { id: string; tipo: string; criado_em: Date; expira_em: Date };
 export type EspacoArvore = { espaco_id: string; pessoas: PessoaArvore[] };
 export type PessoaSemVinculo = {
   pessoa_id: string;
@@ -452,21 +454,79 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
   // Só números: nunca o código nem quem usou
-  type ResumoConvites = { pendentes: number; usados: number; vencidos: number };
+  type ResumoConvites = { pendentes: number; usados: number; vencidos: number; revogados: number };
   async function resumoDosConvites(): Promise<ResumoConvites & { instituicao: ResumoConvites }> {
     return comoOperacao(dep.banco, async (tx) => {
       const linhas = await tx.$queryRaw<(ResumoConvites & { tipo: string })[]>`
         SELECT tipo,
-               count(*) FILTER (WHERE usado_em IS NULL AND expira_em > now())::int AS pendentes,
+               count(*) FILTER (WHERE usado_em IS NULL AND revogado_em IS NULL AND expira_em > now())::int AS pendentes,
                count(*) FILTER (WHERE usado_em IS NOT NULL)::int AS usados,
-               count(*) FILTER (WHERE usado_em IS NULL AND expira_em <= now())::int AS vencidos
+               count(*) FILTER (WHERE usado_em IS NULL AND revogado_em IS NULL AND expira_em <= now())::int AS vencidos,
+               count(*) FILTER (WHERE usado_em IS NULL AND revogado_em IS NOT NULL)::int AS revogados
           FROM convite_individual GROUP BY tipo`;
-      const zero = { pendentes: 0, usados: 0, vencidos: 0 };
+      const zero = { pendentes: 0, usados: 0, vencidos: 0, revogados: 0 };
       const de = (t: string): ResumoConvites => {
         const l = linhas.find((x) => x.tipo === t);
-        return l ? { pendentes: l.pendentes, usados: l.usados, vencidos: l.vencidos } : zero;
+        return l
+          ? {
+              pendentes: l.pendentes,
+              usados: l.usados,
+              vencidos: l.vencidos,
+              revogados: l.revogados,
+            }
+          : zero;
       };
       return { ...de('individual'), instituicao: de('instituicao') };
+    });
+  }
+
+  // L22c: convites esperando uso (nunca o código nem o hash) e revogação com auditoria
+  async function listarConvitesPendentes(): Promise<ConvitePendente[]> {
+    return comoOperacao(
+      dep.banco,
+      (tx) =>
+        tx.$queryRaw<ConvitePendente[]>`
+        SELECT id, tipo, criado_em, expira_em FROM convite_individual
+         WHERE usado_em IS NULL AND revogado_em IS NULL AND expira_em > now()
+         ORDER BY criado_em DESC LIMIT 100`,
+    );
+  }
+  async function revogarConvite(
+    sessao: SessaoOperacao,
+    id: string,
+  ): Promise<'ok' | 'nao_encontrado' | 'nao_pendente'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [existe] = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM convite_individual WHERE id = ${id}::uuid`;
+      if (!existe) return 'nao_encontrado';
+      // Só vale para convite que ainda espera uso; revogar vence o convite na hora
+      const n = await tx.$executeRaw`
+        UPDATE convite_individual
+           SET revogado_em = now(), revogado_por = ${`master:${sessao.usuario}`}, expira_em = now()
+         WHERE id = ${id}::uuid AND usado_em IS NULL AND revogado_em IS NULL AND expira_em > now()`;
+      if (n === 0) return 'nao_pendente';
+      await auditar(tx, `master:${sessao.usuario}`, 'convite.revogado', `convite:${id}`);
+      return 'ok';
+    });
+  }
+
+  // L22c: limite de alunos por representante (1 a 20), guardado em configuracao_plataforma
+  async function lerLimiteAlunos(): Promise<number> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [c] = await tx.$queryRaw<{ valor: string }[]>`
+        SELECT valor FROM configuracao_plataforma WHERE chave = 'limite_alunos_por_representante'`;
+      const n = Number(c?.valor);
+      return Number.isInteger(n) && n >= 1 ? n : 5;
+    });
+  }
+  async function mudarLimiteAlunos(sessao: SessaoOperacao, limite: number): Promise<void> {
+    await comoOperacao(dep.banco, async (tx) => {
+      await tx.$executeRaw`
+        INSERT INTO configuracao_plataforma (chave, valor) VALUES ('limite_alunos_por_representante', ${String(limite)})
+        ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor, atualizado_em = now()`;
+      await auditar(tx, `master:${sessao.usuario}`, 'limite_alunos.mudado', 'plataforma', {
+        limite,
+      });
     });
   }
 
@@ -557,6 +617,10 @@ export function criarOperacao(dep: DependenciasOperacao) {
     contarEspacosIndividuais,
     gerarConviteIndividual,
     resumoDosConvites,
+    listarConvitesPendentes,
+    revogarConvite,
+    lerLimiteAlunos,
+    mudarLimiteAlunos,
     criarInstituicao,
     mudarSituacao,
     painel,

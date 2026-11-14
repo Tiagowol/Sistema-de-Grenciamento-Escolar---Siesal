@@ -690,6 +690,7 @@ export const api = {
     nome: string;
     email: string;
     senha: string;
+    aceite_termo: true;
   }) => chamar<Eu | { criada: true }>('POST', '/auth/criar-instituicao', d),
   logout: () => chamar<void>('POST', '/auth/logout'),
   trocarSenha: (d: { senha_atual: string; senha_nova: string }) =>
@@ -702,6 +703,8 @@ export const api = {
     chamar<{ usuario: UsuarioLista; senha_provisoria: string }>('POST', '/usuarios', d),
   senhaProvisoria: (id: string) =>
     chamar<{ senha_provisoria: string }>('POST', `/usuarios/${id}/senha-provisoria`),
+  desativarUsuario: (id: string) => chamar<void>('POST', `/usuarios/${id}/desativar`),
+  reativarUsuario: (id: string) => chamar<void>('POST', `/usuarios/${id}/reativar`),
   turmas: () => chamar<{ turmas: TurmaLista[] }>('GET', '/turmas'),
   criarTurma: (d: { nome: string; ano_letivo: number; turno: Turno }) =>
     chamar<{ id: string }>('POST', '/turmas', d),
@@ -946,6 +949,13 @@ export type PessoaSemVinculo = {
   email: string;
   papel_desejado: string | null;
 };
+// L22c: convite esperando uso (nunca o código)
+export type ConvitePendente = {
+  id: string;
+  tipo: 'individual' | 'instituicao';
+  criado_em: string;
+  expira_em: string;
+};
 export const apiOperacao = {
   eu: () => chamar<EuOperacao>('GET', '/operacao/eu'),
   login: (d: { usuario: string; senha: string; codigo?: string }) =>
@@ -970,8 +980,14 @@ export const apiOperacao = {
       pendentes: number;
       usados: number;
       vencidos: number;
-      instituicao?: { pendentes: number; usados: number; vencidos: number };
+      revogados?: number;
+      instituicao?: { pendentes: number; usados: number; vencidos: number; revogados?: number };
     }>('GET', '/operacao/convites-individuais'),
+  convitesPendentes: () =>
+    chamar<{ convites: ConvitePendente[] }>('GET', '/operacao/convites-pendentes'),
+  revogarConvite: (id: string) => chamar<void>('POST', `/operacao/convites/${id}/revogar`),
+  limiteAlunos: () => chamar<{ limite: number }>('GET', '/operacao/limite-alunos'),
+  mudarLimiteAlunos: (limite: number) => chamar<void>('PUT', '/operacao/limite-alunos', { limite }),
   painel: () =>
     chamar<{ instituicoes: InstituicaoPainel[]; espacos_individuais: number }>(
       'GET',

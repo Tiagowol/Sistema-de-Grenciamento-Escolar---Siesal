@@ -17,6 +17,20 @@ const TODOS: string[] = [];
 
 export const TOPICOS: Topico[] = [
   {
+    id: 'desativar-conta',
+    titulo: 'Desativar e reativar uma conta',
+    perfis: ['admin'],
+    palavras: ['desativar', 'reativar', 'conta', 'usuario', 'deixar de entrar', 'saiu da escola'],
+    resumo:
+      'Desativar não apaga nada: a pessoa só deixa de entrar. Você pode reativar quando quiser. Vale só para a sua instituição.',
+    passos: [
+      'Abra Usuários no menu e ache a pessoa na lista.',
+      'Escolha Desativar e confirme com Sim, desativar.',
+      'Para voltar, escolha Reativar na mesma linha.',
+      'Você não desativa a sua própria conta.',
+    ],
+  },
+  {
     id: 'master-visao',
     titulo: 'Gestão da plataforma: o que o Master vê e o que não vê',
     perfis: ['master'],

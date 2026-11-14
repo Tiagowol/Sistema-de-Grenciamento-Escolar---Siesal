@@ -398,3 +398,24 @@ describe('matriz v22 (L22b: árvore do Master, só leitura)', () => {
       );
   });
 });
+
+describe('matriz v23 (L22c: Admin desativa, Master revoga convite e muda o limite)', () => {
+  it('só o Admin desativa e reativa usuário, na própria instituição', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(23);
+    for (const acao of ['desativar', 'reativar'])
+      for (const perfil of PERFIS)
+        expect(permitido(perfil, 'usuarios', acao), `${perfil} ${acao}`).toBe(
+          perfil === 'admin' ? 'instituicao' : null,
+        );
+  });
+  it('só o Master revoga convite e administra a configuração da plataforma', () => {
+    for (const [recurso, acao] of [
+      ['convites_plataforma', 'revogar'],
+      ['configuracao_plataforma', 'administrar'],
+    ] as const)
+      for (const perfil of PERFIS)
+        expect(permitido(perfil, recurso, acao), `${perfil} ${recurso}`).toBe(
+          perfil === 'master' ? 'plataforma' : null,
+        );
+  });
+});

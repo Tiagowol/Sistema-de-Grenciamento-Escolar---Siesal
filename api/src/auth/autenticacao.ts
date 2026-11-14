@@ -299,7 +299,13 @@ export function criarAutenticacao(dep: Dependencias) {
         },
       });
       if (!usuario) return null;
-      const { token, duracao } = await abrirSessao(tx, instituicaoId, usuario.id, 'completo', agora);
+      const { token, duracao } = await abrirSessao(
+        tx,
+        instituicaoId,
+        usuario.id,
+        'completo',
+        agora,
+      );
       await registrarAuditoria(tx, {
         instituicaoId,
         ator: ator(usuario.id),
@@ -695,6 +701,66 @@ export function criarAutenticacao(dep: Dependencias) {
     });
   }
 
+  // L22c: Admin desativa ou reativa uma conta da própria instituição. Nada é apagado: a pessoa só deixa de entrar.
+  // Não vale para a própria conta nem para a última pessoa de Administração ativa. A sessão da pessoa cai na hora.
+  async function alterarSituacao(
+    sessao: SessaoAtiva,
+    usuarioId: string,
+    desativar: boolean,
+  ): Promise<
+    | { tipo: 'ok' }
+    | { tipo: 'proibido' }
+    | { tipo: 'nao_encontrado' }
+    | { tipo: 'proprio' }
+    | { tipo: 'ultimo_admin' }
+    | { tipo: 'nao_aplicavel' }
+  > {
+    if (sessao.nivel !== 'completo' || !podeAdministrarUsuarios(sessao.perfil)) {
+      await negarAcesso(sessao, 'usuario.situacao_negada');
+      return { tipo: 'proibido' };
+    }
+    const agora = relogio();
+    return withTenant(dep.banco, { instituicaoId: sessao.instituicaoId }, async (tx) => {
+      const alvo = await tx.usuario.findFirst({ where: { id: usuarioId, encerrada_em: null } });
+      if (!alvo) return { tipo: 'nao_encontrado' as const };
+      if (alvo.situacao === 'aguardando_responsavel') return { tipo: 'nao_aplicavel' as const };
+      if (desativar && alvo.id === sessao.usuarioId) return { tipo: 'proprio' as const };
+      if (desativar && alvo.perfil === 'admin' && alvo.situacao === 'ativo') {
+        const outros = await tx.usuario.count({
+          where: {
+            perfil: 'admin',
+            situacao: 'ativo',
+            encerrada_em: null,
+            NOT: { id: alvo.id },
+          },
+        });
+        if (outros === 0) return { tipo: 'ultimo_admin' as const };
+      }
+      const jaEstaAssim = desativar ? alvo.situacao === 'inativo' : alvo.situacao === 'ativo';
+      if (!jaEstaAssim) {
+        await tx.usuario.updateMany({
+          where: { id: alvo.id },
+          data: desativar
+            ? { situacao: 'inativo', desativado_em: agora }
+            : { situacao: 'ativo', desativado_em: null },
+        });
+        if (desativar)
+          await tx.sessao.updateMany({
+            where: { usuario_id: alvo.id, revogada_em: null },
+            data: { revogada_em: agora },
+          });
+        await registrarAuditoria(tx, {
+          instituicaoId: sessao.instituicaoId,
+          ator: ator(sessao.usuarioId),
+          acao: desativar ? 'usuario.desativado' : 'usuario.reativado',
+          alvo: ator(alvo.id),
+          depois: { perfil: alvo.perfil },
+        });
+      }
+      return { tipo: 'ok' as const };
+    });
+  }
+
   return {
     login,
     entrarPorPessoa,
@@ -705,6 +771,7 @@ export function criarAutenticacao(dep: Dependencias) {
     trocarSenha,
     criarUsuario,
     redefinirSenha,
+    alterarSituacao,
     listarUsuarios,
     passoAtual: () => passoDe(relogio()),
   };

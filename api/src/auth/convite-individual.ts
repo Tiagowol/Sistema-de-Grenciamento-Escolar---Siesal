@@ -64,6 +64,7 @@ export type EntradaInstituicao = {
   nome: string;
   email: string;
   senha: string;
+  termoVersao: string; // L22c: versão do Termo 6 aceito (a função do banco recusa sem ela)
 };
 export type ResultadoInstituicao =
   | { tipo: 'ok'; instituicaoId: string; usuarioId: string }
@@ -82,7 +83,7 @@ export async function criarInstituicaoPorConvite(
   let instituicaoId: string;
   try {
     const [r] = await banco.$queryRaw<{ id: string }[]>`
-      SELECT instituicao_criar_por_convite(${hashDoCodigo(e.codigo)}, ${e.instituicao.trim()}, ${e.nome.trim()}, ${e.email.trim()}, ${senhaHash}) AS id`;
+      SELECT instituicao_criar_por_convite(${hashDoCodigo(e.codigo)}, ${e.instituicao.trim()}, ${e.nome.trim()}, ${e.email.trim()}, ${senhaHash}, ${e.termoVersao}) AS id`;
     if (!r?.id) return { tipo: 'recusada' };
     instituicaoId = r.id;
   } catch {

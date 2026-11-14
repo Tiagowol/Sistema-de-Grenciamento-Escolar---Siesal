@@ -33,6 +33,7 @@ const corpoSituacao = z.strictObject({
   situacao: z.enum(SITUACOES),
   confirmar_nome: z.string().max(120).optional(),
 });
+const corpoLimite = z.strictObject({ limite: z.number().int().min(1).max(20) });
 const corpoModulo = z.strictObject({ modulo: z.enum(MODULOS), ligado: z.boolean() });
 
 export type OpcoesOperacao = {
@@ -179,6 +180,39 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;
     return ops.resumoDosConvites();
+  });
+
+  // L22c: convites esperando uso (sem o código), revogar com auditoria, e o limite de alunos por representante
+  app.get('/operacao/convites-pendentes', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { convites: await ops.listarConvitesPendentes() };
+  });
+  app.post('/operacao/convites/:id/revogar', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const parametros = parametroId.safeParse(requisicao.params);
+    if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await ops.revogarConvite(sessao, parametros.data.id);
+    if (r === 'nao_encontrado') return resposta.code(404).send({ erro: 'Convite não encontrado.' });
+    if (r === 'nao_pendente')
+      return resposta
+        .code(409)
+        .send({ erro: 'Este convite já foi usado, revogado ou venceu. Não há o que revogar.' });
+    return resposta.code(204).send();
+  });
+  app.get('/operacao/limite-alunos', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { limite: await ops.lerLimiteAlunos() };
+  });
+  app.put('/operacao/limite-alunos', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const corpo = corpoLimite.safeParse(requisicao.body);
+    if (!corpo.success) return resposta.code(400).send({ erro: 'Escolha um número de 1 a 20.' });
+    await ops.mudarLimiteAlunos(sessao, corpo.data.limite);
+    return resposta.code(204).send();
   });
 
   app.get('/operacao/auditoria', async (requisicao, resposta) => {

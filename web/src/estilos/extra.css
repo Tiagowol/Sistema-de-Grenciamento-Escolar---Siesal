@@ -1418,3 +1418,23 @@ fieldset {
   opacity: 0.85;
   overflow-wrap: anywhere;
 }
+
+/* L22c: Primeiros passos e termo da instituição */
+.pp-lista {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.pp-lista li {
+  margin-bottom: 8px;
+}
+.pp-lista p {
+  margin: 2px 0 0;
+}
+.termo {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.termo ol {
+  padding-left: 20px;
+}

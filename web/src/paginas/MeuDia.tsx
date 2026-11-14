@@ -3,6 +3,7 @@ import { BLOCOS } from '../blocos';
 import { Aviso } from '../componentes/Aviso';
 import { Kpi, Pill, Progresso, Titulo, Vazio } from '../componentes/Basicos';
 import { EscolhaAgora } from '../componentes/EscolhaAgora';
+import { PrimeirosPassos } from '../componentes/PrimeirosPassos';
 import type { Pagina } from '../componentes/Shell';
 import { TempoVisual } from '../componentes/TempoVisual';
 import { useCarregar } from '../componentes/useCarregar';
@@ -76,6 +77,7 @@ export function MeuDia({
           </button>
         }
       />
+      <PrimeirosPassos perfil="aluno" aoIr={aoIr} />
       {/* Modo simples (L20a): os 4 números e a rotina saem; ficam o próximo passo e as atividades */}
       <div className="grid cols-4 hide-on-simple">
         <Kpi

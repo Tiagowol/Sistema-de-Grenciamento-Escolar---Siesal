@@ -11,3 +11,6 @@ export function textosDoTermo(nomeAluno: string): [string, string, string] {
     'Declaro que os dados informados são verdadeiros.',
   ];
 }
+
+// L22c: versão do texto do Termo 6 (instituição/Admin), minuta v0.1 sem parecer jurídico; guardada na instituição
+export const TERMO_INSTITUICAO_VERSAO = 'T6-v0.1';

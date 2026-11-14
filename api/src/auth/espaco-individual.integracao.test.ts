@@ -550,7 +550,13 @@ describe('cadastro por convite (D4)', () => {
     });
     expect(r.statusCode).toBe(200);
     const corpo = r.json();
-    expect(Object.keys(corpo).sort()).toEqual(['instituicao', 'pendentes', 'usados', 'vencidos']);
+    expect(Object.keys(corpo).sort()).toEqual([
+      'instituicao',
+      'pendentes',
+      'revogados',
+      'usados',
+      'vencidos',
+    ]);
     expect(corpo.usados).toBeGreaterThanOrEqual(2);
     expect(corpo.vencidos).toBeGreaterThanOrEqual(1);
     const painel = await app.inject({
@@ -582,6 +588,7 @@ describe('convite de instituição (20c-3)', () => {
         nome: 'Admin Convidado',
         email: `adm-${randomUUID().slice(0, 8)}@inst.exemplo`,
         senha: SENHA,
+        aceite_termo: true,
         ...extra,
       },
     });
@@ -708,7 +715,12 @@ describe('convite de instituição (20c-3)', () => {
       url: '/operacao/convites-individuais',
       headers: { cookie: master },
     });
-    expect(Object.keys(r.json().instituicao).sort()).toEqual(['pendentes', 'usados', 'vencidos']);
+    expect(Object.keys(r.json().instituicao).sort()).toEqual([
+      'pendentes',
+      'revogados',
+      'usados',
+      'vencidos',
+    ]);
     expect(r.json().instituicao.usados).toBeGreaterThanOrEqual(1);
   });
 

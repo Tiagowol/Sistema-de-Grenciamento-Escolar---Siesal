@@ -297,6 +297,13 @@ describe('cadastro de instituição por link', () => {
     await u.type(screen.getByLabelText('Seu nome'), 'Ana');
     await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
     await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
+    // L22c: sem aceitar o Termo 6 não envia
+    await u.click(screen.getByRole('button', { name: 'Criar instituição' }));
+    expect(
+      await screen.findByText('Para criar a instituição, leia e aceite o termo.'),
+    ).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+    await u.click(screen.getByLabelText(/Li e aceito este termo em nome da instituição/));
     await u.click(screen.getByRole('button', { name: 'Criar instituição' }));
     await waitFor(() => expect(aoEntrar).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -307,6 +314,7 @@ describe('cadastro de instituição por link', () => {
       nome: 'Ana',
       email: 'ana@x.exemplo',
       senha: 'uma senha bem longa 1',
+      aceite_termo: true,
     });
   });
 
@@ -330,6 +338,7 @@ describe('cadastro de instituição por link', () => {
     await u.type(screen.getByLabelText('Seu nome'), 'Ana');
     await u.type(screen.getByLabelText('E-mail'), 'ana@x.exemplo');
     await u.type(screen.getByLabelText('Senha'), 'uma senha bem longa 1');
+    await u.click(screen.getByLabelText(/Li e aceito este termo em nome da instituição/));
     await u.click(screen.getByRole('button', { name: 'Criar instituição' }));
     expect(await screen.findByText(/Não foi possível criar a instituição/)).toBeTruthy();
   });

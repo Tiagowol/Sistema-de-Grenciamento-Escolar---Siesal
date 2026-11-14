@@ -19,6 +19,9 @@ export function Usuarios() {
   const [email, setEmail] = useState('');
   const [perfil, setPerfil] = useState<Perfil>('aluno');
   const [entrega, setEntrega] = useState<{ para: string; senha: string } | null>(null);
+  // L22c: confirmação em texto antes de desativar (nada é apagado; a pessoa só deixa de entrar)
+  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [feito, setFeito] = useState('');
 
   const carregar = useCallback(async () => {
     try {
@@ -30,6 +33,22 @@ export function Usuarios() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  async function mudarSituacao(u: UsuarioLista, desativar: boolean) {
+    setErro('');
+    setFeito('');
+    try {
+      if (desativar) await api.desativarUsuario(u.id);
+      else await api.reativarUsuario(u.id);
+      setFeito(
+        desativar ? `A conta de ${u.nome} foi desativada.` : `A conta de ${u.nome} foi reativada.`,
+      );
+    } catch (x) {
+      setErro(x instanceof ErroApi ? x.message : 'Não foi possível concluir. Tente de novo.');
+    }
+    setConfirmando(null);
+    await carregar();
+  }
 
   async function criar(e: FormEvent) {
     e.preventDefault();
@@ -66,6 +85,7 @@ export function Usuarios() {
         </div>
       </div>
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {feito ? <Aviso>{feito}</Aviso> : null}
       {entrega ? (
         <Aviso>
           Senha provisória de <b>{entrega.para}</b>:{' '}
@@ -129,7 +149,15 @@ export function Usuarios() {
                   <td>{u.nome}</td>
                   <td>{u.email}</td>
                   <td>{PERFIS.find((p) => p.valor === u.perfil)?.rotulo ?? u.perfil}</td>
-                  <td>{u.senhaProvisoria ? 'Senha provisória' : u.situacao}</td>
+                  <td>
+                    {u.situacao === 'inativo'
+                      ? 'Desativada'
+                      : u.situacao === 'aguardando_responsavel'
+                        ? 'Espera o responsável'
+                        : u.senhaProvisoria
+                          ? 'Senha provisória'
+                          : 'Ativa'}
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -137,7 +165,48 @@ export function Usuarios() {
                       onClick={() => void redefinir(u)}
                     >
                       Nova senha provisória<span className="sr-only"> para {u.nome}</span>
-                    </button>
+                    </button>{' '}
+                    {u.situacao === 'inativo' ? (
+                      <button
+                        aria-label={`Reativar ${u.nome}`}
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={() => void mudarSituacao(u, false)}
+                      >
+                        Reativar
+                      </button>
+                    ) : u.situacao === 'ativo' ? (
+                      confirmando === u.id ? (
+                        <span>
+                          <span className="small">
+                            Desativar {u.nome}? A pessoa deixa de entrar. Nada é apagado.
+                          </span>{' '}
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={() => void mudarSituacao(u, true)}
+                          >
+                            Sim, desativar
+                          </button>{' '}
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => setConfirmando(null)}
+                          >
+                            Não
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          aria-label={`Desativar ${u.nome}`}
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => setConfirmando(u.id)}
+                        >
+                          Desativar
+                        </button>
+                      )
+                    ) : null}
                   </td>
                 </tr>
               ))}

@@ -36,6 +36,8 @@ export type Pagina =
   // Console do Master (L22d): mesmas telas de menu, outros itens
   | 'm_instituicoes'
   | 'm_auditoria'
+  | 'm_convites'
+  | 'm_limite'
   | 'm_administradores'
   | 'm_professores'
   | 'm_pedagogicos'

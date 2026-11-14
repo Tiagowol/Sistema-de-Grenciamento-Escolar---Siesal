@@ -448,6 +448,92 @@ describe('console do Master no padrão do sistema (L22d)', () => {
   });
 });
 
+describe('Master: convites e limite de alunos (L22c)', () => {
+  const base = {
+    'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
+    'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+    'GET /operacao/convites-individuais': { corpo: { pendentes: 1, usados: 0, vencidos: 0 } },
+    'GET /operacao/auditoria': { corpo: TRILHA },
+    'GET /operacao/instituicoes': { corpo: { instituicoes } },
+  };
+  const irPara = async (u: ReturnType<typeof userEvent.setup>, rotulo: string) =>
+    u.click(
+      within(screen.getByRole('navigation', { name: 'Telas do sistema' })).getByRole('button', {
+        name: rotulo,
+      }),
+    );
+
+  it('lista convites sem o código; revogar pede confirmação e chama a API', async () => {
+    let revogado = false;
+    const chamadas = simular({
+      ...base,
+      'GET /operacao/convites-pendentes': {
+        corpo: {
+          convites: [
+            {
+              id: 'c1',
+              tipo: 'individual',
+              criado_em: '2026-11-10T12:00:00.000Z',
+              expira_em: '2026-11-17T12:00:00.000Z',
+            },
+            {
+              id: 'c2',
+              tipo: 'instituicao',
+              criado_em: '2026-11-11T12:00:00.000Z',
+              expira_em: '2026-11-18T12:00:00.000Z',
+            },
+          ],
+        },
+      },
+      'POST /operacao/convites/c1/revogar': { status: 204 },
+    });
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await irPara(u, 'Convites');
+    await screen.findByRole('heading', { name: 'Convites' });
+    expect(await screen.findByText('Convite de instituição')).toBeTruthy();
+    expect(screen.getByText(/Criado em 10\/11\/2026 · vale até 17\/11\/2026/)).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    await u.click(screen.getAllByRole('button', { name: /^Revogar/ })[0] as HTMLElement);
+    expect(screen.getByText(/Revogar este convite\? Ele deixa de valer na hora\./)).toBeTruthy();
+    expect(chamadas.some((c) => c.url.includes('/revogar'))).toBe(false);
+    await u.click(screen.getByRole('button', { name: 'Sim, revogar' }));
+    await waitFor(() =>
+      expect(chamadas.some((c) => c.url === '/operacao/convites/c1/revogar')).toBe(true),
+    );
+    revogado = true;
+    expect(revogado).toBe(true);
+    expect(await screen.findByText('Convite revogado. Ele não vale mais.')).toBeTruthy();
+  });
+
+  it('limite de alunos: mostra o atual, recusa fora de 1 a 20 e salva', async () => {
+    const chamadas = simular({
+      ...base,
+      'GET /operacao/limite-alunos': { corpo: { limite: 5 } },
+      'PUT /operacao/limite-alunos': { status: 204 },
+    });
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await irPara(u, 'Limite de alunos');
+    await screen.findByRole('heading', { name: 'Limite de alunos' });
+    expect(await screen.findByText('5')).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+    const campo = screen.getByLabelText('Novo limite');
+    await u.clear(campo);
+    await u.type(campo, '25');
+    await u.click(screen.getByRole('button', { name: 'Salvar o limite' }));
+    expect(await screen.findByText('Escolha um número de 1 a 20.')).toBeTruthy();
+    expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(false);
+    await u.clear(campo);
+    await u.type(campo, '8');
+    await u.click(screen.getByRole('button', { name: 'Salvar o limite' }));
+    expect(await screen.findByText('Limite salvo: 8 alunos por representante.')).toBeTruthy();
+    expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toEqual({ limite: 8 });
+  });
+});
+
 describe('faixa de ambiente (L22b)', () => {
   it('mostra "teste" por padrão e "produção" só quando a API diz producao', async () => {
     simular({ 'GET /config': { corpo: { instituicao_padrao: null, modo_local: true } } });

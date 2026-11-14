@@ -33,6 +33,7 @@ import {
   lerCookie,
   serializarCookie,
 } from './auth/sessao.js';
+import { TERMO_INSTITUICAO_VERSAO } from './auth/termo.js';
 import { registrarAvisos } from './avisos/rotas.js';
 import { withTenant } from './banco/withTenant.js';
 import { registrarConta } from './conta/rotas.js';
@@ -115,6 +116,7 @@ const corpoConfirmar = z.strictObject({
 });
 // Criar a instituição e a conta de Admin com o convite do Master (20c-3)
 const corpoNovaInstituicao = z.strictObject({
+  aceite_termo: z.literal(true), // L22c: Termo 6 (instituição/Admin)
   codigo: z.string().min(8).max(40),
   instituicao: z
     .string()
@@ -382,9 +384,13 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     const corpo = corpoNovaInstituicao.safeParse(requisicao.body);
     if (!corpo.success)
       return resposta.code(400).send({
-        erro: 'Confira o nome da instituição, o seu nome, o e-mail e o código do convite.',
+        erro: 'Confira o nome da instituição, o seu nome, o e-mail, o código do convite e o aceite do termo.',
       });
-    const c = await criarInstituicaoPorConvite(banco, corpo.data);
+    const { aceite_termo: _aceite, ...dadosInstituicao } = corpo.data;
+    const c = await criarInstituicaoPorConvite(banco, {
+      ...dadosInstituicao,
+      termoVersao: TERMO_INSTITUICAO_VERSAO,
+    });
     if (c.tipo === 'senha_fraca') return resposta.code(400).send({ erro: c.motivo });
     if (c.tipo === 'recusada')
       return resposta.code(400).send({
@@ -554,6 +560,34 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       return resposta.code(404).send({ erro: 'Usuário não encontrado.' });
     return { senha_provisoria: r.senhaProvisoria };
   });
+
+  // L22c: o Admin desativa e reativa só gente da própria instituição (nada é apagado)
+  for (const [acao, desativar] of [
+    ['desativar', true],
+    ['reativar', false],
+  ] as const) {
+    app.post(`/usuarios/:id/${acao}`, async (requisicao, resposta) => {
+      const sessao = await exigirSessao(requisicao, resposta, ['completo']);
+      if (!sessao) return resposta;
+      const parametros = parametroUsuario.safeParse(requisicao.params);
+      if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+      const r = await auth.alterarSituacao(sessao, parametros.data.id, desativar);
+      if (r.tipo === 'proibido') return resposta.code(403).send({ erro: 'Sem permissão.' });
+      if (r.tipo === 'nao_encontrado')
+        return resposta.code(404).send({ erro: 'Usuário não encontrado.' });
+      if (r.tipo === 'proprio')
+        return resposta.code(409).send({ erro: 'Você não pode desativar a sua própria conta.' });
+      if (r.tipo === 'ultimo_admin')
+        return resposta
+          .code(409)
+          .send({ erro: 'Esta é a última pessoa de Administração ativa. Cadastre outra antes.' });
+      if (r.tipo === 'nao_aplicavel')
+        return resposta
+          .code(409)
+          .send({ erro: 'Esta conta ainda espera a confirmação do responsável.' });
+      return resposta.code(204).send();
+    });
+  }
 
   return app;
 }

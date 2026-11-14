@@ -2,6 +2,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import {
   apiOperacao,
+  type ConvitePendente,
   ErroApi,
   type EuOperacao,
   type EventoMaster,
@@ -16,6 +17,7 @@ import {
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { CodigoQr } from '../componentes/CodigoQr';
+import { PrimeirosPassos } from '../componentes/PrimeirosPassos';
 import { type Item, type Pagina, Shell } from '../componentes/Shell';
 import { SinoPlataforma } from '../componentes/Sinos';
 import { BotaoVLibras } from '../componentes/VLibras';
@@ -794,6 +796,182 @@ function Auditoria({ aoSair }: { aoSair: () => void }) {
   );
 }
 
+// Convites esperando uso: nunca o código, só tipo e datas; revogar pede confirmação e fica na auditoria
+function Convites({ aoSair }: { aoSair: () => void }) {
+  const [lista, setLista] = useState<ConvitePendente[] | null>(null);
+  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [erro, setErro] = useState('');
+  const [feito, setFeito] = useState('');
+  const carregar = useCallback(async () => {
+    try {
+      setLista((await apiOperacao.convitesPendentes()).convites);
+    } catch (x) {
+      if (x instanceof ErroApi && x.status === 401) return aoSair();
+      setErro(mensagem(x, 'Falha ao listar os convites.'));
+    }
+  }, [aoSair]);
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  async function revogar(id: string) {
+    setErro('');
+    setFeito('');
+    try {
+      await apiOperacao.revogarConvite(id);
+      setFeito('Convite revogado. Ele não vale mais.');
+    } catch (x) {
+      setErro(mensagem(x, 'Não foi possível revogar.'));
+    }
+    setConfirmando(null);
+    await carregar();
+  }
+
+  return (
+    <section className="card" aria-labelledby="ops-convites-titulo">
+      <div className="card-head">
+        <h1 id="ops-convites-titulo" style={{ fontSize: 22 }}>
+          Convites
+        </h1>
+      </div>
+      <p className="muted small">
+        Convites esperando uso. O código não aparece aqui: ele só é mostrado quando o convite é
+        criado.
+      </p>
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {feito ? <Aviso>{feito}</Aviso> : null}
+      {lista === null ? (
+        erro ? null : (
+          <p role="status">Carregando…</p>
+        )
+      ) : lista.length === 0 ? (
+        <p>Nenhum convite esperando uso.</p>
+      ) : (
+        <ul className="ops-pessoas">
+          {lista.map((c) => (
+            <li key={c.id} className="ops-pessoa">
+              <strong>
+                {c.tipo === 'instituicao' ? 'Convite de instituição' : 'Convite de aluno'}
+              </strong>
+              <br />
+              <span className="small muted">
+                Criado em {dataCurta(c.criado_em)} · vale até {dataCurta(c.expira_em)}
+              </span>
+              <br />
+              {confirmando === c.id ? (
+                <span>
+                  <span className="small">Revogar este convite? Ele deixa de valer na hora.</span>{' '}
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => void revogar(c.id)}
+                  >
+                    Sim, revogar
+                  </button>{' '}
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setConfirmando(null)}
+                  >
+                    Não
+                  </button>
+                </span>
+              ) : (
+                <button
+                  aria-label={`Revogar o convite criado em ${dataCurta(c.criado_em)}`}
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setConfirmando(c.id)}
+                >
+                  Revogar
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Limite de alunos por representante (1 a 20): vale para novos cadastros; quem já tem alunos não perde nenhum
+function LimiteAlunos({ aoSair }: { aoSair: () => void }) {
+  const [atual, setAtual] = useState<number | null>(null);
+  const [valor, setValor] = useState('');
+  const [erro, setErro] = useState('');
+  const [feito, setFeito] = useState('');
+  useEffect(() => {
+    apiOperacao.limiteAlunos().then(
+      (r) => {
+        setAtual(r.limite);
+        setValor(String(r.limite));
+      },
+      (x) => {
+        if (x instanceof ErroApi && x.status === 401) return aoSair();
+        setErro(mensagem(x, 'Falha ao ler o limite.'));
+      },
+    );
+  }, [aoSair]);
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault();
+    setErro('');
+    setFeito('');
+    const n = Number(valor);
+    if (!Number.isInteger(n) || n < 1 || n > 20) return setErro('Escolha um número de 1 a 20.');
+    try {
+      await apiOperacao.mudarLimiteAlunos(n);
+      setAtual(n);
+      setFeito(`Limite salvo: ${n} ${n === 1 ? 'aluno' : 'alunos'} por representante.`);
+    } catch (x) {
+      setErro(mensagem(x, 'Não foi possível salvar.'));
+    }
+  }
+
+  return (
+    <section className="card" aria-labelledby="ops-limite-titulo">
+      <div className="card-head">
+        <h1 id="ops-limite-titulo" style={{ fontSize: 22 }}>
+          Limite de alunos
+        </h1>
+      </div>
+      <p className="muted small">
+        Quantos alunos menores cada representante legal pode cadastrar. Vale para novos cadastros;
+        quem já passou do limite não perde nenhum aluno.
+      </p>
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {feito ? <Aviso>{feito}</Aviso> : null}
+      {atual === null ? (
+        erro ? null : (
+          <p role="status">Carregando…</p>
+        )
+      ) : (
+        <form onSubmit={salvar} noValidate>
+          <p>
+            Limite atual: <strong>{atual}</strong>
+          </p>
+          <div className="stack">
+            <Campo rotulo="Novo limite" dica="Um número de 1 a 20.">
+              {({ id, descricao }) => (
+                <input
+                  id={id}
+                  aria-describedby={descricao}
+                  inputMode="numeric"
+                  value={valor}
+                  onChange={(e) => setValor(e.target.value)}
+                />
+              )}
+            </Campo>
+            <button type="submit" className="btn btn-primary">
+              Salvar o limite
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
 // Suporte do Master: texto literal, sem formulário
 function SuporteMaster() {
   return (
@@ -825,6 +1003,18 @@ const ITENS_MASTER: Item[] = [
     rotulo: 'Instituições',
     icone: 'school',
     palavras: ['escola', 'criar', 'modulos', 'convite', 'situacao', 'espacos individuais'],
+  },
+  {
+    id: 'm_convites',
+    rotulo: 'Convites',
+    icone: 'message',
+    palavras: ['revogar', 'codigo', 'aluno', 'instituicao', 'esperando uso'],
+  },
+  {
+    id: 'm_limite',
+    rotulo: 'Limite de alunos',
+    icone: 'users',
+    palavras: ['representante', 'responsavel', 'quantos alunos', 'configuracao'],
   },
   {
     id: 'm_auditoria',
@@ -945,6 +1135,10 @@ function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
         <Arvore area={area} />
       ) : pagina === 'm_auditoria' ? (
         <Auditoria aoSair={aoSair} />
+      ) : pagina === 'm_convites' ? (
+        <Convites aoSair={aoSair} />
+      ) : pagina === 'm_limite' ? (
+        <LimiteAlunos aoSair={aoSair} />
       ) : pagina === 'suporte' ? (
         <SuporteMaster />
       ) : pagina === 'ajuda' ? (
@@ -957,7 +1151,10 @@ function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
           aoMudarInterface={mudarInterface}
         />
       ) : (
-        <Painel eu={eu} aoSair={aoSair} />
+        <>
+          <PrimeirosPassos perfil="master" aoIr={setPagina} />
+          <Painel eu={eu} aoSair={aoSair} />
+        </>
       )}
     </Shell>
   );

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api, ErroApi, type Eu } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { TERMO_INSTITUICAO_ITENS, TERMO_INSTITUICAO_VERSAO } from '../termoInstituicao';
 
 // Link de cadastro de instituição (/cadastro/instituicao#CODIGO, 20c-3): quem recebe o convite do Master cria a
 // instituição e a própria conta de Admin. Depois entra só para ativar o segundo fator (obrigatório).
@@ -18,6 +19,7 @@ export function CadastroInstituicao({
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [aceite, setAceite] = useState(false);
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -26,6 +28,7 @@ export function CadastroInstituicao({
     setErro('');
     if (!convite.trim() || !instituicao.trim() || !nome.trim() || !email.trim() || !senha)
       return setErro('Preencha o convite, o nome da instituição, o seu nome, o e-mail e a senha.');
+    if (!aceite) return setErro('Para criar a instituição, leia e aceite o termo.');
     setEnviando(true);
     try {
       const r = await api.criarInstituicao({
@@ -34,6 +37,7 @@ export function CadastroInstituicao({
         nome: nome.trim(),
         email: email.trim(),
         senha,
+        aceite_termo: true,
       });
       if ('usuario' in r) aoEntrar(r);
       else window.location.assign('/');
@@ -130,6 +134,24 @@ export function CadastroInstituicao({
               />
             )}
           </Campo>
+          <fieldset className="termo">
+            <legend>
+              Termo da instituição (minuta {TERMO_INSTITUICAO_VERSAO}, sem parecer jurídico)
+            </legend>
+            <ol>
+              {TERMO_INSTITUICAO_ITENS.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ol>
+            <label className="opcao">
+              <input
+                type="checkbox"
+                checked={aceite}
+                onChange={(e) => setAceite(e.target.checked)}
+              />{' '}
+              Li e aceito este termo em nome da instituição.
+            </label>
+          </fieldset>
           <button type="submit" className="btn btn-primary" disabled={enviando}>
             {enviando ? 'Criando…' : 'Criar instituição'}
           </button>
