@@ -539,3 +539,10 @@ Sob a A-105 e a A-106. **Estado: Implementado e aplicado no site local (só o co
 
 ## A-108 — Commit de código do L22d (13/11/2026)
 Pedido do autor em chat, em 13/11/2026: "Autorizo o commit". Commit `9dbc69c` (11 arquivos listados, sem `git add .`; autor do git do computador, sem definir autor). Inclui o ajuste de menu do Master da A-103. **Push de código não feito** (não autorizado): o ramo `lote-21-22-fechamento` tem 3 commits de código sem push (`cf31c50` L22a-3, `a6af13c` L22b e este). Um `git push` leva os três. Sem merge nem deploy.
+
+## A-109 — Backup, novo ramo e site atualizado (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Backup atual, novo ramo e atualizar o site".
+- **Backup:** `backups/siesal-20261113-210859.dump` (com `.sha256`), feito com o código do `9dbc69c` e 31 migrações.
+- **Novo ramo:** `lote-22c-admin-convites`, criado a partir do `9dbc69c` (local, sem push). O ramo `lote-21-22-fechamento` fica como estava (3 commits de código sem push: `cf31c50`, `a6af13c`, `9dbc69c`). O nome é meu (próximo lote do plano, L22c); o autor pode pedir outro.
+- **Site:** `docker compose up -d --build`: API e web já estavam com o código atual (nada precisou ser recriado). Site 200, `/api/saude` ok, `ambiente: "teste"`, 31 migrações.
+- Sem push, merge nem deploy.
