@@ -32,7 +32,13 @@
 - **F-059:** a página de Usuários alarga para cerca de 690 px em 360 px de largura (já existia antes do L22c). Sem correção; decisão do autor.
 - **Contraste 4,42:1** (pedido: 4,5:1) no texto cinza `#64748b` sobre `#f4f7fb` (subtítulo do título e marca). Sem correção; decisão do autor.
 - **Observação A3:** foco volta ao início da página depois de Desativar, Revogar e Entendi (no Chrome o Tab continua do ponto certo); leitor de tela fica para a checagem humana.
-- **L22f (Suporte do espaço individual):** ainda sem proposta; o Code escreve a partir de 15/11.
+- **L22f (Suporte do espaço individual atendido pelo Master ou por Admin indicado):** **proposta escrita** em `docs/PROPOSTA-L22F.md` (A-127, commit `e9397f3`); 3 itens; **precisa de migração 0033** (tabela `atendente_suporte` e 3 funções `SECURITY DEFINER`, com backup e `RETORNO-0033.md`) e de matriz v24. Falta o autor responder a **Q1** (o que o atendente vê de quem pediu; recomendada A: nome e e-mail) e dar o **"aprovo"** separadamente. Recomendação do Code: código só em 15/11 ou depois, e só depois da checagem humana dos lotes de hoje. Sem código.
+
+## Próximos passos, em ordem (para a próxima sessão)
+1. **Autor:** checagem humana do L22c, L22e e L22g (leitor de tela, teclado, contraste, NAPNE; menu em Firefox e Safari), testes T1 a T4 e a tela "Auditoria" como Admin. Defeito achado vem antes de novo lote.
+2. **Autor:** decidir sobre a F-059 e o contraste 4,42:1 (hoje sem proposta; o Code escreve se o autor pedir).
+3. **Autor:** ler `docs/PROPOSTA-L22F.md`, responder a Q1 e dar o "aprovo". **Code:** só então migração 0033 (backup antes), código, testes e conferência em 360, 768 e 1280 px.
+4. Merge em `siesal-4` e deploy fora do computador: só com autorizações separadas (nada pedido ainda).
 
 ## Ritmo
 - Hoje (14/11) houve três lotes de código (L22c, L22e e L22g) e a conferência do L22c. O Adendo 4 recomenda um lote por dia. Sugestão: amanhã, checagem humana e decisão sobre o L22g e a F-059.
