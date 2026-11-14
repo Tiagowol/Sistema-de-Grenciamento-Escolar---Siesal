@@ -304,3 +304,9 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Correção: nenhuma feita (esta sessão não escreve código). Proposta para um lote pequeno de defeito: lista em cartões em telas estreitas.
 - Como voltar atrás: não se aplica (nada foi alterado).
 - Observação: medido em servidor temporário com o código real do commit e API simulada; o servidor foi removido.
+
+## 15/11/2026 — Causa da F-059 estava errada no registro anterior
+- O que falhou: o registro de 14/11 dizia que a página "Usuários" alarga por causa de uma tabela com largura mínima de cerca de 704 px.
+- Causa: medido de novo em 15/11, a tabela já rola dentro de `.table-wrap` (288 px). Quem alarga a página são os textos `sr-only` (`position: absolute`) dos botões da coluna Ação, que vazam para fora da área rolável (página com 606 px).
+- Correção: nenhuma no código (decisão do autor). Causa e formas de corrigir em `docs/LEVANTAMENTO-F059-E-CONTRASTE-2026-11-15.md`.
+- Como voltar atrás: não se aplica (só texto).
