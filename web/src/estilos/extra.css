@@ -1453,3 +1453,35 @@ fieldset {
   border-radius: 12px;
   overflow-wrap: anywhere;
 }
+
+/* L22g: menu lateral sem barra de rolagem visível. A rolagem continua (roda, toque e teclado). */
+.sidebar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+/* Sombra suave no pé quando ainda há itens abaixo; some ao chegar no fim. Não é animada. */
+.sidebar.mais-abaixo::after {
+  content: "";
+  position: sticky;
+  bottom: 0;
+  flex: 0 0 auto;
+  height: 44px;
+  margin-top: -44px;
+  background: linear-gradient(to bottom, transparent, var(--menu-b) 90%);
+  pointer-events: none;
+}
+/* Item com rótulo longo: ícone centralizado, texto com a mesma entrelinha, sem cortar */
+.nav button {
+  line-height: 1.25;
+}
+.nav button > span:not(.inlineicon):not(.counter) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nav button .inlineicon {
+  align-self: center;
+  flex: 0 0 auto;
+}

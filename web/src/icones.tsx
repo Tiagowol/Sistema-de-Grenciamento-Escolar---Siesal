@@ -35,6 +35,17 @@ const TRACADOS = {
   sair: '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>',
   painel: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
   maos: '<path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V12M16 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.5 14a1.5 1.5 0 0 1 2.5-1.7L7 14"/>',
+  // L22g: ícones próprios para que nenhum item do menu repita o desenho de outro
+  agenda: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12 8h4M12 12h4"/>',
+  pedidos: '<path d="M3 13h5l1.5 3h5L16 13h5M3 13l3-8h12l3 8v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+  lupa: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/>',
+  megafone:
+    '<path d="M3 11v3a1 1 0 0 0 1 1h2l7 4V6l-7 4H4a1 1 0 0 0-1 1zM17 9a4 4 0 0 1 0 6M20 6.5a8 8 0 0 1 0 11"/>',
+  olho: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  ajuste:
+    '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  envelope: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  pessoa: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/>',
 } as const;
 

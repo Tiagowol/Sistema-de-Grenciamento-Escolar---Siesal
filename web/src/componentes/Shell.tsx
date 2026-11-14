@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Fragment, useId, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import type { Eu, Modulo } from '../api';
 import { Icone, type NomeIcone } from '../icones';
 import { buscarNoMenu } from '../menu';
@@ -86,7 +86,7 @@ const ITENS: Item[] = [
   {
     id: 'agenda',
     rotulo: 'Agenda',
-    icone: 'calendar',
+    icone: 'agenda',
     so: ALUNO,
     palavras: ['calendario', 'compromisso', 'horario', 'semana'],
   },
@@ -180,7 +180,7 @@ const ITENS: Item[] = [
   {
     id: 'acompanhantes',
     rotulo: 'Quem pode ver meus dados',
-    icone: 'users',
+    icone: 'olho',
     so: ['aluno', 'responsavel'],
     soIndividual: true,
     palavras: [
@@ -196,7 +196,7 @@ const ITENS: Item[] = [
   {
     id: 'acompanhamentoinst',
     rotulo: 'Pedidos de acompanhamento',
-    icone: 'users',
+    icone: 'pedidos',
     so: ['admin', 'pedagogico'],
     soEscola: true,
     palavras: [
@@ -229,7 +229,7 @@ const ITENS: Item[] = [
     id: 'avisosescola',
     modulo: 'mensagens',
     rotulo: 'Avisos da escola',
-    icone: 'file',
+    icone: 'megafone',
     so: ['admin', 'pedagogico'],
     palavras: ['comunicado', 'mensagem', 'publicar', 'aviso curto'],
   },
@@ -243,7 +243,7 @@ const ITENS: Item[] = [
   {
     id: 'auditoria',
     rotulo: 'Auditoria',
-    icone: 'file',
+    icone: 'lupa',
     so: ['admin'],
     palavras: ['registro', 'historico', 'o que foi feito', 'acoes', 'entradas', 'integridade'],
   },
@@ -341,6 +341,9 @@ export function Shell({
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState('');
   const idBusca = useId();
+  // L22g: sem barra de rolagem visível; uma sombra no pé avisa que ainda há itens abaixo
+  const menuRef = useRef<HTMLElement>(null);
+  const [maisAbaixo, setMaisAbaixo] = useState(false);
   // Menu recolhido (só computador): lembrado neste aparelho; o celular usa o botão Menu de sempre
   const [recolhido, setRecolhido] = useState(() => {
     try {
@@ -372,6 +375,21 @@ export function Shell({
   );
   const atual = itens.find((i) => i.id === pagina);
   const achados = buscarNoMenu(itens, busca, 'acessibilidade');
+  // Recalcula ao rolar, ao mudar o tamanho da janela e quando a lista muda (busca, perfil)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a lista de resultados muda a altura do menu
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    const calcular = () =>
+      setMaisAbaixo(menu.scrollHeight - menu.scrollTop - menu.clientHeight > 4);
+    calcular();
+    menu.addEventListener('scroll', calcular, { passive: true });
+    window.addEventListener('resize', calcular);
+    return () => {
+      menu.removeEventListener('scroll', calcular);
+      window.removeEventListener('resize', calcular);
+    };
+  }, [achados.length, aberto, recolhido]);
   const iniciais = eu.usuario.nome
     .split(' ')
     .map((p) => p[0])
@@ -387,7 +405,8 @@ export function Shell({
       <div className={`app${recolhido ? ' menu-recolhido' : ''}`}>
         <aside
           id="menu-principal"
-          className={`sidebar${aberto ? ' show' : ''}`}
+          ref={menuRef}
+          className={`sidebar${aberto ? ' show' : ''}${maisAbaixo ? ' mais-abaixo' : ''}`}
           aria-label="Menu principal"
         >
           <div className="brand">

@@ -997,7 +997,7 @@ function SuporteMaster() {
 
 // Console do Master no mesmo menu e topo dos outros perfis (L22d): usa o Shell do sistema
 const SECAO_ARVORE = 'Árvore (só leitura)';
-const ITENS_MASTER: Item[] = [
+export const ITENS_MASTER: Item[] = [
   {
     id: 'm_instituicoes',
     rotulo: 'Instituições',
@@ -1007,19 +1007,19 @@ const ITENS_MASTER: Item[] = [
   {
     id: 'm_convites',
     rotulo: 'Convites',
-    icone: 'message',
+    icone: 'envelope',
     palavras: ['revogar', 'codigo', 'aluno', 'instituicao', 'esperando uso'],
   },
   {
     id: 'm_limite',
     rotulo: 'Limite de alunos',
-    icone: 'users',
+    icone: 'ajuste',
     palavras: ['representante', 'responsavel', 'quantos alunos', 'configuracao'],
   },
   {
     id: 'm_auditoria',
     rotulo: 'Auditoria',
-    icone: 'file',
+    icone: 'lupa',
     palavras: ['trilha', 'registro', 'integridade', 'acoes'],
   },
   {
@@ -1039,7 +1039,7 @@ const ITENS_MASTER: Item[] = [
   {
     id: 'm_pedagogicos',
     rotulo: 'Pedagógicos e NAPNE',
-    icone: 'access',
+    icone: 'heart',
     secao: SECAO_ARVORE,
     palavras: ['pedagogico', 'napne', 'arvore', 'pessoas'],
   },
@@ -1060,7 +1060,7 @@ const ITENS_MASTER: Item[] = [
   {
     id: 'm_sem_vinculo',
     rotulo: 'Usuários sem vínculo',
-    icone: 'file',
+    icone: 'pessoa',
     secao: SECAO_ARVORE,
     palavras: ['sem instituicao', 'conta solta', 'arvore'],
   },
