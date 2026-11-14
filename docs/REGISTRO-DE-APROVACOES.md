@@ -569,3 +569,10 @@ Sob a A-111 e a A-112. **Estado: Implementado**, **não aplicado no site** (a mi
 - **Banco:** migração `0032_admin_convites.sql` (colunas do Termo 6 e da revogação; troca `instituicao_criar_por_convite` para 6 parâmetros). Matriz v23. Retorno: `docs/RETORNO-0032.md`.
 - **Verificação por máquina:** integração 393/393 (12 novos em `l22c.integracao.test.ts`); testes de tela e shared 1352/1352 (axe sem violação nas telas novas); tipos ok; lint dos 25 arquivos do lote ok (1 aviso de CSS).
 - **Não feito:** aplicar a 0032 e reconstruir o site; conferência no navegador (360/768/1280 px); checagem humana; Suporte do espaço individual (L22f) e Auditoria do Admin (L22e) ficam para depois.
+
+## A-114 — Backup, migração 0032 e reconstrução do site (13/11/2026)
+Pedido do autor em chat, em 13/11/2026: "Autorizo" (backup e aplicação da migração 0032 com reconstrução do site).
+- **Backup antes:** `backups/siesal-20261113-213024.dump` (com `.sha256`). **Migração** pelo job `migrate`: `0032_admin_convites.sql` aplicada (32 migrações no total).
+- **API e site reconstruídos** (`docker compose up -d --build`): site 200, `/api/saude` ok, rotas novas do Master sem sessão respondem 401, colunas `revogado_em` e `revogado_por` e a função de 6 parâmetros existem no banco.
+- **Estado:** L22c **Implementado e aplicado no site local**, ainda **não Verificado**. **Código sem commit** (autorização separada). Sem merge nem deploy.
+- **Não conferido:** telas no navegador (360, 768, 1280 px) e a checagem humana. Retorno: restaurar o backup acima ou `docs/RETORNO-0032.md`.
