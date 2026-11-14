@@ -1377,7 +1377,7 @@ fieldset {
   }
 }
 
-/* L22b: faixa de ambiente (todas as telas) e menu das áreas do console do Master */
+/* L22b: faixa de ambiente (todas as telas) */
 .faixa-ambiente {
   display: flex;
   align-items: center;
@@ -1397,44 +1397,7 @@ fieldset {
   background: var(--red-soft);
   color: var(--red);
 }
-.ops-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-}
-@media (min-width: 900px) {
-  .ops-layout {
-    grid-template-columns: 240px minmax(0, 1fr);
-    align-items: start;
-  }
-}
-.ops-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ops-menu h2 {
-  margin: 8px 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-.ops-menu button {
-  min-height: 44px;
-  padding: 8px 12px;
-  text-align: left;
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-}
-.ops-menu button[aria-current="page"] {
-  color: var(--primary);
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  font-weight: 700;
-}
+/* L22b: lista de pessoas da árvore do Master (o menu usa as mesmas classes do menu lateral do sistema) */
 .ops-pessoas {
   list-style: none;
   margin: 0;
@@ -1446,5 +1409,12 @@ fieldset {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+.versao-sistema {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
   overflow-wrap: anywhere;
 }

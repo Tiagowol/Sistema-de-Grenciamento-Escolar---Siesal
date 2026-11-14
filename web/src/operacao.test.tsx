@@ -147,7 +147,6 @@ describe('tela /operacao', () => {
     expect(
       screen.getByText(/1 Admin, 3 professores, 20 alunos, 0 Pedagógico, 0 responsáveis/),
     ).toBeTruthy();
-    expect(screen.getByText('A trilha está íntegra: nenhum registro foi alterado.')).toBeTruthy();
     expect((await axe.run(container, semContraste)).violations).toEqual([]);
     const u = userEvent.setup();
     await u.click(screen.getByRole('button', { name: 'Criar' }));
@@ -259,7 +258,7 @@ describe('tela /operacao', () => {
     simular(baseGestao);
     const { container } = render(<Operacao />);
     await screen.findByText('Escola A (fictícia)');
-    const menu = screen.getByRole('navigation', { name: 'Áreas da gestão' });
+    const menu = screen.getByRole('navigation', { name: 'Telas do sistema' });
     for (const rotulo of [
       'Instituições',
       'Administradores',
@@ -268,6 +267,10 @@ describe('tela /operacao', () => {
       'Alunos',
       'Responsáveis',
       'Usuários sem vínculo',
+      'Auditoria',
+      'Suporte',
+      'Acessibilidade',
+      'Ajuda',
     ])
       expect(within(menu).getByRole('button', { name: rotulo })).toBeTruthy();
     expect(
@@ -287,7 +290,7 @@ describe('tela /operacao', () => {
     await screen.findByText('Escola A (fictícia)');
     const u = userEvent.setup();
     await u.click(
-      within(screen.getByRole('navigation', { name: 'Áreas da gestão' })).getByRole('button', {
+      within(screen.getByRole('navigation', { name: 'Telas do sistema' })).getByRole('button', {
         name: 'Alunos',
       }),
     );
@@ -347,7 +350,7 @@ describe('tela /operacao', () => {
     render(<Operacao />);
     await screen.findByText('Escola A (fictícia)');
     const u = userEvent.setup();
-    const menu = screen.getByRole('navigation', { name: 'Áreas da gestão' });
+    const menu = screen.getByRole('navigation', { name: 'Telas do sistema' });
     await u.click(within(menu).getByRole('button', { name: 'Responsáveis' }));
     await u.selectOptions(await screen.findByLabelText('Onde olhar'), 'espacos');
     await screen.findByText('Responsável Fictício');
@@ -356,6 +359,92 @@ describe('tela /operacao', () => {
     await u.click(within(menu).getByRole('button', { name: 'Usuários sem vínculo' }));
     await screen.findByText('Pessoa Solta Fictícia');
     expect(screen.getByText(/Pediu para ser professor/)).toBeTruthy();
+  });
+});
+
+describe('console do Master no padrão do sistema (L22d)', () => {
+  const base = {
+    'GET /operacao/eu': { corpo: { nivel: 'completo', usuario: 'master_um' } },
+    'GET /operacao/painel': { corpo: { instituicoes, espacos_individuais: 2 } },
+    'GET /operacao/convites-individuais': {
+      corpo: {
+        pendentes: 1,
+        usados: 0,
+        vencidos: 0,
+        instituicao: { pendentes: 2, usados: 0, vencidos: 0 },
+      },
+    },
+    'GET /operacao/auditoria': { corpo: TRILHA },
+    'GET /operacao/instituicoes': { corpo: { instituicoes } },
+  };
+
+  it('tem busca no menu, Ajuda no topo, Versão, sino de avisos e Sair', async () => {
+    simular(base);
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    expect(screen.getByLabelText('Buscar no menu')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Ajuda' })).toHaveLength(2);
+    expect(screen.getByText(/SIESAL 4\.0 · Parte 1/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sair' })).toBeTruthy();
+    // Sino: 2 convites de instituição esperando + 1 instituição em implantação (nenhuma no exemplo) = 1 aviso
+    await screen.findByRole('button', { name: /Avisos da plataforma, 1 aviso/ });
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('a busca no menu acha só itens do Master', async () => {
+    simular(base);
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await u.type(screen.getByLabelText('Buscar no menu'), 'trilha');
+    const menu = screen.getByRole('navigation', { name: 'Telas do sistema' });
+    expect(within(menu).getByRole('button', { name: /Auditoria/ })).toBeTruthy();
+    expect(within(menu).queryByRole('button', { name: /Alunos/ })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: /Notas/ })).toBeNull();
+  });
+
+  it('Auditoria é página própria e mostra a conferência da trilha', async () => {
+    simular(base);
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    expect(screen.queryByText('A trilha está íntegra: nenhum registro foi alterado.')).toBeNull();
+    const u = userEvent.setup();
+    await u.click(
+      within(screen.getByRole('navigation', { name: 'Telas do sistema' })).getByRole('button', {
+        name: 'Auditoria',
+      }),
+    );
+    await screen.findByRole('heading', { name: 'Auditoria' });
+    await screen.findByText('A trilha está íntegra: nenhum registro foi alterado.');
+    expect(screen.getByText(/instituicao\.criada/)).toBeTruthy();
+  });
+
+  it('Suporte e Ajuda do Master são texto, sem formulário e sem dado escolar', async () => {
+    simular(base);
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    const menu = screen.getByRole('navigation', { name: 'Telas do sistema' });
+    await u.click(within(menu).getByRole('button', { name: 'Suporte' }));
+    await screen.findByRole('heading', { name: 'Suporte' });
+    expect(screen.queryByRole('textbox')).toBeNull();
+    await u.click(within(menu).getByRole('button', { name: 'Ajuda' }));
+    await screen.findByRole('heading', { name: 'Ajuda e manual' });
+    expect(screen.getAllByText(/Gestão da plataforma: o que o Master vê/).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText(/SIESAL 4\.0 · Parte 1/).length).toBeGreaterThan(1);
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
+  it('o sino da plataforma avisa trilha com problema', async () => {
+    simular({ ...base, 'GET /operacao/auditoria': { corpo: { integra: false, eventos: [] } } });
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const sino = await screen.findByRole('button', { name: /Avisos da plataforma, 2 avisos/ });
+    await userEvent.setup().click(sino);
+    expect(await screen.findByText(/registro alterado na trilha/)).toBeTruthy();
+    expect(screen.getByText(/2 convites de instituição esperando uso/)).toBeTruthy();
   });
 });
 

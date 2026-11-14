@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ErroApi, type Eu, type Identidade, URL_LOGOTIPO } from './api';
+import { Titulo } from './componentes/Basicos';
 import { type Pagina, Shell } from './componentes/Shell';
 import { BotaoVLibras } from './componentes/VLibras';
 import { carregarInterface, INTERFACE_PADRAO, type Interface, salvarInterface } from './interface';
@@ -16,7 +17,7 @@ import { Calendario } from './paginas/Calendario';
 import { CalendarioEscola } from './paginas/CalendarioEscola';
 import { Cartoes } from './paginas/Cartoes';
 import { ConfigurarTotp } from './paginas/ConfigurarTotp';
-import { Conta } from './paginas/Conta';
+import { Conta, Suporte } from './paginas/Conta';
 import { Foco } from './paginas/Foco';
 import { IdentidadeEscola } from './paginas/IdentidadeEscola';
 import { Inicio } from './paginas/Inicio';
@@ -253,6 +254,15 @@ export function App() {
       {etapa ??
         (pagina === 'conta' && eu.nivel === 'completo' ? (
           <Conta aoSair={sair} />
+        ) : pagina === 'suporte' && eu.nivel === 'completo' ? (
+          <>
+            <Titulo
+              olho="Ajuda"
+              titulo="Suporte"
+              sub="Conte o que aconteceu. A equipe responde pelo sistema."
+            />
+            <Suporte />
+          </>
         ) : pagina === 'ajuda' ? (
           <Ajuda perfil={eu.usuario.perfil} />
         ) : pagina === 'acessibilidade' ? (

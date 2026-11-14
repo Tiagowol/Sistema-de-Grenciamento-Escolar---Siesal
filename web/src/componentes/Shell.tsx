@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { useId, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import type { Eu, Modulo } from '../api';
 import { Icone, type NomeIcone } from '../icones';
 import { buscarNoMenu } from '../menu';
+import { VERSAO_SISTEMA } from '../versao';
 import { SinoMensagens, SinoPrazos } from './Sinos';
 
 export type Pagina =
@@ -30,7 +31,17 @@ export type Pagina =
   | 'acompanhamento'
   | 'acompanhantes'
   | 'acompanhamentoinst'
-  | 'meualuno';
+  | 'meualuno'
+  | 'suporte'
+  // Console do Master (L22d): mesmas telas de menu, outros itens
+  | 'm_instituicoes'
+  | 'm_auditoria'
+  | 'm_administradores'
+  | 'm_professores'
+  | 'm_pedagogicos'
+  | 'm_alunos'
+  | 'm_responsaveis'
+  | 'm_sem_vinculo';
 
 const ROTULO_PERFIL: Record<string, string> = {
   admin: 'Administração',
@@ -38,9 +49,10 @@ const ROTULO_PERFIL: Record<string, string> = {
   aluno: 'Aluno',
   pedagogico: 'Pedagógico e apoio',
   responsavel: 'Responsável',
+  master: 'Master',
 };
 
-type Item = {
+export type Item = {
   id: Pagina;
   rotulo: string;
   icone: NomeIcone;
@@ -50,6 +62,7 @@ type Item = {
   soIndividual?: boolean; // L22a-2: só existe no espaço individual do aluno
   soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
   moduloNaEscola?: Modulo; // 20d: some se o Master desligar o módulo na escola; no espaço individual fica sempre
+  secao?: string; // L22d: título de grupo no menu (aparece antes do primeiro item do grupo)
 };
 const ALUNO = ['aluno'];
 const ITENS: Item[] = [
@@ -205,6 +218,7 @@ const ITENS: Item[] = [
     id: 'notasoficiais',
     rotulo: 'Notas oficiais',
     icone: 'book',
+    soEscola: true, // L22d: no espaço individual não há escola nem notas oficiais
     so: ['admin', 'pedagogico', 'responsavel'],
     palavras: ['boletim', 'prova', 'revisao', 'resultado'],
   },
@@ -236,6 +250,7 @@ const ITENS: Item[] = [
     modulo: 'calendario',
     rotulo: 'Calendário da escola',
     icone: 'calendar',
+    soEscola: true, // L22d: o espaço individual não tem calendário de escola
     so: ['admin', 'professor', 'pedagogico', 'responsavel'],
     palavras: ['feriado', 'periodo letivo', 'bimestre', 'evento', 'ano letivo', 'datas'],
   },
@@ -252,6 +267,12 @@ const ITENS: Item[] = [
     icone: 'spark',
     so: ['admin'],
     palavras: ['logotipo', 'logo', 'cor', 'nome da escola', 'marca'],
+  },
+  {
+    id: 'suporte',
+    rotulo: 'Suporte',
+    icone: 'message',
+    palavras: ['pedir suporte', 'problema', 'erro', 'nao consigo', 'contato', 'ajuda da escola'],
   },
   {
     id: 'acessibilidade',
@@ -275,8 +296,10 @@ const ITENS: Item[] = [
 
 const CHAVE_MENU = 'siesal-menu-recolhido-v1';
 
+type EuDoShell = Omit<Eu, 'usuario'> & { usuario: { id: string; nome: string; perfil: string } };
+
 type Props = {
-  eu: Eu;
+  eu: EuDoShell;
   pagina: Pagina;
   aoIr: (p: Pagina) => void;
   aoSair: () => void;
@@ -284,6 +307,9 @@ type Props = {
   rotulos?: 'icones' | 'texto'; // L17d: topo com ícones (padrão) ou com texto
   vlibras?: ReactNode; // L17d: ícone flutuante do VLibras, fora do conteúdo
   escola?: { nome: string; logotipo: string | null } | null; // L19: identidade da escola
+  itens?: Item[]; // L22d: lista própria de itens (console do Master); sem ela vale a lista por perfil
+  sinos?: ReactNode; // L22d: sinos próprios (console do Master)
+  subtitulo?: string;
   children: ReactNode;
 };
 
@@ -297,6 +323,9 @@ export function Shell({
   rotulos = 'icones',
   vlibras = null,
   escola = null,
+  itens: itensProprios,
+  sinos = null,
+  subtitulo,
   children,
 }: Props) {
   const [aberto, setAberto] = useState(false);
@@ -322,13 +351,14 @@ export function Shell({
   const ligado = (m?: Modulo) => !m || (eu.modulos?.[m] ?? true);
   const individual = eu.espaco === 'individual';
   const ligadoNaEscola = (m?: Modulo) => !m || individual || ligado(m);
-  const itens = ITENS.filter(
+  const itens = (itensProprios ?? ITENS).filter(
     (i) =>
-      (!i.so || i.so.includes(eu.usuario.perfil)) &&
-      ligado(i.modulo) &&
-      ligadoNaEscola(i.moduloNaEscola) &&
-      !(individual && i.soEscola) &&
-      !(!individual && i.soIndividual),
+      itensProprios !== undefined ||
+      ((!i.so || i.so.includes(eu.usuario.perfil)) &&
+        ligado(i.modulo) &&
+        ligadoNaEscola(i.moduloNaEscola) &&
+        !(individual && i.soEscola) &&
+        !(!individual && i.soIndividual)),
   );
   const atual = itens.find((i) => i.id === pagina);
   const achados = buscarNoMenu(itens, busca, 'acessibilidade');
@@ -361,7 +391,7 @@ export function Shell({
             )}
             <div>
               <strong>{escola?.nome ?? 'SIESAL'}</strong>
-              <small>{escola ? 'com SIESAL' : 'Educação e inclusão'}</small>
+              <small>{subtitulo ?? (escola ? 'com SIESAL' : 'Educação e inclusão')}</small>
             </div>
           </div>
           <div className="nav-section">Navegação</div>
@@ -397,32 +427,41 @@ export function Shell({
               const i = itens.find((x) => x.id === a.id);
               if (!i) return null;
               const atualAqui = !a.dentroDe && i.id === pagina;
+              const indice = achados.indexOf(a);
+              const anterior =
+                indice > 0 ? itens.find((x) => x.id === achados[indice - 1]?.id) : null;
+              const titulo =
+                !busca.trim() && i.secao && i.secao !== anterior?.secao ? i.secao : null;
               return (
-                <button
-                  key={`${a.id}-${a.rotulo}`}
-                  type="button"
-                  className={atualAqui ? 'active' : ''}
-                  aria-current={atualAqui ? 'page' : undefined}
-                  onClick={() => {
-                    aoIr(i.id);
-                    setAberto(false);
-                    setBusca('');
-                  }}
-                >
-                  <span className="inlineicon">
-                    <Icone nome={i.icone} />
-                  </span>
-                  <span>
-                    {a.rotulo}
-                    {a.dentroDe ? <small className="busca-dentro"> · em {a.dentroDe}</small> : null}
-                  </span>
-                  {i.id === 'avisos' && !a.dentroDe && naoLidas > 0 ? (
-                    <span className="counter">
-                      {naoLidas}
-                      <span className="sr-only"> não lidos</span>
+                <Fragment key={`${a.id}-${a.rotulo}`}>
+                  {titulo ? <div className="nav-section">{titulo}</div> : null}
+                  <button
+                    type="button"
+                    className={atualAqui ? 'active' : ''}
+                    aria-current={atualAqui ? 'page' : undefined}
+                    onClick={() => {
+                      aoIr(i.id);
+                      setAberto(false);
+                      setBusca('');
+                    }}
+                  >
+                    <span className="inlineicon">
+                      <Icone nome={i.icone} />
                     </span>
-                  ) : null}
-                </button>
+                    <span>
+                      {a.rotulo}
+                      {a.dentroDe ? (
+                        <small className="busca-dentro"> · em {a.dentroDe}</small>
+                      ) : null}
+                    </span>
+                    {i.id === 'avisos' && !a.dentroDe && naoLidas > 0 ? (
+                      <span className="counter">
+                        {naoLidas}
+                        <span className="sr-only"> não lidos</span>
+                      </span>
+                    ) : null}
+                  </button>
+                </Fragment>
               );
             })}
           </nav>
@@ -431,6 +470,7 @@ export function Shell({
               <b>Uma coisa de cada vez</b>
               <span>Cada tela mostra só o que importa agora.</span>
             </div>
+            <p className="versao-sistema">{VERSAO_SISTEMA}</p>
           </div>
         </aside>
         <div
@@ -482,8 +522,12 @@ export function Shell({
             <div className="top-actions">
               {eu.nivel === 'completo' ? (
                 <div className="sinos">
-                  {ligado('mensagens') ? <SinoMensagens aoIr={aoIr} /> : null}
-                  {eu.usuario.perfil === 'aluno' ? <SinoPrazos aoIr={aoIr} /> : null}
+                  {sinos ?? (
+                    <>
+                      {ligado('mensagens') ? <SinoMensagens aoIr={aoIr} /> : null}
+                      {eu.usuario.perfil === 'aluno' ? <SinoPrazos aoIr={aoIr} /> : null}
+                    </>
+                  )}
                 </div>
               ) : null}
               <div className="rolebox">

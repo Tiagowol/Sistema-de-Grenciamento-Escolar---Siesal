@@ -231,7 +231,7 @@ function PedirComSenha({
   );
 }
 
-function Suporte() {
+export function Suporte() {
   const [assunto, setAssunto] = useState('acesso');
   const [texto, setTexto] = useState('');
   const [msg, setMsg] = useState<{ tipo: 'info' | 'warn'; texto: string } | null>(null);

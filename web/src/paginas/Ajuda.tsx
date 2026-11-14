@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { Vazio } from '../componentes/Basicos';
 import { MANUAL_DATA, MANUAL_VERSAO, type Topico, topicosDoPerfil } from '../manual';
 import { normalizar } from '../menu';
+import { VERSAO_DATA, VERSAO_SISTEMA } from '../versao';
 
 // Ajuda e manual por perfil: passos curtos, exemplos fictícios, busca sem acento, versão e data visíveis.
 export function Ajuda({ perfil }: { perfil: string }) {
@@ -30,7 +31,7 @@ export function Ajuda({ perfil }: { perfil: string }) {
           <h1>Ajuda e manual</h1>
           <p>
             Passos curtos para cada tarefa. Manual versão {MANUAL_VERSAO}, atualizado em{' '}
-            {MANUAL_DATA}.
+            {MANUAL_DATA}. {VERSAO_SISTEMA}, de {VERSAO_DATA}.
           </p>
         </div>
       </div>

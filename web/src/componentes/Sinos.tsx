@@ -1,5 +1,12 @@
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
-import { api, type Caixa, type ItemCaixa, type MeuDia, type ResumoTarefa } from '../api';
+import {
+  api,
+  apiOperacao,
+  type Caixa,
+  type ItemCaixa,
+  type MeuDia,
+  type ResumoTarefa,
+} from '../api';
 import { paraTexto, somarDias } from '../datas';
 import { Icone, type NomeIcone } from '../icones';
 import { Carregando } from './Basicos';
@@ -393,6 +400,84 @@ export function SinoPrazos({ aoIr }: { aoIr: (p: Pagina) => void }) {
       <button type="button" className="btn btn-outline btn-sm" onClick={() => aoIr('atividades')}>
         Ver todas as atividades
       </button>
+    </Sino>
+  );
+}
+
+// L22d: sino "Avisos da plataforma" do Master. Só o que o Master já pode ler (números e nomes de instituição):
+// trilha com problema, convites de instituição esperando uso e instituições em implantação. Nunca dado escolar.
+export function SinoPlataforma({ aoIr }: { aoIr: (p: Pagina) => void }) {
+  const [avisos, setAvisos] = useState<{ chave: string; texto: string; ir: Pagina }[] | null>(null);
+  const [erro, setErro] = useState(false);
+
+  const carregar = useCallback(async () => {
+    try {
+      const [painel, convites, trilha] = await Promise.all([
+        apiOperacao.painel(),
+        apiOperacao.resumoConvites(),
+        apiOperacao.trilha(),
+      ]);
+      const lista: { chave: string; texto: string; ir: Pagina }[] = [];
+      if (!trilha.integra)
+        lista.push({
+          chave: 'trilha',
+          texto: 'A conferência achou registro alterado na trilha do Master.',
+          ir: 'm_auditoria',
+        });
+      const esperando = convites.instituicao?.pendentes ?? 0;
+      if (esperando > 0)
+        lista.push({
+          chave: 'convites',
+          texto: `${esperando} ${esperando === 1 ? 'convite de instituição esperando' : 'convites de instituição esperando'} uso.`,
+          ir: 'm_instituicoes',
+        });
+      for (const i of painel.instituicoes.filter((x) => x.situacao === 'em_implantacao'))
+        lista.push({
+          chave: `impl-${i.id}`,
+          texto: `${i.nome} está em implantação.`,
+          ir: 'm_instituicoes',
+        });
+      setAvisos(lista);
+      setErro(false);
+    } catch {
+      setErro(true);
+    }
+  }, []);
+  useEffect(() => {
+    void carregar();
+    window.addEventListener('focus', carregar);
+    return () => window.removeEventListener('focus', carregar);
+  }, [carregar]);
+
+  const n = avisos?.length ?? 0;
+  return (
+    <Sino
+      classe="mensagens"
+      icone="bell"
+      rotulo="Avisos"
+      nome={`Avisos da plataforma, ${n === 0 ? 'nenhum' : n === 1 ? '1 aviso' : `${n} avisos`}`}
+      contagem={n}
+      titulo="Avisos da plataforma"
+      aoAbrir={() => void carregar()}
+    >
+      {erro ? (
+        <p>Não foi possível carregar os avisos. Tente de novo.</p>
+      ) : !avisos ? (
+        <Carregando />
+      ) : avisos.length === 0 ? (
+        <p>Nenhum aviso por enquanto.</p>
+      ) : (
+        <ul className="sino-lista">
+          {avisos.map((a) => (
+            <li key={a.chave} className="sino-item">
+              <p>{a.texto}</p>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => aoIr(a.ir)}>
+                Abrir
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </Sino>
   );
 }

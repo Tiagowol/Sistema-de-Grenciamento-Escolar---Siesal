@@ -17,6 +17,21 @@ const TODOS: string[] = [];
 
 export const TOPICOS: Topico[] = [
   {
+    id: 'master-visao',
+    titulo: 'Gestão da plataforma: o que o Master vê e o que não vê',
+    perfis: ['master'],
+    palavras: ['master', 'gestao', 'instituicao', 'arvore', 'auditoria', 'convite', 'suporte'],
+    resumo:
+      'O Master cuida da plataforma. Vê números, a árvore de pessoas (nome, e-mail e situação) e a trilha de ações. Não vê notas nem o conteúdo dos alunos.',
+    passos: [
+      'Em Instituições, crie uma instituição, mude a situação e ligue ou desligue módulos.',
+      'Na Árvore, escolha uma área (por exemplo, Alunos) e depois a instituição. A leitura é apenas de consulta.',
+      'Em Auditoria, confira a trilha das ações do Master e se ela está íntegra.',
+      'Em Suporte, veja como pedir ajuda sobre a plataforma.',
+    ],
+    exemplo: 'Cada abertura da árvore fica registrada na Auditoria, sem os nomes lidos.',
+  },
+  {
     id: 'entrar',
     titulo: 'Entrar no sistema e trocar a senha',
     perfis: TODOS,

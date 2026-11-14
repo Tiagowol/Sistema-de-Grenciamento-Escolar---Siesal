@@ -16,7 +16,19 @@ import {
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { CodigoQr } from '../componentes/CodigoQr';
+import { type Item, type Pagina, Shell } from '../componentes/Shell';
+import { SinoPlataforma } from '../componentes/Sinos';
+import { BotaoVLibras } from '../componentes/VLibras';
+import { carregarInterface, type Interface, salvarInterface } from '../interface';
 import { lerCodigoDoLink, linkDeCadastro } from '../linkCadastro';
+import {
+  aplicarPreferencias,
+  carregarPreferencias,
+  type Preferencias,
+  salvarPreferencias,
+} from '../preferencias';
+import { Acessibilidade } from './Acessibilidade';
+import { Ajuda } from './Ajuda';
 
 // L18: entrada separada dos Masters (/gestao; antes /operacao). Sem menu da escola e sem nenhum dado escolar.
 const mensagem = (x: unknown, padrao: string) => (x instanceof ErroApi ? x.message : padrao);
@@ -379,18 +391,16 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
   }>({ pendentes: 0, usados: 0, vencidos: 0 });
   const [conviteNovo, setConviteNovo] = useState('');
   const [conviteInstituicao, setConviteInstituicao] = useState('');
-  const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
   const [feito, setFeito] = useState('');
 
   const carregar = useCallback(async () => {
     try {
-      const [p, t] = await Promise.all([apiOperacao.painel(), apiOperacao.trilha()]);
+      const p = await apiOperacao.painel();
       setLista(p.instituicoes);
       setIndividuais(p.espacos_individuais ?? 0);
       setConvites(await apiOperacao.resumoConvites());
-      setTrilha(t);
     } catch (x) {
       if (x instanceof ErroApi && x.status === 401) return aoSair();
       setErro(mensagem(x, 'Falha ao listar.'));
@@ -430,13 +440,6 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
             nem de notas.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() => void apiOperacao.logout().then(aoSair, aoSair)}
-        >
-          Sair
-        </button>
       </div>
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       {feito ? <Aviso>{feito}</Aviso> : null}
@@ -572,28 +575,6 @@ function Painel({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
               Copiar o link
             </button>
           </div>
-        ) : null}
-      </section>
-      <section className="card mt" aria-labelledby="ops-trilha-titulo">
-        <div className="card-head">
-          <h2 id="ops-trilha-titulo">Trilha do Master</h2>
-        </div>
-        {trilha ? (
-          <>
-            <p>
-              {trilha.integra
-                ? 'A trilha está íntegra: nenhum registro foi alterado.'
-                : 'Atenção: a conferência achou registro alterado na trilha.'}
-            </p>
-            <ol className="lista-versoes">
-              {trilha.eventos.map((e) => (
-                <li key={e.seq}>
-                  {dataEHora(e.criado_em)} · {e.ator} · {e.acao}
-                  {e.alvo ? ` · ${e.alvo}` : ''}
-                </li>
-              ))}
-            </ol>
-          </>
         ) : null}
       </section>
     </>
@@ -769,30 +750,216 @@ function Arvore({ area }: { area: (typeof AREAS)[number] }) {
   );
 }
 
-// Menu das áreas à esquerda (em cima, no celular) e a página escolhida ao lado
-function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
-  const [area, setArea] = useState<Area>('instituicoes');
-  const atual = AREAS.find((a) => a.id === area);
-  const botao = (id: Area, rotulo: string) => (
-    <button
-      type="button"
-      aria-current={area === id ? 'page' : undefined}
-      onClick={() => setArea(id)}
-    >
-      {rotulo}
-    </button>
-  );
+// Auditoria: a trilha do Master em página própria, com a conferência de integridade
+function Auditoria({ aoSair }: { aoSair: () => void }) {
+  const [trilha, setTrilha] = useState<{ integra: boolean; eventos: EventoMaster[] } | null>(null);
+  const [erro, setErro] = useState('');
+  useEffect(() => {
+    apiOperacao.trilha().then(setTrilha, (x) => {
+      if (x instanceof ErroApi && x.status === 401) return aoSair();
+      setErro(mensagem(x, 'Falha ao ler a trilha.'));
+    });
+  }, [aoSair]);
   return (
-    <div className="ops-layout">
-      <nav className="ops-menu" aria-label="Áreas da gestão">
-        {botao('instituicoes', 'Instituições')}
-        <h2>Árvore (só leitura)</h2>
-        {AREAS.map((a) => (
-          <span key={a.id}>{botao(a.id, a.rotulo)}</span>
-        ))}
-      </nav>
-      <div>{atual ? <Arvore area={atual} /> : <Painel eu={eu} aoSair={aoSair} />}</div>
-    </div>
+    <section className="card" aria-labelledby="ops-trilha-titulo">
+      <div className="card-head">
+        <h1 id="ops-trilha-titulo" style={{ fontSize: 22 }}>
+          Auditoria
+        </h1>
+      </div>
+      <p className="muted small">
+        Trilha das ações do Master. Cada abertura da árvore também fica aqui.
+      </p>
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {trilha ? (
+        <>
+          <p>
+            {trilha.integra
+              ? 'A trilha está íntegra: nenhum registro foi alterado.'
+              : 'Atenção: a conferência achou registro alterado na trilha.'}
+          </p>
+          <ol className="lista-versoes">
+            {trilha.eventos.map((e) => (
+              <li key={e.seq}>
+                {dataEHora(e.criado_em)} · {e.ator} · {e.acao}
+                {e.alvo ? ` · ${e.alvo}` : ''}
+              </li>
+            ))}
+          </ol>
+        </>
+      ) : erro ? null : (
+        <p role="status">Carregando…</p>
+      )}
+    </section>
+  );
+}
+
+// Suporte do Master: texto literal, sem formulário
+function SuporteMaster() {
+  return (
+    <section className="card" aria-labelledby="ops-suporte-titulo">
+      <div className="card-head">
+        <h1 id="ops-suporte-titulo" style={{ fontSize: 22 }}>
+          Suporte
+        </h1>
+      </div>
+      <p>O suporte da plataforma é feito por quem cuida do SIESAL. Aqui não há formulário.</p>
+      <ol>
+        <li>Veja a Ajuda e a Auditoria antes de pedir ajuda.</li>
+        <li>Anote o que aconteceu: a tela, o dia (dia/mês) e a instituição.</li>
+        <li>Não escreva senhas, códigos de convite nem dados de alunos na mensagem.</li>
+      </ol>
+      <p className="muted small">
+        Pedidos de suporte de alunos, professores e famílias ficam com o Admin e o Pedagógico de
+        cada escola. O Master não lê esses pedidos.
+      </p>
+    </section>
+  );
+}
+
+// Console do Master no mesmo menu e topo dos outros perfis (L22d): usa o Shell do sistema
+const SECAO_ARVORE = 'Árvore (só leitura)';
+const ITENS_MASTER: Item[] = [
+  {
+    id: 'm_instituicoes',
+    rotulo: 'Instituições',
+    icone: 'school',
+    palavras: ['escola', 'criar', 'modulos', 'convite', 'situacao', 'espacos individuais'],
+  },
+  {
+    id: 'm_auditoria',
+    rotulo: 'Auditoria',
+    icone: 'file',
+    palavras: ['trilha', 'registro', 'integridade', 'acoes'],
+  },
+  {
+    id: 'm_administradores',
+    rotulo: 'Administradores',
+    icone: 'lock',
+    secao: SECAO_ARVORE,
+    palavras: ['admin', 'arvore', 'pessoas'],
+  },
+  {
+    id: 'm_professores',
+    rotulo: 'Professores',
+    icone: 'book',
+    secao: SECAO_ARVORE,
+    palavras: ['professor', 'arvore', 'pessoas'],
+  },
+  {
+    id: 'm_pedagogicos',
+    rotulo: 'Pedagógicos e NAPNE',
+    icone: 'access',
+    secao: SECAO_ARVORE,
+    palavras: ['pedagogico', 'napne', 'arvore', 'pessoas'],
+  },
+  {
+    id: 'm_alunos',
+    rotulo: 'Alunos',
+    icone: 'users',
+    secao: SECAO_ARVORE,
+    palavras: ['aluno', 'arvore', 'pessoas'],
+  },
+  {
+    id: 'm_responsaveis',
+    rotulo: 'Responsáveis',
+    icone: 'home',
+    secao: SECAO_ARVORE,
+    palavras: ['responsavel', 'familia', 'arvore', 'pessoas'],
+  },
+  {
+    id: 'm_sem_vinculo',
+    rotulo: 'Usuários sem vínculo',
+    icone: 'file',
+    secao: SECAO_ARVORE,
+    palavras: ['sem instituicao', 'conta solta', 'arvore'],
+  },
+  {
+    id: 'suporte',
+    rotulo: 'Suporte',
+    icone: 'message',
+    palavras: ['ajuda da plataforma', 'problema', 'contato'],
+  },
+  {
+    id: 'acessibilidade',
+    rotulo: 'Acessibilidade',
+    icone: 'access',
+    palavras: ['configuracao', 'configuracoes', 'ajustes', 'preferencias', 'opcoes'],
+  },
+  {
+    id: 'ajuda',
+    rotulo: 'Ajuda',
+    icone: 'help',
+    palavras: ['manual', 'como usar', 'duvida', 'tutorial', 'passo a passo'],
+  },
+];
+const AREA_DA_PAGINA: Partial<Record<Pagina, (typeof AREAS)[number]['id']>> = {
+  m_administradores: 'administradores',
+  m_professores: 'professores',
+  m_pedagogicos: 'pedagogicos',
+  m_alunos: 'alunos',
+  m_responsaveis: 'responsaveis',
+  m_sem_vinculo: 'sem_vinculo',
+};
+
+function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
+  const [pagina, setPagina] = useState<Pagina>('m_instituicoes');
+  // Acessibilidade do Master: só neste aparelho (o Master não tem linha de preferências no banco)
+  const [prefs, setPrefs] = useState<Preferencias>(() => carregarPreferencias());
+  const [interfaceAtual, setInterfaceAtual] = useState<Interface>(() => carregarInterface());
+  const mudarPrefs = (p: Preferencias) => {
+    setPrefs(p);
+    salvarPreferencias(p);
+    aplicarPreferencias(p);
+  };
+  const mudarInterface = (i: Interface) => {
+    setInterfaceAtual(i);
+    salvarInterface(i);
+  };
+  const area = AREAS.find((a) => a.id === AREA_DA_PAGINA[pagina]);
+  const euDoShell = {
+    nivel: 'completo' as const,
+    usuario: { id: 'master', nome: eu.usuario, perfil: 'master' },
+  };
+  return (
+    <Shell
+      eu={euDoShell}
+      pagina={pagina}
+      aoIr={setPagina}
+      aoSair={() => void apiOperacao.logout().then(aoSair, aoSair)}
+      rotulos={interfaceAtual.rotulos}
+      itens={ITENS_MASTER}
+      subtitulo="Gestão da plataforma"
+      sinos={<SinoPlataforma aoIr={setPagina} />}
+      vlibras={
+        <BotaoVLibras
+          ligado={interfaceAtual.vlibras}
+          avisoAceito={interfaceAtual.vlibras_aviso_aceito}
+          aoAceitar={() =>
+            mudarInterface({ ...interfaceAtual, vlibras: true, vlibras_aviso_aceito: true })
+          }
+        />
+      }
+    >
+      {area ? (
+        <Arvore area={area} />
+      ) : pagina === 'm_auditoria' ? (
+        <Auditoria aoSair={aoSair} />
+      ) : pagina === 'suporte' ? (
+        <SuporteMaster />
+      ) : pagina === 'ajuda' ? (
+        <Ajuda perfil="master" />
+      ) : pagina === 'acessibilidade' ? (
+        <Acessibilidade
+          valor={prefs}
+          aoMudar={mudarPrefs}
+          interfaceAtual={interfaceAtual}
+          aoMudarInterface={mudarInterface}
+        />
+      ) : (
+        <Painel eu={eu} aoSair={aoSair} />
+      )}
+    </Shell>
   );
 }
 
@@ -820,15 +987,10 @@ export function Operacao() {
         <p role="status">Carregando…</p>
       </Moldura>
     );
+  if (eu?.nivel === 'completo') return <Gestao eu={eu} aoSair={sair} />;
   return (
     <Moldura>
-      {!eu ? (
-        <Entrada aoEntrar={setEu} />
-      ) : eu.nivel === 'configurar_totp' ? (
-        <Totp aoConcluir={() => void atualizar()} />
-      ) : (
-        <Gestao eu={eu} aoSair={sair} />
-      )}
+      {!eu ? <Entrada aoEntrar={setEu} /> : <Totp aoConcluir={() => void atualizar()} />}
     </Moldura>
   );
 }
