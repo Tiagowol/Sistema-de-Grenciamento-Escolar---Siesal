@@ -12,7 +12,7 @@
   --purple: #6650a5;
   --purple-soft: #f1ecff;
   --text: #1b2c43;
-  --muted: #64748b;
+  --muted: #5d6b80;
   --border: #dde5ed;
   --bg: #f4f7fb;
   --panel: #fff;
@@ -831,6 +831,7 @@ small,
   margin-bottom: 17px;
 }
 .table-wrap {
+  position: relative; /* F-059: textos sr-only da tabela não vazam da área rolável */
   overflow-x: auto;
 }
 .table {
