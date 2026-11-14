@@ -590,3 +590,6 @@ Mensagem do autor em chat, em 14/11/2026, 19:06. Decisões: (1) a conferência d
 - **Feito:** conferência por máquina em `docs/VERIFICACAO-L22C.md` (1 falha de responsividade antiga, F-059, e 3 observações; sem conta real: servidor temporário com o código real e API simulada). Explicação de L22e e L22f entregue em chat.
 - **Estado do L22c:** continua **Implementado e aplicado no site local, não Verificado** (falta a checagem humana do autor).
 - **Não feito:** propostas de L22e e L22f; correção da F-059.
+
+## A-117 — "Seguir L22e" e proposta do L22e (14/11/2026, noite)
+Resposta do autor em chat, em 14/11/2026: "Não, seguir L22e" (sem lote de defeito antes). Proposta escrita em `docs/PROPOSTA-L22E.md` (1 item: tela "Auditoria" do Admin, só leitura, só ações administrativas da própria instituição; sem migração; sem mudança de matriz; Q1 = quais eventos entram, recomendada A). **Estado do L22e: Planejado.** Sem código e sem migração. Falta a resposta à Q1 e o "aprovo" explícito. F-059 e contraste 4,42:1 seguem abertos, fora deste lote.
