@@ -9,6 +9,7 @@ import { SinoMensagens, SinoPrazos } from './Sinos';
 export type Pagina =
   | 'inicio'
   | 'usuarios'
+  | 'auditoria'
   | 'turmas'
   | 'notasprof'
   | 'notasoficiais'
@@ -238,6 +239,13 @@ const ITENS: Item[] = [
     icone: 'users',
     so: ['admin'],
     palavras: ['contas', 'senha', 'cadastro', 'pessoas'],
+  },
+  {
+    id: 'auditoria',
+    rotulo: 'Auditoria',
+    icone: 'file',
+    so: ['admin'],
+    palavras: ['registro', 'historico', 'o que foi feito', 'acoes', 'entradas', 'integridade'],
   },
   {
     id: 'turmas',

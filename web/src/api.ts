@@ -52,6 +52,15 @@ export type UsuarioLista = {
   senhaProvisoria: boolean;
 };
 
+// L22e: um registro da auditoria da escola, já em frase (nunca o conteúdo `antes`/`depois`)
+export type EventoAuditoriaEscola = {
+  seq: number;
+  quando: string;
+  quem: string;
+  perfil: string;
+  frase: string;
+};
+
 export type Turno = 'manha' | 'tarde' | 'noite';
 export type TurmaLista = {
   id: string;
@@ -699,6 +708,12 @@ export const api = {
   confirmarTotp: (codigo: string) =>
     chamar<{ codigos_recuperacao: string[] }>('POST', '/auth/totp/confirmar', { codigo }),
   usuarios: () => chamar<{ usuarios: UsuarioLista[] }>('GET', '/usuarios'),
+  // L22e: auditoria da própria instituição (Admin). `antes` pede a página seguinte, mais antiga.
+  auditoriaEscola: (antes?: number) =>
+    chamar<{ integra: boolean | null; tem_mais: boolean; eventos: EventoAuditoriaEscola[] }>(
+      'GET',
+      `/auditoria${antes === undefined ? '' : `?antes=${antes}`}`,
+    ),
   criarUsuario: (d: { perfil: Perfil; nome: string; email: string }) =>
     chamar<{ usuario: UsuarioLista; senha_provisoria: string }>('POST', '/usuarios', d),
   senhaProvisoria: (id: string) =>

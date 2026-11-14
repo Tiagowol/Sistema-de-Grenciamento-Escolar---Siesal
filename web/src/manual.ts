@@ -268,6 +268,21 @@ export const TOPICOS: Topico[] = [
     ],
   },
   {
+    id: 'admin-auditoria',
+    titulo: 'Auditoria: o que foi feito na instituição',
+    perfis: ['admin'],
+    palavras: ['auditoria', 'registro', 'historico', 'o que foi feito', 'entradas', 'integridade'],
+    resumo:
+      'A Auditoria mostra o que a equipe fez na instituição. Ela serve apenas para ler. Não mostra nada da vida dos alunos.',
+    passos: [
+      'Abra Auditoria no menu.',
+      'Leia os registros, do mais novo para o mais velho. Cada um diz quem fez, o que fez e quando.',
+      'Escolha Ver registros mais antigos para ver mais.',
+      'A faixa no topo diz se a cadeia está íntegra. Se disser não, avise o Master.',
+      'Abrir a Auditoria também fica registrado: quem abriu e quando.',
+    ],
+  },
+  {
     id: 'acessibilidade',
     titulo: 'Acessibilidade: letra, cores e movimento',
     perfis: TODOS,

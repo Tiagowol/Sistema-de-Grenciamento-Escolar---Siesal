@@ -419,3 +419,13 @@ describe('matriz v23 (L22c: Admin desativa, Master revoga convite e muda o limit
         );
   });
 });
+
+// L22e: a auditoria da própria instituição é só do Admin (e do Master na plataforma)
+describe('auditoria da escola (L22e)', () => {
+  it('só o Admin lê, e só na própria instituição', () => {
+    expect(permitido('admin', 'auditoria', 'ler')).toBe('instituicao');
+    for (const perfil of ['professor', 'aluno', 'pedagogico', 'responsavel'] as const) {
+      expect(permitido(perfil, 'auditoria', 'ler')).toBeNull();
+    }
+  });
+});

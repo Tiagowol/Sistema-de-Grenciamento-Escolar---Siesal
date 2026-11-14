@@ -106,3 +106,6 @@ export const podeAcompanharPorInstituicao = (perfil: string): boolean => perfil 
 
 // "Meu aluno" (L22a-3, matriz v21): o representante legal lê tudo do aluno menor, só leitura. O vínculo legal é conferido no banco.
 export const podeVerComoRepresentante = (perfil: string): boolean => perfil === 'responsavel';
+
+// Auditoria da escola (L22e). Espelha a matriz: `auditoria.ler` do Admin vale na instituição. Só o Admin.
+export const podeLerAuditoriaDaEscola = (perfil: string): boolean => perfil === 'admin';

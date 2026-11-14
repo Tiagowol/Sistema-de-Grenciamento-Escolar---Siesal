@@ -11,6 +11,7 @@ import { AcompanhamentoInstituicao } from './paginas/AcompanhamentoInstituicao';
 import { Agenda } from './paginas/Agenda';
 import { Ajuda } from './paginas/Ajuda';
 import { Atividades } from './paginas/Atividades';
+import { AuditoriaEscola } from './paginas/AuditoriaEscola';
 import { Avisos } from './paginas/Avisos';
 import { AvisosEscola } from './paginas/AvisosEscola';
 import { Calendario } from './paginas/Calendario';
@@ -331,6 +332,8 @@ export function App() {
           <IdentidadeEscola aoMudar={carregarEscola} />
         ) : pagina === 'usuarios' && eu.usuario.perfil === 'admin' ? (
           <Usuarios />
+        ) : eu.nivel === 'completo' && pagina === 'auditoria' && eu.usuario.perfil === 'admin' ? (
+          <AuditoriaEscola />
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (
           <Turmas />
         ) : ehAluno ? (

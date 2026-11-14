@@ -5,6 +5,7 @@ import { registrarRepresentado } from './acompanhamento/representado.js';
 import { registrarAcompanhamento } from './acompanhamento/rotas.js';
 import { registrarAjuda } from './ajuda/rotas.js';
 import { registrarApoio } from './apoio/rotas.js';
+import { registrarAuditoriaEscola } from './auditoria/rotas.js';
 import {
   type Autenticacao,
   criarAutenticacao,
@@ -450,6 +451,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarAcompanhamentoInstituicao(app, { banco: opcoes.banco, exigirSessao });
   registrarRepresentado(app, { banco: opcoes.banco, exigirSessao });
   registrarEscola(app, { banco: opcoes.banco, exigirSessao });
+  registrarAuditoriaEscola(app, { banco: opcoes.banco, exigirSessao });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)
   const limitadorOperacao = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
