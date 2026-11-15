@@ -1,7 +1,7 @@
 // Manual do sistema por perfil (L16e). Texto literal, passos curtos (no máximo 5), exemplos fictícios.
 // Sem senha, sem endereço de acesso e sem dado real. Ao mudar uma tela, atualize o tópico e a data.
 export const MANUAL_VERSAO = '1.0';
-export const MANUAL_DATA = '08/11/2026';
+export const MANUAL_DATA = '15/11/2026';
 
 export type Topico = {
   id: string;
@@ -28,6 +28,41 @@ export const TOPICOS: Topico[] = [
       'Escolha Desativar e confirme com Sim, desativar.',
       'Para voltar, escolha Reativar na mesma linha.',
       'Você não desativa a sua própria conta.',
+    ],
+  },
+  {
+    id: 'suporte-espacos-admin',
+    titulo: 'Suporte dos espaços individuais (Admin indicado)',
+    perfis: ['admin'],
+    palavras: [
+      'suporte',
+      'espaco individual',
+      'pedido',
+      'atendente',
+      'aluno sem escola',
+      'representante',
+    ],
+    resumo:
+      'Se o Master indicou você, o menu mostra Suporte dos espaços. Você lê os pedidos de alunos sem escola e de representantes legais e marca como atendido. Nada mais do espaço dessas pessoas aparece.',
+    passos: [
+      'Abra Suporte dos espaços no menu (ou o aviso no sino Mensagens).',
+      'Leia o assunto, o texto, o nome e o e-mail de quem pediu.',
+      'Responda por e-mail, fora do SIESAL.',
+      'Escolha Marcar como atendido e confirme.',
+    ],
+  },
+  {
+    id: 'master-atendentes',
+    titulo: 'Indicar um Admin para atender o suporte dos espaços',
+    perfis: ['master'],
+    palavras: ['atendente', 'indicar', 'retirar', 'suporte', 'espaco individual', 'admin'],
+    resumo:
+      'Você ou um Admin que você indicar atende os pedidos de suporte dos espaços individuais. Retirar a indicação corta o acesso na hora. Cada abertura da fila fica na auditoria.',
+    passos: [
+      'Abra Atendentes do suporte no menu.',
+      'Ache o Admin na lista e escolha Indicar; confirme.',
+      'Para cortar o acesso, escolha Retirar na mesma linha.',
+      'Veja a fila em Suporte dos espaços.',
     ],
   },
   {

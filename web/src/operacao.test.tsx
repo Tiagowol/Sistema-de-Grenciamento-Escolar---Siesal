@@ -446,6 +446,50 @@ describe('console do Master no padrão do sistema (L22d)', () => {
     expect(await screen.findByText(/registro alterado na trilha/)).toBeTruthy();
     expect(screen.getByText(/2 convites de instituição esperando uso/)).toBeTruthy();
   });
+
+  // L22f: pedidos de suporte dos espaços individuais
+  it('o sino da plataforma avisa pedidos de suporte dos espaços e a tela mostra a fila do Master', async () => {
+    const chamadas = simular({
+      ...base,
+      'GET /operacao/suporte-individual/contagem': { corpo: { abertos: 2 } },
+      'GET /operacao/suporte-individual': {
+        corpo: {
+          pedidos: [
+            {
+              pedido_id: 'p1',
+              espaco_id: 'e1',
+              assunto: 'acesso',
+              texto: 'Não consigo entrar.',
+              nome: 'Família Fictícia',
+              email: 'familia@exemplo.invalid',
+              criado_em: '2026-11-13T12:00:00.000Z',
+            },
+          ],
+        },
+      },
+      'POST /operacao/suporte-individual/p1/atender': { status: 204 },
+    });
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole('button', { name: /Avisos da plataforma/ }));
+    expect(
+      await screen.findByText(/Há 2 pedidos de suporte esperando de espaços individuais/),
+    ).toBeTruthy();
+    await u.click(
+      within(screen.getByRole('navigation', { name: 'Telas do sistema' })).getByRole('button', {
+        name: 'Suporte dos espaços',
+      }),
+    );
+    expect(await screen.findByText('Não consigo entrar.')).toBeTruthy();
+    expect(screen.getByText(/Família Fictícia · familia@exemplo.invalid/)).toBeTruthy();
+    await u.click(screen.getByRole('button', { name: /Marcar como atendido: Família Fictícia/ }));
+    await u.click(screen.getByRole('button', { name: 'Sim, marcar como atendido' }));
+    await waitFor(() =>
+      expect(chamadas.some((c) => c.url === '/operacao/suporte-individual/p1/atender')).toBe(true),
+    );
+    expect(chamadas.find((c) => c.url.endsWith('/p1/atender'))?.corpo).toEqual({ espaco_id: 'e1' });
+  });
 });
 
 describe('Master: convites e limite de alunos (L22c)', () => {

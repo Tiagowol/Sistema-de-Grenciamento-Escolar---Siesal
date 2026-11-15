@@ -3,7 +3,7 @@ import { PERFIS, type Perfil } from './perfis.js';
 import dados from './permissoes.json' with { type: 'json' };
 
 // Matriz de permissões versionada como dado (ADR-006). Negar por padrão: o que não está no arquivo é negado.
-export const ESCOPOS = ['proprio', 'vinculo', 'instituicao', 'plataforma'] as const;
+export const ESCOPOS = ['proprio', 'vinculo', 'instituicao', 'plataforma', 'indicado'] as const;
 export type Escopo = (typeof ESCOPOS)[number];
 
 const esquemaEscopos = z.partialRecord(z.enum(PERFIS), z.enum(ESCOPOS));

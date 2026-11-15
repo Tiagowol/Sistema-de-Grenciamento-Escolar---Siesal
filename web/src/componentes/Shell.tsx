@@ -34,11 +34,14 @@ export type Pagina =
   | 'acompanhamentoinst'
   | 'meualuno'
   | 'suporte'
+  | 'suporteindividual'
   // Console do Master (L22d): mesmas telas de menu, outros itens
   | 'm_instituicoes'
   | 'm_auditoria'
   | 'm_convites'
   | 'm_limite'
+  | 'm_atendentes'
+  | 'm_suporte_individual'
   | 'm_administradores'
   | 'm_professores'
   | 'm_pedagogicos'
@@ -65,6 +68,7 @@ export type Item = {
   soIndividual?: boolean; // L22a-2: só existe no espaço individual do aluno
   soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
   moduloNaEscola?: Modulo; // 20d: some se o Master desligar o módulo na escola; no espaço individual fica sempre
+  soAtendente?: boolean; // L22f: só o Admin indicado pelo Master vê
   secao?: string; // L22d: título de grupo no menu (aparece antes do primeiro item do grupo)
 };
 const ALUNO = ['aluno'];
@@ -247,6 +251,15 @@ const ITENS: Item[] = [
     so: ['admin'],
     palavras: ['registro', 'historico', 'o que foi feito', 'acoes', 'entradas', 'integridade'],
   },
+  // L22f: aparece só para o Admin que o Master indicou (conferido no banco a cada abertura)
+  {
+    id: 'suporteindividual',
+    rotulo: 'Suporte dos espaços',
+    icone: 'maos',
+    so: ['admin'],
+    soAtendente: true,
+    palavras: ['pedido', 'aluno sem escola', 'representante', 'atender', 'espaco individual'],
+  },
   {
     id: 'turmas',
     rotulo: 'Turmas e vínculos',
@@ -370,6 +383,7 @@ export function Shell({
       ((!i.so || i.so.includes(eu.usuario.perfil)) &&
         ligado(i.modulo) &&
         ligadoNaEscola(i.moduloNaEscola) &&
+        !(i.soAtendente && !eu.atendente_suporte) &&
         !(individual && i.soEscola) &&
         !(!individual && i.soIndividual)),
   );

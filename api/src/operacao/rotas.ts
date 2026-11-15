@@ -33,6 +33,8 @@ const corpoSituacao = z.strictObject({
   situacao: z.enum(SITUACOES),
   confirmar_nome: z.string().max(120).optional(),
 });
+const corpoAtendente = z.strictObject({ instituicao_id: z.uuid(), usuario_id: z.uuid() });
+const corpoAtender = z.strictObject({ espaco_id: z.uuid() });
 const corpoLimite = z.strictObject({ limite: z.number().int().min(1).max(20) });
 const corpoModulo = z.strictObject({ modulo: z.enum(MODULOS), ligado: z.boolean() });
 
@@ -212,6 +214,57 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     const corpo = corpoLimite.safeParse(requisicao.body);
     if (!corpo.success) return resposta.code(400).send({ erro: 'Escolha um número de 1 a 20.' });
     await ops.mudarLimiteAlunos(sessao, corpo.data.limite);
+    return resposta.code(204).send();
+  });
+
+  // L22f: suporte do espaço individual. Indicar e retirar Admin atendente; fila e atendimento pelo Master.
+  app.get('/operacao/suporte-atendentes', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { admins: await ops.listarAtendentes() };
+  });
+  for (const acao of ['indicar', 'retirar'] as const) {
+    app.post(`/operacao/suporte-atendentes/${acao}`, async (requisicao, resposta) => {
+      const sessao = await exigir(requisicao, resposta);
+      if (!sessao) return resposta;
+      const corpo = corpoAtendente.safeParse(requisicao.body);
+      if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+      const { instituicao_id, usuario_id } = corpo.data;
+      if (acao === 'indicar') {
+        const r = await ops.indicarAtendente(sessao, instituicao_id, usuario_id);
+        if (r === 'nao_admin')
+          return resposta
+            .code(404)
+            .send({ erro: 'Esta pessoa não é Admin ativo de uma escola ativa.' });
+        if (r === 'ja_indicado')
+          return resposta.code(409).send({ erro: 'Este Admin já está indicado.' });
+      } else {
+        const r = await ops.retirarAtendente(sessao, instituicao_id, usuario_id);
+        if (r === 'nao_indicado')
+          return resposta.code(409).send({ erro: 'Este Admin não está indicado.' });
+      }
+      return resposta.code(204).send();
+    });
+  }
+  app.get('/operacao/suporte-individual', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { pedidos: await ops.suporteIndividualFila(sessao) };
+  });
+  app.get('/operacao/suporte-individual/contagem', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { abertos: await ops.suporteIndividualContar() };
+  });
+  app.post('/operacao/suporte-individual/:id/atender', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    const parametros = parametroId.safeParse(requisicao.params);
+    const corpo = corpoAtender.safeParse(requisicao.body);
+    if (!parametros.success || !corpo.success)
+      return resposta.code(400).send({ erro: 'Dados inválidos.' });
+    const r = await ops.suporteIndividualAtender(sessao, corpo.data.espaco_id, parametros.data.id);
+    if (r === 'nao_encontrado') return resposta.code(404).send({ erro: 'Pedido não encontrado.' });
     return resposta.code(204).send();
   });
 

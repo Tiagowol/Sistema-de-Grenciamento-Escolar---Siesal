@@ -31,6 +31,7 @@ import { NotasProfessor } from './paginas/NotasProfessor';
 import { Personalizar } from './paginas/Personalizar';
 import { QuemPodeVer } from './paginas/QuemPodeVer';
 import { RegrasNotas } from './paginas/RegrasNotas';
+import { SuporteEspacos } from './paginas/SuporteEspacos';
 import { TrocarSenha } from './paginas/TrocarSenha';
 import { Turmas } from './paginas/Turmas';
 import { Usuarios } from './paginas/Usuarios';
@@ -334,6 +335,22 @@ export function App() {
           <Usuarios />
         ) : eu.nivel === 'completo' && pagina === 'auditoria' && eu.usuario.perfil === 'admin' ? (
           <AuditoriaEscola />
+        ) : eu.nivel === 'completo' &&
+          pagina === 'suporteindividual' &&
+          eu.usuario.perfil === 'admin' &&
+          eu.atendente_suporte ? (
+          <>
+            <Titulo
+              olho="Administração"
+              titulo="Suporte dos espaços"
+              sub="Pedidos de alunos sem escola e de representantes legais. Só leitura e atendimento."
+            />
+            <SuporteEspacos
+              nivel="h2"
+              carregar={() => api.suporteIndividual().then((r) => r.pedidos)}
+              atender={(p) => api.atenderSuporteIndividual(p.pedido_id, p.espaco_id)}
+            />
+          </>
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (
           <Turmas />
         ) : ehAluno ? (

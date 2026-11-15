@@ -50,6 +50,7 @@ import {
 import { registrarNotas } from './notas/rotas.js';
 import { registrarNucleo } from './nucleo/rotas.js';
 import { registrarOperacao } from './operacao/rotas.js';
+import { ehAtendenteAtivo, registrarSuporteIndividual } from './suporte/rotas.js';
 import { registrarTurmas } from './turmas/rotas.js';
 
 export type OpcoesApp = {
@@ -452,6 +453,7 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarRepresentado(app, { banco: opcoes.banco, exigirSessao });
   registrarEscola(app, { banco: opcoes.banco, exigirSessao });
   registrarAuditoriaEscola(app, { banco: opcoes.banco, exigirSessao });
+  registrarSuporteIndividual(app, { banco: opcoes.banco, exigirSessao });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)
   const limitadorOperacao = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
@@ -482,6 +484,8 @@ export function criarApp(opcoes: OpcoesApp = {}) {
         return {
           espaco,
           modulos: espaco === 'individual' ? MODULOS_DO_ESPACO_INDIVIDUAL : await lerModulos(tx),
+          // L22f: o menu "Suporte dos espaços" só existe para o Admin indicado pelo Master
+          atendente_suporte: await ehAtendenteAtivo(tx, sessao),
         };
       })),
     };

@@ -109,3 +109,6 @@ export const podeVerComoRepresentante = (perfil: string): boolean => perfil === 
 
 // Auditoria da escola (L22e). Espelha a matriz: `auditoria.ler` do Admin vale na instituição. Só o Admin.
 export const podeLerAuditoriaDaEscola = (perfil: string): boolean => perfil === 'admin';
+
+// Suporte do espaço individual (L22f, matriz v24): o Admin só atende se o Master o indicou (conferido no banco a cada chamada).
+export const podeSerAtendenteDeSuporte = (perfil: string): boolean => perfil === 'admin';

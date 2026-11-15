@@ -42,6 +42,25 @@ export type PessoaArvore = {
 };
 // L22c: só id, tipo e datas (o código só aparece uma vez, na criação)
 export type ConvitePendente = { id: string; tipo: string; criado_em: Date; expira_em: Date };
+// L22f: Admins que o Master pode indicar para atender o suporte dos espaços individuais, e a fila de pedidos
+export type CandidatoAtendente = {
+  instituicao_id: string;
+  instituicao_nome: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  indicado: boolean;
+};
+// Só estes campos saem da fila (Q1 = A): nada do espaço além do pedido e de quem pediu
+export type PedidoSuporteIndividual = {
+  pedido_id: string;
+  espaco_id: string;
+  assunto: string;
+  texto: string;
+  nome: string;
+  email: string;
+  criado_em: Date;
+};
 export type EspacoArvore = { espaco_id: string; pessoas: PessoaArvore[] };
 export type PessoaSemVinculo = {
   pessoa_id: string;
@@ -592,6 +611,85 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
+  // L22f: suporte do espaço individual. O Master indica e retira Admins atendentes e também atende a fila.
+  async function listarAtendentes(): Promise<CandidatoAtendente[]> {
+    return comoOperacao(
+      dep.banco,
+      (tx) => tx.$queryRaw<CandidatoAtendente[]>`SELECT * FROM suporte_atendentes_candidatos()`,
+    );
+  }
+  async function indicarAtendente(
+    sessao: SessaoOperacao,
+    instituicaoId: string,
+    usuarioId: string,
+  ): Promise<'ok' | 'nao_admin' | 'ja_indicado'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const por = `master:${sessao.usuario}`;
+      const [r] = await tx.$queryRaw<{ r: string }[]>`
+        SELECT suporte_atendente_indicar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${por}) AS r`;
+      if (r?.r === 'ok')
+        await auditar(tx, por, 'suporte_atendente.indicado', `usuario:${usuarioId}`, {
+          instituicao: instituicaoId,
+        });
+      return (r?.r ?? 'nao_admin') as 'ok' | 'nao_admin' | 'ja_indicado';
+    });
+  }
+  async function retirarAtendente(
+    sessao: SessaoOperacao,
+    instituicaoId: string,
+    usuarioId: string,
+  ): Promise<'ok' | 'nao_indicado'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const por = `master:${sessao.usuario}`;
+      const [r] = await tx.$queryRaw<{ r: string }[]>`
+        SELECT suporte_atendente_retirar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${por}) AS r`;
+      if (r?.r !== 'ok') return 'nao_indicado';
+      await auditar(tx, por, 'suporte_atendente.retirado', `usuario:${usuarioId}`, {
+        instituicao: instituicaoId,
+      });
+      return 'ok';
+    });
+  }
+  // Cada abertura da fila fica na trilha (quem e quando; nunca o que foi lido)
+  async function suporteIndividualFila(sessao: SessaoOperacao): Promise<PedidoSuporteIndividual[]> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const fila = await tx.$queryRaw<
+        PedidoSuporteIndividual[]
+      >`SELECT * FROM suporte_ind_listar()`;
+      await auditar(
+        tx,
+        `master:${sessao.usuario}`,
+        'suporte_individual.fila_aberta',
+        'suporte_individual',
+      );
+      return fila.sort((a, b) => a.criado_em.getTime() - b.criado_em.getTime());
+    });
+  }
+  async function suporteIndividualContar(): Promise<number> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [r] = await tx.$queryRaw<{ n: number }[]>`SELECT suporte_ind_contar() AS n`;
+      return Number(r?.n ?? 0);
+    });
+  }
+  async function suporteIndividualAtender(
+    sessao: SessaoOperacao,
+    espacoId: string,
+    pedidoId: string,
+  ): Promise<'ok' | 'nao_encontrado'> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [r] = await tx.$queryRaw<{ r: string }[]>`
+        SELECT suporte_ind_atender(${espacoId}::uuid, ${pedidoId}::uuid) AS r`;
+      if (r?.r !== 'ok') return 'nao_encontrado';
+      await auditar(
+        tx,
+        `master:${sessao.usuario}`,
+        'suporte_individual.atendido',
+        `pedido_suporte:${pedidoId}`,
+      );
+      return 'ok';
+    });
+  }
+
   // Trilha do Master (últimos 100 eventos) e conferência da cadeia de hash
   async function trilha() {
     return comoOperacao(dep.banco, async (tx) => ({
@@ -628,6 +726,12 @@ export function criarOperacao(dep: DependenciasOperacao) {
     arvoreInstituicao,
     arvoreEspacos,
     arvoreSemVinculo,
+    listarAtendentes,
+    indicarAtendente,
+    retirarAtendente,
+    suporteIndividualFila,
+    suporteIndividualContar,
+    suporteIndividualAtender,
     trilha,
   };
 }

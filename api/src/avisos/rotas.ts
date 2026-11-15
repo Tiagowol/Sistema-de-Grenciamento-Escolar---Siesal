@@ -4,13 +4,14 @@ import { itensDeAjuda } from '../ajuda/rotas.js';
 import { registrarAuditoria } from '../auditoria/auditoria.js';
 import type { SessaoAtiva } from '../auth/autenticacao.js';
 import { podeLerAvisoEscolar, podeLerCaixa, podePublicarAviso } from '../auth/politica.js';
+import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 import {
   type ClienteTransacao,
   type withTenant as WithTenant,
   withTenant,
 } from '../banco/withTenant.js';
-import { criarRespostaAdiada, enviarGuardada } from '../banco/resposta-adiada.js';
 import { itensDeSuporte } from '../conta/rotas.js';
+import { itensDeSuporteIndividual } from '../suporte/rotas.js';
 
 // Sino de mensagens (L16): caixa por perfil, "visto" e avisos curtos só de leitura.
 // A caixa só reaproveita pedido_revisao (L15). Mostra estado, nota atual e data; nunca o motivo da revisão nem
@@ -32,7 +33,14 @@ const texto = z
 const corpoAviso = z.strictObject({ texto, turma_id: uuid.optional() });
 
 export type ItemCaixa = {
-  tipo: 'pedido_aberto' | 'resposta' | 'aviso' | 'ajuda_aberta' | 'ajuda_minha' | 'suporte_aberto';
+  tipo:
+    | 'pedido_aberto'
+    | 'resposta'
+    | 'aviso'
+    | 'ajuda_aberta'
+    | 'ajuda_minha'
+    | 'suporte_aberto'
+    | 'suporte_individual';
   id: string;
   visto: boolean;
   dia: string; // AAAA-MM-DD; a tela mostra dia/mês
@@ -182,6 +190,8 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
     for (const l of await itensDeAjuda(tx, sessao)) itens.push(l as ItemCaixa);
     // Pedidos de suporte (L17c): o Admin e o Pedagógico veem os que esperam resposta
     for (const l of await itensDeSuporte(tx, sessao)) itens.push(l as ItemCaixa);
+    // Pedidos de suporte dos espaços individuais (L22f): só o Admin indicado vê, e só a quantidade
+    for (const l of await itensDeSuporteIndividual(tx, sessao)) itens.push(l as ItemCaixa);
     // Não vistos primeiro; dentro de cada grupo, o mais recente primeiro
     return itens.sort(
       (x, y) => Number(x.visto) - Number(y.visto) || (x.dia < y.dia ? 1 : x.dia > y.dia ? -1 : 0),
@@ -199,7 +209,13 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
     const novos = (await itensDaCaixa(tx, sessao)).filter((i) => !i.visto);
     const ajuda = (i: ItemCaixa) => i.tipo === 'ajuda_aberta' || i.tipo === 'ajuda_minha';
     const pedidos = novos
-      .filter((i) => i.tipo !== 'aviso' && i.tipo !== 'suporte_aberto' && !ajuda(i))
+      .filter(
+        (i) =>
+          i.tipo !== 'aviso' &&
+          i.tipo !== 'suporte_aberto' &&
+          i.tipo !== 'suporte_individual' &&
+          !ajuda(i),
+      )
       .map((i) => i.id);
     const suportes = novos.filter((i) => i.tipo === 'suporte_aberto').map((i) => i.id);
     const avisos = novos.filter((i) => i.tipo === 'aviso').map((i) => i.id);

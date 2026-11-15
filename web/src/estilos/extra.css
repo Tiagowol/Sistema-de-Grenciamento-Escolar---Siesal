@@ -1485,3 +1485,19 @@ fieldset {
   align-self: center;
   flex: 0 0 auto;
 }
+
+/* L22f: barra que enche com os dias de espera de um pedido de suporte (só forma; o texto diz "hoje", "ontem" ou "há N dias") */
+.suporte-barra {
+  display: inline-block;
+  width: 96px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  vertical-align: middle;
+  overflow: hidden;
+}
+.suporte-barra > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}

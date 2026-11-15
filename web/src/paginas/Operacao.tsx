@@ -31,6 +31,7 @@ import {
 } from '../preferencias';
 import { Acessibilidade } from './Acessibilidade';
 import { Ajuda } from './Ajuda';
+import { AtendentesSuporte, SuporteEspacos } from './SuporteEspacos';
 
 // L18: entrada separada dos Masters (/gestao; antes /operacao). Sem menu da escola e sem nenhum dado escolar.
 const mensagem = (x: unknown, padrao: string) => (x instanceof ErroApi ? x.message : padrao);
@@ -988,8 +989,10 @@ function SuporteMaster() {
         <li>Não escreva senhas, códigos de convite nem dados de alunos na mensagem.</li>
       </ol>
       <p className="muted small">
-        Pedidos de suporte de alunos, professores e famílias ficam com o Admin e o Pedagógico de
-        cada escola. O Master não lê esses pedidos.
+        Pedidos de suporte de alunos, professores e famílias de uma escola ficam com o Admin e o
+        Pedagógico dessa escola: o Master não lê esses pedidos. Os pedidos dos espaços individuais
+        (aluno sem escola e representante legal) são atendidos pelo Master ou por um Admin que o
+        Master indicar: veja Suporte dos espaços.
       </p>
     </section>
   );
@@ -1015,6 +1018,18 @@ export const ITENS_MASTER: Item[] = [
     rotulo: 'Limite de alunos',
     icone: 'ajuste',
     palavras: ['representante', 'responsavel', 'quantos alunos', 'configuracao'],
+  },
+  {
+    id: 'm_suporte_individual',
+    rotulo: 'Suporte dos espaços',
+    icone: 'maos',
+    palavras: ['pedido', 'aluno sem escola', 'representante', 'atender', 'espaco individual'],
+  },
+  {
+    id: 'm_atendentes',
+    rotulo: 'Atendentes do suporte',
+    icone: 'shield',
+    palavras: ['indicar', 'retirar', 'admin atendente', 'suporte'],
   },
   {
     id: 'm_auditoria',
@@ -1139,6 +1154,15 @@ function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
         <Convites aoSair={aoSair} />
       ) : pagina === 'm_limite' ? (
         <LimiteAlunos aoSair={aoSair} />
+      ) : pagina === 'm_suporte_individual' ? (
+        <SuporteEspacos
+          nivel="h1"
+          aoSair={aoSair}
+          carregar={() => apiOperacao.suporteFila().then((r) => r.pedidos)}
+          atender={(p) => apiOperacao.atenderSuporte(p.pedido_id, p.espaco_id)}
+        />
+      ) : pagina === 'm_atendentes' ? (
+        <AtendentesSuporte aoSair={aoSair} />
       ) : pagina === 'suporte' ? (
         <SuporteMaster />
       ) : pagina === 'ajuda' ? (

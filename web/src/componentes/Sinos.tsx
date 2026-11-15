@@ -164,6 +164,25 @@ function ItemDaCaixa({
       </li>
     );
   }
+  if (item.tipo === 'suporte_individual') {
+    // L22f: só o Admin indicado vê; só a quantidade, sem pressão
+    return (
+      <li className="sino-item">
+        <h3>Pedidos de suporte dos espaços</h3>
+        <p>
+          Há {item.abertos} {item.abertos === 1 ? 'pedido esperando' : 'pedidos esperando'} de
+          espaços individuais.
+        </p>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() => ir('suporteindividual')}
+        >
+          Abrir a fila
+        </button>
+      </li>
+    );
+  }
   if (item.tipo === 'suporte_aberto') {
     // Pedido de suporte (L17c): chega ao Admin e ao Pedagógico
     return (
@@ -412,10 +431,12 @@ export function SinoPlataforma({ aoIr }: { aoIr: (p: Pagina) => void }) {
 
   const carregar = useCallback(async () => {
     try {
-      const [painel, convites, trilha] = await Promise.all([
+      const [painel, convites, trilha, suporte] = await Promise.all([
         apiOperacao.painel(),
         apiOperacao.resumoConvites(),
         apiOperacao.trilha(),
+        // Se só esta contagem falhar, os outros avisos continuam aparecendo
+        apiOperacao.suporteContagem().catch(() => ({ abertos: 0 })),
       ]);
       const lista: { chave: string; texto: string; ir: Pagina }[] = [];
       if (!trilha.integra)
@@ -423,6 +444,12 @@ export function SinoPlataforma({ aoIr }: { aoIr: (p: Pagina) => void }) {
           chave: 'trilha',
           texto: 'A conferência achou registro alterado na trilha do Master.',
           ir: 'm_auditoria',
+        });
+      if (suporte.abertos > 0)
+        lista.push({
+          chave: 'suporte-espacos',
+          texto: `Há ${suporte.abertos} ${suporte.abertos === 1 ? 'pedido de suporte esperando' : 'pedidos de suporte esperando'} de espaços individuais.`,
+          ir: 'm_suporte_individual',
         });
       const esperando = convites.instituicao?.pendentes ?? 0;
       if (esperando > 0)

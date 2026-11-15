@@ -429,3 +429,18 @@ describe('auditoria da escola (L22e)', () => {
     }
   });
 });
+
+// L22f: o suporte do espaço individual é atendido pelo Master ou por um Admin indicado pelo Master
+describe('suporte do espaço individual (L22f)', () => {
+  it('só o Master e o Admin indicado atendem; só o Master indica', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(24);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'suporte_individual', 'atender'), perfil).toBe(
+        perfil === 'master' ? 'plataforma' : perfil === 'admin' ? 'indicado' : null,
+      );
+      expect(permitido(perfil, 'suporte_individual', 'indicar_atendente'), perfil).toBe(
+        perfil === 'master' ? 'plataforma' : null,
+      );
+    }
+  });
+});

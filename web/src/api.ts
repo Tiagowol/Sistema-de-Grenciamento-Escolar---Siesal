@@ -10,6 +10,8 @@ export type Eu = {
   modulos?: EstadoModulos;
   // 20c-1: aluno sem instituição usa um espaço individual (sem turmas, notas oficiais nem avisos da escola)
   espaco?: 'escola' | 'individual';
+  // L22f: o Admin indicado pelo Master atende o suporte dos espaços individuais
+  atendente_suporte?: boolean;
 };
 // 20c-2: cadastro com data de nascimento e CPF (opcional); menor de 18 anos informa o responsável
 export type NovoCadastro = {
@@ -402,7 +404,10 @@ export type ContaDados = {
     dia: string;
   }[];
 };
+// L22f: aviso para o Admin indicado (só a quantidade)
+export type ItemSuporteIndividual = ItemBase & { tipo: 'suporte_individual'; abertos: number };
 export type ItemCaixa =
+  | ItemSuporteIndividual
   | ItemSuporteAberto
   | ItemPedidoAberto
   | ItemResposta
@@ -714,6 +719,10 @@ export const api = {
       'GET',
       `/auditoria${antes === undefined ? '' : `?antes=${antes}`}`,
     ),
+  // L22f: fila do Admin indicado (403 se a indicação não valer)
+  suporteIndividual: () => chamar<{ pedidos: PedidoSuporteEspaco[] }>('GET', '/suporte-individual'),
+  atenderSuporteIndividual: (id: string, espaco_id: string) =>
+    chamar<void>('POST', `/suporte-individual/${id}/atender`, { espaco_id }),
   criarUsuario: (d: { perfil: Perfil; nome: string; email: string }) =>
     chamar<{ usuario: UsuarioLista; senha_provisoria: string }>('POST', '/usuarios', d),
   senhaProvisoria: (id: string) =>
@@ -964,6 +973,24 @@ export type PessoaSemVinculo = {
   email: string;
   papel_desejado: string | null;
 };
+// L22f: pedido de suporte de espaço individual (só estes campos) e Admin que o Master pode indicar
+export type PedidoSuporteEspaco = {
+  pedido_id: string;
+  espaco_id: string;
+  assunto: string;
+  texto: string;
+  nome: string;
+  email: string;
+  criado_em: string;
+};
+export type CandidatoAtendente = {
+  instituicao_id: string;
+  instituicao_nome: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  indicado: boolean;
+};
 // L22c: convite esperando uso (nunca o código)
 export type ConvitePendente = {
   id: string;
@@ -1001,6 +1028,17 @@ export const apiOperacao = {
   convitesPendentes: () =>
     chamar<{ convites: ConvitePendente[] }>('GET', '/operacao/convites-pendentes'),
   revogarConvite: (id: string) => chamar<void>('POST', `/operacao/convites/${id}/revogar`),
+  atendentes: () => chamar<{ admins: CandidatoAtendente[] }>('GET', '/operacao/suporte-atendentes'),
+  indicarAtendente: (instituicao_id: string, usuario_id: string) =>
+    chamar<void>('POST', '/operacao/suporte-atendentes/indicar', { instituicao_id, usuario_id }),
+  retirarAtendente: (instituicao_id: string, usuario_id: string) =>
+    chamar<void>('POST', '/operacao/suporte-atendentes/retirar', { instituicao_id, usuario_id }),
+  suporteFila: () =>
+    chamar<{ pedidos: PedidoSuporteEspaco[] }>('GET', '/operacao/suporte-individual'),
+  suporteContagem: () =>
+    chamar<{ abertos: number }>('GET', '/operacao/suporte-individual/contagem'),
+  atenderSuporte: (id: string, espaco_id: string) =>
+    chamar<void>('POST', `/operacao/suporte-individual/${id}/atender`, { espaco_id }),
   limiteAlunos: () => chamar<{ limite: number }>('GET', '/operacao/limite-alunos'),
   mudarLimiteAlunos: (limite: number) => chamar<void>('PUT', '/operacao/limite-alunos', { limite }),
   painel: () =>

@@ -29,6 +29,7 @@ import {
   podePedirSuporte,
   podePublicarAviso,
   podeResponderPedido,
+  podeSerAtendenteDeSuporte,
   podeUsarCalendario,
   podeUsarCartoes,
   podeUsarNucleo,
@@ -261,5 +262,13 @@ describe('política "Meu aluno" (L22a-3) x matriz de permissões (v21)', () => {
       for (const acao of ['administrar', 'escrever', 'criar', 'alterar', 'apagar'])
         expect(permitido(perfil, 'representado', acao), `${perfil}/${acao}`).toBeNull();
     }
+  });
+});
+
+describe('suporte do espaço individual (L22f)', () => {
+  it.each(PERFIS)('perfil %s: só o Admin pode ser indicado atendente, como na matriz', (perfil) => {
+    expect(podeSerAtendenteDeSuporte(perfil)).toBe(
+      permitido(perfil, 'suporte_individual', 'atender') === 'indicado',
+    );
   });
 });
