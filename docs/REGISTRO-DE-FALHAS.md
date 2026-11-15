@@ -318,3 +318,9 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Medido de novo no site reconstruído: largura da página 360, 768 e 1280 px (era 606 em 360 px); axe de contraste na tela Usuários: 0 violações.
 - Como voltar atrás: `git revert 7bc6174`, depois `docker compose up -d --build web` e `docker compose restart proxy`.
 - Observação (já existia, não é desta correção): `web/src/l22g.test.tsx` termina com 1 erro não tratado do vitest (`SinoPrazos`, `Sinos.tsx:361`, dado de teste sem `atrasadas`), com os 1433 testes passando. Confirmado igual sem a correção. Fica para um lote de defeito de teste, se o autor quiser.
+
+## 15/11/2026 — Teste do Calendário falha depois da meia-noite UTC
+- O que falhou: `web/src/calendario.test.tsx` ("o tempo é concreto: palavra, data e quadrados") não acha "amanhã" quando o relógio do contêiner de teste (UTC) já está em 15/11 (domingo) enquanto o horário local ainda é 14/11 (sábado, 21h).
+- Causa: o teste depende da data real, não de uma data fixa. Falhou igual sem as mudanças do L22f.
+- Correção: nenhuma feita (fora do escopo do lote). Proposta: fixar a data do teste. Hoje a suíte de telas fica em 1478 de 1479 por isso.
+- Como voltar atrás: não se aplica.

@@ -643,3 +643,6 @@ Mensagem do autor ao Code: a parte manual da checagem humana (ler as telas, leit
 
 ## A-130 — Correções da F-059 e do contraste autorizadas e aplicadas (14/11/2026, 20:28 do autor; feito em 15/11)
 Autor: F-059 pela Forma A (`position: relative` em `.table-wrap`); contraste pela Forma A (`--muted` para `#5d6b80`, 5,04:1). Autorizou código, commit e reconstrução do site; **não** autorizou o L22f nem o download do Firefox/WebKit. Feito: commit de código `7bc6174` (1 arquivo, só CSS); integração 400 de 400; telas e shared 1433 de 1433; tipos do web sem erro; site reconstruído (web e proxy), `/api/saude` ok. Medido: largura da página 360 px em 360, 768 em 768, 1280 em 1280; axe de contraste na tela Usuários sem violação. Não é "Verificado" (checagem humana pendente). Sem migração, merge nem deploy fora do computador do autor.
+
+## A-131 — L22f aprovado e implementado (autor, 15/11/2026)
+Autor: "q1 A aprovo 22f". **Q1 = A:** o atendente vê nome e e-mail de quem pediu. Feito: migração 0033 (backup `backups/siesal-20261114-210616.dump`, aplicada pelo job `migrate`), matriz v24, API do Master e do Admin indicado, telas, sino e manual. Detalhes e testes em `docs/VERIFICACAO-L22F.md`. **Não Verificado.** O código **não foi commitado** (CLAUDE.md: commit de código com autorização separada; a de 14/11, 20:28, valeu só para o ajuste da F-059). Sem merge nem deploy.

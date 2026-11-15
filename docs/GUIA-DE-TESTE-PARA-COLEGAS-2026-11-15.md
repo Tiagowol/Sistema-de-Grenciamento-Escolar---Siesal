@@ -57,6 +57,16 @@ Quem testa: precisa de uma conta de Admin (segundo fator exigido) e da conta do 
 6. Repita em 360 px (gaveta do celular: botão de menu abre o menu) e em 768 px.
 - Terminou quando: os 6 itens foram conferidos nas 3 larguras.
 
+## 6b. L22f — Suporte dos espaços individuais
+Quem testa: precisa da conta do Master e de um Admin de teste (o autor entrega). Use só pedidos fictícios.
+1. Como Master, abra **Atendentes do suporte**, ache um Admin fictício e clique em **Indicar**. Confirme com "Sim, indicar".
+2. Entre como esse Admin: no menu aparece **Suporte dos espaços** (outro Admin, não indicado, **não** vê esse item).
+3. Abra **Suporte dos espaços**: os pedidos aparecem em cartões, com assunto, texto, nome e e-mail, e "hoje", "ontem" ou "há N dias" com o dia/mês. Não deve haver tabela nem rolagem horizontal em 360 px.
+4. Clique em **Marcar como atendido** e confirme. O pedido sai da lista e o foco vai para o título da página.
+5. Como Master, clique em **Retirar** na indicação: o Admin perde o item do menu e a fila na hora.
+- Terminou quando: os 5 passos fizeram o que está escrito.
+- Falhou se: aparecer qualquer dado do espaço além de assunto, texto, nome e e-mail; ou pedido de uma escola aparecer na fila; ou um Admin não indicado abrir a fila. **Isso é falha de segurança: anote e avise o autor na hora.**
+
 ## 7. Testes T1 a T4 (cadastro próprio e representante legal)
 O guia completo, com as contas e os códigos de convite, está no computador do autor em `segredos-locais/GUIA-DE-TESTES-2026-11-13.txt` (fora do git, não compartilhe). Resumo sem segredo:
 - **T1 — Cadastro próprio, com confirmação por e-mail.** Em `/pessoa`, "Criar cadastro" com nome e e-mail de teste novos. O site avisa que enviou um link. Abra a caixa de e-mails de teste e clique no link. Depois entre. Deve aparecer "Escolha o espaço" vazia, sem dado de aluno. **Falhou se:** o login funciona antes de confirmar o e-mail.
@@ -80,6 +90,7 @@ O guia completo, com as contas e os códigos de convite, está no computador do 
 | L22c passos 1 a 5 | 360 / 768 / 1280 | | | |
 | L22e Auditoria | 360 / 768 / 1280 | | | |
 | L22g menu | 360 / 768 / 1280 | | | |
+| L22f Suporte dos espaços | 360 / 768 / 1280 | | | |
 | T1 | | | | |
 | T2 | | | | |
 | T3 | | | | |
