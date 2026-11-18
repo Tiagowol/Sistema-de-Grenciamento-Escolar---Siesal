@@ -646,3 +646,6 @@ Autor: F-059 pela Forma A (`position: relative` em `.table-wrap`); contraste pel
 
 ## A-131 — L22f aprovado e implementado (autor, 15/11/2026)
 Autor: "q1 A aprovo 22f". **Q1 = A:** o atendente vê nome e e-mail de quem pediu. Feito: migração 0033 (backup `backups/siesal-20261114-210616.dump`, aplicada pelo job `migrate`), matriz v24, API do Master e do Admin indicado, telas, sino e manual. Detalhes e testes em `docs/VERIFICACAO-L22F.md`. **Não Verificado.** O código **não foi commitado** (CLAUDE.md: commit de código com autorização separada; a de 14/11, 20:28, valeu só para o ajuste da F-059). Sem merge nem deploy.
+
+## A-132 — L22i aprovado, implementado, commitado, mesclado e publicado no link externo (autor, 18/11/2026)
+Autor: aprovou o L22i (3 itens; substitui a D4 de 10/11) e depois "faça o commit" e "push, merge e deploy do L22i (commit 9976722)". Feito: migrações 0034 e 0035 (backups `backups/siesal-20261118-140134.dump` e `backups/siesal-20261118-160400.dump`), matriz v25, commit `9976722`, push do ramo `lote-22c-admin-convites`, merge **fast-forward em `siesal-4`** e push de `siesal-4`. `main` (v3) não foi tocada. Deploy: site já refeito com este código; link externo https://siesal.tail378cb5.ts.net/ responde 200 e as rotas novas respondem 401 sem sessão. Nada "Verificado": falta o teste de ponta a ponta do autor e as checagens humanas.
