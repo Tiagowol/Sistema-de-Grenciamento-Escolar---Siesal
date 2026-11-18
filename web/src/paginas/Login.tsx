@@ -4,6 +4,7 @@ import { api, type CadastroAguardando, ErroApi, type Eu } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { TempoVisual } from '../componentes/TempoVisual';
+import { AVISO_CODIGO_INVALIDO, codigoTemCaractereInvalido } from '../codigoConvite';
 import { paraTexto } from '../datas';
 import { lerCodigoDoLink } from '../linkCadastro';
 import { AceitarAcompanhamento } from './AceitarAcompanhamento';
@@ -69,6 +70,7 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
     setErro('');
     if (!convite.trim() || !nome.trim() || !email.trim() || !senha || !nascimento)
       return setErro('Preencha o convite, o nome, a data de nascimento, o e-mail e a senha.');
+    if (codigoTemCaractereInvalido(convite)) return setErro(AVISO_CODIGO_INVALIDO);
     if (menor && (!respNome.trim() || !respCpf.trim() || !respNascimento || !respEmail.trim()))
       return setErro(
         'Quem tem menos de 18 anos precisa informar o nome, o CPF, a data de nascimento e o e-mail do responsável.',

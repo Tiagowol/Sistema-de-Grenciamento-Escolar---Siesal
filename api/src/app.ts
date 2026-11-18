@@ -290,10 +290,13 @@ export function criarApp(opcoes: OpcoesApp = {}) {
       return resposta.code(400).send({ erro: c.motivo });
     if (c.tipo === 'sem_chave')
       return resposta.code(503).send({ erro: 'O cadastro com CPF não está disponível agora.' });
-    if (c.tipo === 'recusada')
+    if (c.tipo === 'recusada') {
+      // O usuário vê sempre a mesma frase (ADR-008); o motivo fica só no registro do servidor
+      app.log.warn({ motivo: c.motivo ?? 'desconhecido' }, 'cadastro individual recusado');
       return resposta.code(400).send({
         erro: 'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
       });
+    }
     // Menor de 18 anos: não entra. O responsável recebe o link (caixa de teste) e confirma
     if (c.tipo === 'aguardando' && corpo.data.responsavel) {
       const link = `${(opcoes.linkBase ?? 'http://localhost:18080').replace(/\/+$/, '')}/confirmar/responsavel#${c.token}`;

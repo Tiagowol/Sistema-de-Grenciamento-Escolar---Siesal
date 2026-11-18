@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { api, ErroApi, type Eu, type PessoaEu } from '../api';
+import { AVISO_CODIGO_INVALIDO, codigoTemCaractereInvalido } from '../codigoConvite';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { AlunosAcompanhados } from './AlunosAcompanhados';
@@ -145,6 +146,7 @@ export function AcessoPessoa({ aoEntrar }: { aoEntrar: (eu: Eu) => void }) {
   async function criarAluno(e: FormEvent) {
     e.preventDefault();
     setErro('');
+    if (codigoTemCaractereInvalido(convite)) return setErro(AVISO_CODIGO_INVALIDO);
     if (!aceiteRep) return setErro('Para criar a conta, marque a caixa da declaração.');
     setEnviando(true);
     try {

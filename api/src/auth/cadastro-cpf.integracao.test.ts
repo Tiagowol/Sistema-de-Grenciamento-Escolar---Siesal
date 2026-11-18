@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { criarApp } from '../app.js';
 import { criarOperadores } from '../migrar/bootstrap.js';
 import { emitirConviteMaster } from '../migrar/convite-master.js';
@@ -190,6 +190,30 @@ describe('maior de 18 anos', () => {
       payload: { ...base, nascimento: '2000-01-15' },
     });
     expect(bom.statusCode, bom.body).toBe(201);
+  });
+
+  it('L22h: convite inexistente dá a frase genérica e o motivo vai só para o registro do servidor', async () => {
+    const aviso = vi.spyOn(app.log, 'warn');
+    const r = await app.inject({
+      method: 'POST',
+      url: '/auth/criar-conta-individual',
+      payload: {
+        codigo: 'ABCD-EFGH-JKLM-NPQR',
+        nome: 'Aluno Fictício',
+        email: email('h'),
+        senha: SENHA,
+        nascimento: '2000-01-15',
+      },
+    });
+    expect(r.statusCode).toBe(400);
+    expect(r.json().erro).toBe(
+      'Não foi possível criar a conta. Confira os dados ou peça outro convite.',
+    );
+    expect(aviso).toHaveBeenCalledWith(
+      { motivo: 'convite_inexistente_vencido_ou_usado' },
+      'cadastro individual recusado',
+    );
+    aviso.mockRestore();
   });
 
   it('sem a chave do CPF, o cadastro com CPF responde 503 e sem CPF continua funcionando', async () => {

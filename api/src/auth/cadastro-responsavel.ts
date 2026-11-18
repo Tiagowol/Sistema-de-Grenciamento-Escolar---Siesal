@@ -29,7 +29,7 @@ export type ResultadoCadastro =
   | { tipo: 'senha_fraca'; motivo: string }
   | { tipo: 'dados'; motivo: string }
   | { tipo: 'sem_chave' }
-  | { tipo: 'recusada' };
+  | { tipo: 'recusada'; motivo?: string };
 
 export const gerarToken = (): string => randomBytes(32).toString('base64url');
 export const hashToken = (t: string): string => createHash('sha256').update(t).digest('hex');
@@ -100,10 +100,17 @@ export async function criarCadastroAluno(
       SELECT cadastro_aluno_criar(${hashDoCodigo(e.codigo)}, ${e.nome.trim()}, ${e.email.trim()}, ${senhaHash},
         ${e.nascimento}::date, ${JSON.stringify(aluno)}::jsonb,
         ${pedido ? JSON.stringify(pedido) : null}::jsonb, ${token ? hashToken(token) : null}) AS id`;
-    if (!r?.id) return { tipo: 'recusada' };
+    if (!r?.id) return { tipo: 'recusada', motivo: 'sem_retorno' };
     instituicaoId = r.id;
-  } catch {
-    return { tipo: 'recusada' };
+  } catch (erro) {
+    // Motivo só para o registro do servidor: nunca o texto do erro (pode ter e-mail ou CPF), só rótulos fixos
+    const texto = erro instanceof Error ? erro.message : '';
+    const motivo = texto.includes('convite invalido ou vencido')
+      ? 'convite_inexistente_vencido_ou_usado'
+      : texto.includes('e-mail em uso')
+        ? 'email_em_uso'
+        : 'erro_no_banco';
+    return { tipo: 'recusada', motivo };
   }
   // Auditoria sem nenhum valor de CPF: só se havia CPF e se era menor
   const usuarioId = await withTenant(banco as PrismaClient, { instituicaoId }, async (tx) => {
