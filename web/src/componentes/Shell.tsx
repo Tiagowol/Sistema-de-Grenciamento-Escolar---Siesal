@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
-import type { Eu, Modulo } from '../api';
+import type { Eu, FuncaoIndicada, Modulo } from '../api';
 import { Icone, type NomeIcone } from '../icones';
 import { buscarNoMenu } from '../menu';
 import { VERSAO_SISTEMA } from '../versao';
@@ -71,7 +71,7 @@ export type Item = {
   soIndividual?: boolean; // L22a-2: só existe no espaço individual do aluno
   soEscola?: boolean; // 20c-1: não existe no espaço individual (aluno sem instituição)
   moduloNaEscola?: Modulo; // 20d: some se o Master desligar o módulo na escola; no espaço individual fica sempre
-  soAtendente?: boolean; // L22f: só o Admin indicado pelo Master vê
+  soFuncao?: FuncaoIndicada; // L22k: só o Admin indicado pelo Master para esta função vê
   secao?: string; // L22d: título de grupo no menu (aparece antes do primeiro item do grupo)
 };
 const ALUNO = ['aluno'];
@@ -260,16 +260,16 @@ const ITENS: Item[] = [
     rotulo: 'Suporte dos espaços',
     icone: 'maos',
     so: ['admin'],
-    soAtendente: true,
+    soFuncao: 'suporte_individual',
     palavras: ['pedido', 'aluno sem escola', 'representante', 'atender', 'espaco individual'],
   },
-  // L22i: junto com o suporte, só para o Admin indicado
+  // L22i: só para o Admin indicado para pedidos de convite (L22k)
   {
     id: 'pedidosconvite',
     rotulo: 'Pedidos de convite',
     icone: 'envelope',
     so: ['admin'],
-    soAtendente: true,
+    soFuncao: 'pedido_convite',
     palavras: ['convite', 'aprovar', 'recusar', 'aluno sem escola', 'codigo', 'pedido'],
   },
   {
@@ -395,7 +395,7 @@ export function Shell({
       ((!i.so || i.so.includes(eu.usuario.perfil)) &&
         ligado(i.modulo) &&
         ligadoNaEscola(i.moduloNaEscola) &&
-        !(i.soAtendente && !eu.atendente_suporte) &&
+        !(i.soFuncao && !eu.funcoes_indicadas?.includes(i.soFuncao)) &&
         !(individual && i.soEscola) &&
         !(!individual && i.soIndividual)),
   );

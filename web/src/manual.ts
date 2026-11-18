@@ -43,7 +43,7 @@ export const TOPICOS: Topico[] = [
       'representante',
     ],
     resumo:
-      'Se o Master indicou você, o menu mostra Suporte dos espaços. Você lê os pedidos de alunos sem escola e de representantes legais e marca como atendido. Nada mais do espaço dessas pessoas aparece.',
+      'Se o Master indicou você para o suporte, o menu mostra Suporte dos espaços. Você lê os pedidos de alunos sem escola e de representantes legais e marca como atendido. Nada mais do espaço dessas pessoas aparece.',
     passos: [
       'Abra Suporte dos espaços no menu (ou o aviso no sino Mensagens).',
       'Leia o assunto, o texto, o nome e o e-mail de quem pediu.',
@@ -53,16 +53,16 @@ export const TOPICOS: Topico[] = [
   },
   {
     id: 'master-atendentes',
-    titulo: 'Indicar um Admin para atender o suporte dos espaços',
+    titulo: 'Indicar um Admin por função: suporte dos espaços e pedidos de convite',
     perfis: ['master'],
-    palavras: ['atendente', 'indicar', 'retirar', 'suporte', 'espaco individual', 'admin'],
+    palavras: ['atendente', 'indicar', 'retirar', 'suporte', 'convite', 'funcao', 'admin'],
     resumo:
-      'Você ou um Admin que você indicar atende os pedidos de suporte dos espaços individuais. Retirar a indicação corta o acesso na hora. Cada abertura da fila fica na auditoria.',
+      'Você escolhe o que cada Admin faz: só os pedidos de suporte dos espaços, só os pedidos de convite, ou os dois. Retirar uma função corta só aquela, na hora. Cada mudança fica na trilha do Master.',
     passos: [
-      'Abra Atendentes do suporte no menu.',
-      'Ache o Admin na lista e escolha Indicar; confirme.',
-      'Para cortar o acesso, escolha Retirar na mesma linha.',
-      'Veja a fila em Suporte dos espaços.',
+      'Abra Admins indicados no menu.',
+      'Ache o Admin na lista. Cada função tem uma chave com o nome dela.',
+      'Ligue ou desligue a chave e confirme.',
+      'O cartão diz em palavras o que o Admin faz agora.',
     ],
   },
   {

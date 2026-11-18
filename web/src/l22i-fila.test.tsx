@@ -31,8 +31,12 @@ const PEDIDOS: PedidoConvite[] = [
 
 function montar() {
   let fila = [...PEDIDOS];
-  const decidir = vi.fn(async (p: PedidoConvite) => {
+  const decidir = vi.fn(async (p: PedidoConvite, acao: 'aprovar' | 'recusar') => {
     fila = fila.filter((x) => x.pedido_id !== p.pedido_id);
+    // L22j: aprovar devolve o código para a tela
+    return acao === 'aprovar'
+      ? { codigo: 'ABCD-EFGH-JKLM-NPQR', expira_em: '2026-11-25T12:00:00Z' }
+      : undefined;
   });
   const carregar = vi.fn(async () => fila);
   const r = render(<PedidosConvite nivel="h1" carregar={carregar} decidir={decidir} />);
@@ -60,10 +64,33 @@ describe('Pedidos de convite', () => {
     await waitFor(() => expect(decidir).toHaveBeenCalledWith(PEDIDOS[0], 'aprovar'));
     expect(
       await screen.findByText(
-        'Convite enviado por e-mail para Ana Ficticia. O pedido saiu da fila.',
+        /Convite enviado por e-mail para Ana Ficticia. O pedido saiu da fila./,
       ),
     ).toBeTruthy();
     expect(screen.queryByText('ana@x.exemplo')).toBeNull();
+  });
+
+  it('L22j: depois de aprovar, mostra o código grande, a validade e os botões de copiar; passa no axe', async () => {
+    const { container } = montar();
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole('button', { name: 'Aprovar o pedido de Ana Ficticia' }));
+    await u.click(screen.getByRole('button', { name: 'Sim, aprovar' }));
+    expect(await screen.findByRole('heading', { name: 'Convite de Ana Ficticia' })).toBeTruthy();
+    expect(screen.getByText('ABCD-EFGH-JKLM-NPQR')).toBeTruthy();
+    expect(screen.getByText('25/11/2026')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copiar o código' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copiar o link' })).toBeTruthy();
+    const r = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
+    expect(r.violations).toEqual([]);
+  });
+
+  it('L22j: recusar não mostra código', async () => {
+    montar();
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole('button', { name: 'Recusar o pedido de Bia Ficticia' }));
+    await u.click(screen.getByRole('button', { name: 'Sim, recusar' }));
+    await screen.findByText(/sem o motivo/);
+    expect(screen.queryByRole('button', { name: 'Copiar o código' })).toBeNull();
   });
 
   it('recusar avisa que a pessoa não recebe o motivo; "Não" cancela', async () => {

@@ -16,6 +16,7 @@ import {
 } from '../api';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
+import { CodigoDoConvite } from '../componentes/CodigoDoConvite';
 import { CodigoQr } from '../componentes/CodigoQr';
 import { PrimeirosPassos } from '../componentes/PrimeirosPassos';
 import { type Item, type Pagina, Shell } from '../componentes/Shell';
@@ -820,14 +821,6 @@ function ConviteAluno({ aoSair }: { aoSair: () => void }) {
       setGerando(false);
     }
   }
-  function copiar(texto: string, ok: string) {
-    setErro('');
-    void navigator.clipboard
-      ?.writeText(texto)
-      .then(() => setFeito(ok))
-      .catch(() => setErro('Não foi possível copiar. Selecione o texto e copie.'));
-  }
-
   return (
     <section className="card" aria-labelledby="ops-convite-aluno-titulo">
       <div className="card-head">
@@ -850,54 +843,16 @@ function ConviteAluno({ aoSair }: { aoSair: () => void }) {
         {convite ? 'Criar outro convite' : 'Criar convite'}
       </button>
       {convite ? (
-        <div className="mt" role="status">
-          <p className="small muted">Código do convite</p>
-          <p>
-            <strong
-              style={{ fontSize: 24, letterSpacing: 1, wordBreak: 'break-all', userSelect: 'all' }}
-            >
-              {convite.codigo}
-            </strong>
-          </p>
-          <p>
-            Vale por 7 dias, até <strong>{dataCurta(convite.expira_em)}</strong>.
-          </p>
-          <div aria-hidden="true" style={{ display: 'flex', gap: 4, maxWidth: 280 }}>
-            {['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'].map((dia) => (
-              <span
-                key={dia}
-                style={{
-                  flex: 1,
-                  height: 12,
-                  borderRadius: 3,
-                  background: 'var(--accent, #2563eb)',
-                }}
-              />
-            ))}
-          </div>
-          <p className="small muted">Os 7 blocos são os 7 dias de validade.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ minHeight: 44 }}
-              onClick={() => copiar(convite.codigo, 'Código copiado.')}
-            >
-              Copiar o código
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline"
-              style={{ minHeight: 44 }}
-              onClick={() => copiar(linkDeCadastro('aluno', convite.codigo), 'Link copiado.')}
-            >
-              Copiar o link
-            </button>
-          </div>
-          <p className="small muted mt-sm">
-            Envie o código ou o link só para o aluno. Para cancelar antes do uso, vá em Convites.
-          </p>
-        </div>
+        <CodigoDoConvite
+          codigo={convite.codigo}
+          expiraEm={convite.expira_em}
+          aoCopiar={(ok) => {
+            setErro('');
+            setFeito(ok);
+          }}
+          aoFalhar={setErro}
+          dica="Envie o código ou o link só para o aluno. Para cancelar antes do uso, vá em Convites."
+        />
       ) : null}
     </section>
   );
@@ -1151,9 +1106,9 @@ export const ITENS_MASTER: Item[] = [
   },
   {
     id: 'm_atendentes',
-    rotulo: 'Atendentes do suporte',
+    rotulo: 'Admins indicados',
     icone: 'shield',
-    palavras: ['indicar', 'retirar', 'admin atendente', 'suporte'],
+    palavras: ['indicar', 'retirar', 'admin atendente', 'suporte', 'convite', 'funcao'],
   },
   {
     id: 'm_auditoria',

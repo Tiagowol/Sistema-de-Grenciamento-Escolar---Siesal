@@ -490,6 +490,32 @@ describe('console do Master no padrão do sistema (L22d)', () => {
     );
     expect(chamadas.find((c) => c.url.endsWith('/p1/atender'))?.corpo).toEqual({ espaco_id: 'e1' });
   });
+
+  // L22j (item 2): pedidos de convite em aviso próprio, separado do suporte, cada um com sua contagem
+  it('o sino separa pedidos de convite de pedidos de suporte e leva à tela certa', async () => {
+    simular({
+      ...base,
+      'GET /operacao/suporte-individual/contagem': { corpo: { abertos: 2 } },
+      'GET /operacao/pedidos-convite/contagem': { corpo: { abertos: 1 } },
+      'GET /operacao/pedidos-convite': { corpo: { pedidos: [] } },
+    });
+    render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    // 2 convites de instituição + suporte + pedidos de convite = 3 avisos
+    await u.click(await screen.findByRole('button', { name: /Avisos da plataforma, 3 avisos/ }));
+    expect(
+      await screen.findByText('Há 1 pedido de convite esperando de quem ainda não tem código.'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Há 2 pedidos de suporte esperando de espaços individuais/),
+    ).toBeTruthy();
+    const aviso = screen
+      .getByText('Há 1 pedido de convite esperando de quem ainda não tem código.')
+      .closest('li') as HTMLElement;
+    await u.click(within(aviso).getByRole('button', { name: 'Abrir' }));
+    expect(await screen.findByRole('heading', { name: 'Pedidos de convite' })).toBeTruthy();
+  });
 });
 
 describe('Master: convites e limite de alunos (L22c)', () => {

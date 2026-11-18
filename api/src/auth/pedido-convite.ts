@@ -31,6 +31,9 @@ export type Decisor =
   | { tipo: 'admin'; inst: string; usuario: string };
 export type ResultadoDecisao = 'ok' | 'nao_encontrado' | 'proibido' | 'sem_email' | 'email_falhou';
 export type EntregaEmail = { enviarEmail?: EnviarEmail; linkBase?: string };
+// L22j (item 1): ao aprovar, o código volta também para a tela de quem decidiu (o e-mail só chega na caixa de teste local)
+export type ConviteCriado = { codigo: string; expira_em: Date };
+export type Decisao = { resultado: ResultadoDecisao; convite?: ConviteCriado };
 
 // Lançada dentro da transação para desfazer a decisão quando o e-mail não sai (o pedido continua pendente)
 export class DesfazerDecisao extends Error {
@@ -38,11 +41,11 @@ export class DesfazerDecisao extends Error {
     super(resultado);
   }
 }
-export async function comDesfazer(f: () => Promise<ResultadoDecisao>): Promise<ResultadoDecisao> {
+export async function comDesfazer(f: () => Promise<Decisao>): Promise<Decisao> {
   try {
     return await f();
   } catch (x) {
-    if (x instanceof DesfazerDecisao) return x.resultado;
+    if (x instanceof DesfazerDecisao) return { resultado: x.resultado };
     throw x;
   }
 }
@@ -64,7 +67,7 @@ export async function decidirPedido(
   acao: 'aprovar' | 'recusar',
   pedidoId: string,
   e: EntregaEmail,
-): Promise<ResultadoDecisao> {
+): Promise<Decisao> {
   if (!e.enviarEmail) throw new DesfazerDecisao('sem_email');
   const por = `${d.tipo}:${d.usuario}`;
   if (acao === 'recusar') {
@@ -74,7 +77,8 @@ export async function decidirPedido(
             SELECT * FROM pedido_convite_recusar(${pedidoId}::uuid, ${por})`
         : await tx.$queryRaw<{ resultado: string; nome: string; email: string }[]>`
             SELECT * FROM pedido_convite_recusar_admin(${d.inst}::uuid, ${d.usuario}::uuid, ${pedidoId}::uuid)`;
-    if (r?.resultado !== 'ok') return (r?.resultado as ResultadoDecisao) ?? 'nao_encontrado';
+    if (r?.resultado !== 'ok')
+      return { resultado: (r?.resultado as ResultadoDecisao) ?? 'nao_encontrado' };
     try {
       await e.enviarEmail({
         para: r.email,
@@ -84,7 +88,7 @@ export async function decidirPedido(
     } catch {
       throw new DesfazerDecisao('email_falhou');
     }
-    return 'ok';
+    return { resultado: 'ok' };
   }
   const codigo = gerarCodigoDeConvite();
   const hash = hashDoCodigo(codigo);
@@ -95,7 +99,8 @@ export async function decidirPedido(
           SELECT * FROM pedido_convite_aprovar(${pedidoId}::uuid, ${hash}, ${por})`
       : await tx.$queryRaw<Linha[]>`
           SELECT * FROM pedido_convite_aprovar_admin(${d.inst}::uuid, ${d.usuario}::uuid, ${pedidoId}::uuid, ${hash})`;
-  if (r?.resultado !== 'ok') return (r?.resultado as ResultadoDecisao) ?? 'nao_encontrado';
+  if (r?.resultado !== 'ok')
+    return { resultado: (r?.resultado as ResultadoDecisao) ?? 'nao_encontrado' };
   const link = `${(e.linkBase ?? 'http://localhost:18080').replace(/\/+$/, '')}/cadastro/aluno#${codigo}`;
   try {
     await e.enviarEmail({
@@ -106,7 +111,7 @@ export async function decidirPedido(
   } catch {
     throw new DesfazerDecisao('email_falhou');
   }
-  return 'ok';
+  return { resultado: 'ok', convite: { codigo, expira_em: r.expira_em } };
 }
 
 // Resposta HTTP de cada resultado que não é 'ok' (mensagens iguais para o Master e para o Admin indicado)

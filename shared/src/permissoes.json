@@ -1,6 +1,6 @@
 {
-  "versao": 25,
-  "descricao": "Matriz de permissões da Parte 1 (rascunho v1 de MATRIZ-DE-PERMISSOES.md). Negar por padrão: o que não está aqui é negado. Escopos: proprio, vinculo, instituicao, plataforma, indicado (Admin indicado pelo Master).",
+  "versao": 26,
+  "descricao": "Matriz de permissões da Parte 1 (rascunho v1 de MATRIZ-DE-PERMISSOES.md). Negar por padrão: o que não está aqui é negado. Escopos: proprio, vinculo, instituicao, plataforma, indicado (Admin indicado pelo Master para aquela função: suporte_individual ou pedido_convite).",
   "recursos": {
     "instituicoes": {
       "administrar": { "master": "plataforma" }
@@ -149,8 +149,10 @@
       "atender": { "admin": "instituicao", "pedagogico": "instituicao" }
     },
     "suporte_individual": {
-      "atender": { "master": "plataforma", "admin": "indicado" },
-      "indicar_atendente": { "master": "plataforma" }
+      "atender": { "master": "plataforma", "admin": "indicado" }
+    },
+    "indicacoes_admin": {
+      "gerenciar": { "master": "plataforma" }
     },
     "pedidos_convite": {
       "decidir": { "master": "plataforma", "admin": "indicado" }

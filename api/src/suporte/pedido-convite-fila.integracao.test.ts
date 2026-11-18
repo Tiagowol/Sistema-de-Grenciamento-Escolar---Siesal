@@ -119,6 +119,7 @@ describe('L22i item 3: fila de pedidos de convite', () => {
     const id = await idDoPedido('p0');
     expect((await chamar('GET', '/operacao/pedidos-convite')).statusCode).toBe(401);
     expect((await chamar('POST', `/operacao/pedidos-convite/${id}/aprovar`)).statusCode).toBe(401);
+    expect((await chamar('GET', '/operacao/pedidos-convite/contagem')).statusCode).toBe(401);
     expect((await chamar('GET', '/pedidos-convite', cookies.comum)).statusCode).toBe(403);
     expect((await chamar('POST', `/pedidos-convite/${id}/aprovar`, cookies.comum)).statusCode).toBe(
       403,
@@ -142,13 +143,22 @@ describe('L22i item 3: fila de pedidos de convite', () => {
     await pedir('p1');
     const id = await idDoPedido('p1');
     const r = await chamar('POST', `/operacao/pedidos-convite/${id}/aprovar`, master);
-    expect(r.statusCode, r.body).toBe(204);
+    expect(r.statusCode, r.body).toBe(200);
     expect(enviados).toHaveLength(1);
     expect(enviados[0]?.para).toBe('p1@pedido.exemplo');
     const texto = enviados[0]?.texto ?? '';
     const codigo = /([A-Z2-9]{4}(?:-[A-Z2-9]{4}){3})/.exec(texto)?.[1] as string;
     expect(codigo).toBeTruthy();
     expect(texto).toContain(`http://site.exemplo/cadastro/aluno#${codigo}`);
+    // L22j: o mesmo código volta para a tela de quem aprovou, com a data de fim; nunca vai para a auditoria
+    expect(r.json().codigo).toBe(codigo);
+    expect(r.json().expira_em).toBeTruthy();
+    const vazou = await amb.admin.query(
+      `SELECT 1 FROM operator_auditoria o WHERE o::text LIKE $1
+       UNION ALL SELECT 1 FROM auditoria_evento a WHERE a::text LIKE $1`,
+      [`%${codigo}%`],
+    );
+    expect(vazou.rowCount).toBe(0);
     const p = (
       await amb.admin.query(
         'SELECT estado, decidido_por, convite_id FROM pedido_convite WHERE id = $1',
@@ -197,9 +207,10 @@ describe('L22i item 3: fila de pedidos de convite', () => {
   });
 
   it('o Admin indicado pelo Master também vê e decide, com rastro na escola; retirado, perde o acesso', async () => {
-    const ind = await chamar('POST', '/operacao/suporte-atendentes/indicar', master, {
+    const ind = await chamar('POST', '/operacao/admins-indicados/indicar', master, {
       instituicao_id: amb.instA,
       usuario_id: ids.indicado,
+      funcao: 'pedido_convite',
     });
     expect(ind.statusCode, ind.body).toBe(204);
     await pedir('p4');
@@ -207,10 +218,25 @@ describe('L22i item 3: fila de pedidos de convite', () => {
     const fila = await chamar('GET', '/pedidos-convite', cookies.indicado);
     expect(fila.statusCode).toBe(200);
     expect(fila.json().pedidos.some((x: { pedido_id: string }) => x.pedido_id === id)).toBe(true);
+    // L22j (item 2): o sino Mensagens do indicado traz os pedidos de convite em item próprio, com a contagem
+    const contagemMaster = await chamar('GET', '/operacao/pedidos-convite/contagem', master);
+    expect(contagemMaster.statusCode).toBe(200);
+    const caixa = (await chamar('GET', '/caixa', cookies.indicado)).json().itens as {
+      tipo: string;
+      abertos?: number;
+    }[];
+    const item = caixa.find((i) => i.tipo === 'pedido_convite');
+    expect(item?.abertos).toBe(contagemMaster.json().abertos);
+    expect(caixa.some((i) => i.tipo === 'suporte_individual' && i.abertos === item?.abertos)).toBe(
+      false,
+    );
+    const comum = (await chamar('GET', '/caixa', cookies.comum)).json().itens as { tipo: string }[];
+    expect(comum.some((i) => i.tipo === 'pedido_convite')).toBe(false);
+    expect((await chamar('POST', '/caixa/vistos', cookies.indicado)).statusCode).toBe(200);
     const antes = enviados.length;
-    expect(
-      (await chamar('POST', `/pedidos-convite/${id}/aprovar`, cookies.indicado)).statusCode,
-    ).toBe(204);
+    const aprovado = await chamar('POST', `/pedidos-convite/${id}/aprovar`, cookies.indicado);
+    expect(aprovado.statusCode).toBe(200);
+    expect(aprovado.json().codigo).toMatch(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
     expect(enviados).toHaveLength(antes + 1);
     expect(
       (await amb.admin.query('SELECT decidido_por FROM pedido_convite WHERE id = $1', [id])).rows[0]
@@ -221,11 +247,57 @@ describe('L22i item 3: fila de pedidos de convite', () => {
       [amb.instA],
     );
     expect(aud.rowCount).toBe(1);
-    await chamar('POST', '/operacao/suporte-atendentes/retirar', master, {
+    await chamar('POST', '/operacao/admins-indicados/retirar', master, {
       instituicao_id: amb.instA,
       usuario_id: ids.indicado,
+      funcao: 'pedido_convite',
     });
     expect((await chamar('GET', '/pedidos-convite', cookies.indicado)).statusCode).toBe(403);
+  });
+
+  // L22k: cada função vale sozinha; retirar uma não mexe na outra
+  it('indicação por função: só convite não abre o suporte; só suporte não abre o convite; retirar uma deixa a outra', async () => {
+    const mudar = (acao: 'indicar' | 'retirar', apelido: string, funcao: string) =>
+      chamar('POST', `/operacao/admins-indicados/${acao}`, master, {
+        instituicao_id: amb.instA,
+        usuario_id: ids[apelido],
+        funcao,
+      });
+    const eu = async (apelido: string) =>
+      (await chamar('GET', '/auth/eu', cookies[apelido])).json().funcoes_indicadas as string[];
+    // "indicado": só pedidos de convite
+    expect((await mudar('indicar', 'indicado', 'pedido_convite')).statusCode).toBe(204);
+    expect(await eu('indicado')).toEqual(['pedido_convite']);
+    expect((await chamar('GET', '/pedidos-convite', cookies.indicado)).statusCode).toBe(200);
+    expect((await chamar('GET', '/suporte-individual', cookies.indicado)).statusCode).toBe(403);
+    // "comum": só suporte dos espaços
+    expect((await mudar('indicar', 'comum', 'suporte_individual')).statusCode).toBe(204);
+    expect(await eu('comum')).toEqual(['suporte_individual']);
+    expect((await chamar('GET', '/suporte-individual', cookies.comum)).statusCode).toBe(200);
+    expect((await chamar('GET', '/pedidos-convite', cookies.comum)).statusCode).toBe(403);
+    const caixa = (await chamar('GET', '/caixa', cookies.comum)).json().itens as { tipo: string }[];
+    expect(caixa.some((i) => i.tipo === 'pedido_convite')).toBe(false);
+    // "comum" com as duas; retirar o suporte deixa o convite
+    expect((await mudar('indicar', 'comum', 'pedido_convite')).statusCode).toBe(204);
+    expect(await eu('comum')).toEqual(['suporte_individual', 'pedido_convite']);
+    expect((await mudar('retirar', 'comum', 'suporte_individual')).statusCode).toBe(204);
+    expect(await eu('comum')).toEqual(['pedido_convite']);
+    expect((await chamar('GET', '/suporte-individual', cookies.comum)).statusCode).toBe(403);
+    expect((await chamar('GET', '/pedidos-convite', cookies.comum)).statusCode).toBe(200);
+    // a lista do Master mostra as funções de cada um; a trilha guarda a função
+    const lista = (await chamar('GET', '/operacao/admins-indicados', master)).json().admins as {
+      usuario_id: string;
+      funcoes: string[];
+    }[];
+    expect(lista.find((a) => a.usuario_id === ids.comum)?.funcoes).toEqual(['pedido_convite']);
+    const trilha = await amb.admin.query(
+      "SELECT 1 FROM operator_auditoria WHERE acao = 'admin_funcao.retirada' AND alvo = $1 AND detalhe->>'funcao' = 'suporte_individual'",
+      [`usuario:${ids.comum}`],
+    );
+    expect(trilha.rowCount).toBe(1);
+    // limpeza: os próximos testes contam com o "comum" sem indicação
+    await mudar('retirar', 'comum', 'pedido_convite');
+    await mudar('retirar', 'indicado', 'pedido_convite');
   });
 
   it('Admin sem indicação não consegue recusar: o pedido continua pendente', async () => {

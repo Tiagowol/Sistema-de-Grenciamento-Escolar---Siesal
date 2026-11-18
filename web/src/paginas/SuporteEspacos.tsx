@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiOperacao, type CandidatoAtendente, ErroApi, type PedidoSuporteEspaco } from '../api';
+import {
+  apiOperacao,
+  type CandidatoAtendente,
+  ErroApi,
+  type FuncaoIndicada,
+  type PedidoSuporteEspaco,
+} from '../api';
 import { Aviso } from '../componentes/Aviso';
 
 // L22f: suporte dos espaços individuais (aluno sem escola e o representante com o aluno menor).
@@ -169,10 +175,38 @@ export function SuporteEspacos({ nivel, carregar, atender, aoSair }: Props) {
   );
 }
 
-// Console do Master: quem indica e retira o Admin atendente. Nada é apagado; retirar corta o acesso na hora.
+// L22k: console do Master. Indica e retira um Admin POR FUNÇÃO (suporte dos espaços, pedidos de convite).
+// Cada função é uma chave com o nome em texto; cada mudança pede confirmação. Nada é apagado; retirar corta só aquela função.
+const FUNCOES: { valor: FuncaoIndicada; rotulo: string; ligar: string; desligar: string }[] = [
+  {
+    valor: 'suporte_individual',
+    rotulo: 'Pedidos de suporte dos espaços',
+    ligar: 'Ele passa a ler nome, e-mail e texto dos pedidos de suporte dos espaços individuais.',
+    desligar: 'O acesso aos pedidos de suporte é cortado na hora.',
+  },
+  {
+    valor: 'pedido_convite',
+    rotulo: 'Pedidos de convite',
+    ligar: 'Ele passa a ler nome, e-mail e motivo dos pedidos de convite e a aprovar ou recusar.',
+    desligar: 'O acesso aos pedidos de convite é cortado na hora.',
+  },
+];
+// O que o Admin faz hoje, em palavras
+export function resumoDasFuncoes(funcoes: FuncaoIndicada[]): string {
+  const sup = funcoes.includes('suporte_individual');
+  const conv = funcoes.includes('pedido_convite');
+  if (sup && conv) return 'Faz as duas: pedidos de suporte e pedidos de convite.';
+  if (sup) return 'Só pedidos de suporte dos espaços.';
+  if (conv) return 'Só pedidos de convite.';
+  return 'Nenhuma função.';
+}
+
+type Mudanca = { chave: string; funcao: FuncaoIndicada; ligar: boolean };
+
 export function AtendentesSuporte({ aoSair }: { aoSair: () => void }) {
   const [admins, setAdmins] = useState<CandidatoAtendente[] | null>(null);
-  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState<Mudanca | null>(null);
+  const [trabalhando, setTrabalhando] = useState(false);
   const [erro, setErro] = useState('');
   const [feito, setFeito] = useState('');
   const titulo = useRef<HTMLHeadingElement>(null);
@@ -189,37 +223,44 @@ export function AtendentesSuporte({ aoSair }: { aoSair: () => void }) {
     void ler();
   }, [ler]);
 
-  async function mudar(a: CandidatoAtendente) {
+  async function mudar(a: CandidatoAtendente, m: Mudanca) {
+    const f = FUNCOES.find((x) => x.valor === m.funcao);
     setErro('');
     setFeito('');
+    setTrabalhando(true);
     try {
-      if (a.indicado) {
-        await apiOperacao.retirarAtendente(a.instituicao_id, a.usuario_id);
-        setFeito(`${a.nome} deixou de atender o suporte dos espaços. O acesso foi cortado.`);
-      } else {
-        await apiOperacao.indicarAtendente(a.instituicao_id, a.usuario_id);
-        setFeito(`${a.nome} agora atende o suporte dos espaços individuais.`);
-      }
+      await apiOperacao.mudarFuncaoAdmin(
+        m.ligar ? 'indicar' : 'retirar',
+        a.instituicao_id,
+        a.usuario_id,
+        m.funcao,
+      );
+      setFeito(
+        m.ligar
+          ? `${a.nome} agora cuida de: ${f?.rotulo}.`
+          : `${a.nome} deixou de cuidar de: ${f?.rotulo}. O acesso foi cortado.`,
+      );
     } catch (x) {
-      setErro(mensagem(x, 'Não foi possível salvar.'));
+      setErro(mensagem(x, 'Não foi possível salvar. Nada foi alterado.'));
     }
+    setTrabalhando(false);
     setConfirmando(null);
     await ler();
     titulo.current?.focus();
   }
 
-  const indicados = admins?.filter((a) => a.indicado).length ?? 0;
+  const indicados = admins?.filter((a) => a.funcoes.length > 0).length ?? 0;
   return (
     <section className="card" aria-labelledby="atend-titulo">
       <div className="card-head">
         <h1 id="atend-titulo" ref={titulo} tabIndex={-1} style={{ fontSize: 22 }}>
-          Atendentes do suporte
+          Admins indicados
         </h1>
       </div>
       <p className="muted small">
-        O Admin indicado aqui lê os pedidos de suporte dos espaços individuais (nome, e-mail,
-        assunto e texto) e marca como atendido. Se ele for desativado ou a escola deixar de estar
-        ativa, a indicação para de valer sozinha. Cada abertura da fila fica na auditoria.
+        Escolha o que cada Admin faz: pedidos de suporte dos espaços individuais, pedidos de
+        convite, ou os dois. Se o Admin for desativado ou a escola deixar de estar ativa, a
+        indicação para de valer sozinha. Cada mudança fica na trilha do Master.
       </p>
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       <div role="status">{feito ? <Aviso>{feito}</Aviso> : null}</div>
@@ -232,12 +273,15 @@ export function AtendentesSuporte({ aoSair }: { aoSair: () => void }) {
       ) : (
         <>
           <p>
-            <strong>{indicados}</strong> {indicados === 1 ? 'Admin indicado' : 'Admins indicados'}{' '}
-            de {admins.length}.
+            <strong>{indicados}</strong>{' '}
+            {indicados === 1 ? 'Admin com alguma função' : 'Admins com alguma função'} de{' '}
+            {admins.length}.
           </p>
           <ul className="ops-pessoas" aria-label="Admins das escolas ativas">
             {admins.map((a) => {
               const chave = `${a.instituicao_id}:${a.usuario_id}`;
+              const pedido = confirmando?.chave === chave ? confirmando : null;
+              const fPedido = pedido ? FUNCOES.find((x) => x.valor === pedido.funcao) : null;
               return (
                 <li key={chave} className="ops-pessoa">
                   <strong>{a.nome}</strong>
@@ -246,42 +290,57 @@ export function AtendentesSuporte({ aoSair }: { aoSair: () => void }) {
                     {a.email} · {a.instituicao_nome}
                   </span>
                   <br />
-                  <span className="small">
-                    {a.indicado ? 'Indicado como atendente' : 'Não indicado'}
-                  </span>
-                  <br />
-                  {confirmando === chave ? (
+                  <span className="small">{resumoDasFuncoes(a.funcoes)}</span>
+                  <fieldset className="ops-modulos">
+                    <legend>
+                      Funções<span className="sr-only"> de {a.nome}</span>
+                    </legend>
+                    {FUNCOES.map((f) => {
+                      const ligada = a.funcoes.includes(f.valor);
+                      return (
+                        <label key={f.valor} className="opcao-radio" style={{ minHeight: 44 }}>
+                          <input
+                            type="checkbox"
+                            role="switch"
+                            aria-checked={ligada}
+                            checked={ligada}
+                            disabled={trabalhando || pedido !== null}
+                            onChange={(e) =>
+                              setConfirmando({ chave, funcao: f.valor, ligar: e.target.checked })
+                            }
+                          />
+                          <span>{f.rotulo}</span>
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                  {pedido && fPedido ? (
                     <span>
                       <span className="small">
-                        {a.indicado
-                          ? 'Retirar a indicação? O acesso à fila é cortado na hora.'
-                          : 'Indicar este Admin? Ele passa a ler nome, e-mail e texto dos pedidos.'}
+                        {pedido.ligar
+                          ? `Dar a ${a.nome} a função "${fPedido.rotulo}"? ${fPedido.ligar}`
+                          : `Retirar de ${a.nome} a função "${fPedido.rotulo}"? ${fPedido.desligar}`}
                       </span>{' '}
                       <button
                         type="button"
                         className="btn btn-primary btn-sm"
-                        onClick={() => void mudar(a)}
+                        style={{ minHeight: 44 }}
+                        disabled={trabalhando}
+                        onClick={() => void mudar(a, pedido)}
                       >
-                        {a.indicado ? 'Sim, retirar' : 'Sim, indicar'}
+                        {pedido.ligar ? 'Sim, indicar' : 'Sim, retirar'}
                       </button>{' '}
                       <button
                         type="button"
                         className="btn btn-outline btn-sm"
+                        style={{ minHeight: 44 }}
+                        disabled={trabalhando}
                         onClick={() => setConfirmando(null)}
                       >
                         Não
                       </button>
                     </span>
-                  ) : (
-                    <button
-                      type="button"
-                      aria-label={`${a.indicado ? 'Retirar' : 'Indicar'} ${a.nome} (${a.instituicao_nome})`}
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setConfirmando(chave)}
-                    >
-                      {a.indicado ? 'Retirar' : 'Indicar'}
-                    </button>
-                  )}
+                  ) : null}
                 </li>
               );
             })}

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ErroApi, type PedidoConvite } from '../api';
+import { type ConviteDoPedido, ErroApi, type PedidoConvite } from '../api';
 import { Aviso } from '../componentes/Aviso';
+import { CodigoDoConvite } from '../componentes/CodigoDoConvite';
 import { diasDeEspera, quandoPediu } from './SuporteEspacos';
 
 // L22i (item 3): fila de pedidos de convite de quem não tem código. Uma tela para o Master (console) e para o Admin indicado.
 // Aprovar envia o convite por e-mail; recusar avisa sem dizer o motivo. Cartões, tempo em palavra, dia/mês e barra.
+// L22j (item 1): depois de Aprovar, o código aparece aqui também, para copiar e repassar (o e-mail pode não chegar).
 const DIAS_DA_BARRA = 14;
 const mensagem = (x: unknown, padrao: string) => (x instanceof ErroApi ? x.message : padrao);
 
@@ -12,7 +14,7 @@ type Acao = 'aprovar' | 'recusar';
 type Props = {
   nivel: 'h1' | 'h2';
   carregar: () => Promise<PedidoConvite[]>;
-  decidir: (p: PedidoConvite, acao: Acao) => Promise<void>;
+  decidir: (p: PedidoConvite, acao: Acao) => Promise<ConviteDoPedido | undefined>;
   aoSair?: () => void;
 };
 
@@ -22,6 +24,7 @@ export function PedidosConvite({ nivel, carregar, decidir, aoSair }: Props) {
   const [trabalhando, setTrabalhando] = useState(false);
   const [erro, setErro] = useState('');
   const [feito, setFeito] = useState('');
+  const [aprovado, setAprovado] = useState<(ConviteDoPedido & { nome: string }) | null>(null);
   const titulo = useRef<HTMLHeadingElement>(null);
 
   const ler = useCallback(async () => {
@@ -39,12 +42,14 @@ export function PedidosConvite({ nivel, carregar, decidir, aoSair }: Props) {
   async function enviar(p: PedidoConvite, acao: Acao) {
     setErro('');
     setFeito('');
+    setAprovado(null);
     setTrabalhando(true);
     try {
-      await decidir(p, acao);
+      const convite = await decidir(p, acao);
+      if (acao === 'aprovar' && convite) setAprovado({ ...convite, nome: p.nome });
       setFeito(
         acao === 'aprovar'
-          ? `Convite enviado por e-mail para ${p.nome}. O pedido saiu da fila.`
+          ? `Convite enviado por e-mail para ${p.nome}. O pedido saiu da fila. O código está abaixo: copie agora, ele não aparece de novo.`
           : `Pedido recusado. ${p.nome} foi avisado por e-mail, sem o motivo. O pedido saiu da fila.`,
       );
     } catch (x) {
@@ -58,6 +63,7 @@ export function PedidosConvite({ nivel, carregar, decidir, aoSair }: Props) {
   }
 
   const Cabecalho = nivel;
+  const Subtitulo = nivel === 'h1' ? 'h2' : 'h3';
   return (
     <section className="card" aria-labelledby="ped-conv-titulo">
       <div className="card-head">
@@ -72,11 +78,28 @@ export function PedidosConvite({ nivel, carregar, decidir, aoSair }: Props) {
       </div>
       <p className="muted small">
         Pedidos de quem não tem código. Você vê o nome, o e-mail e o motivo. Aprovar cria um convite
-        de 7 dias e envia o código por e-mail. Recusar avisa a pessoa por e-mail, sem dizer o
-        motivo.
+        de 7 dias, envia o código por e-mail e mostra o código aqui, para você copiar e repassar.
+        Recusar avisa a pessoa por e-mail, sem dizer o motivo.
       </p>
       {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
       <div role="status">{feito ? <Aviso>{feito}</Aviso> : null}</div>
+      {aprovado ? (
+        <section aria-labelledby="ped-conv-codigo" className="mt">
+          <Subtitulo id="ped-conv-codigo" style={{ fontSize: 18 }}>
+            Convite de {aprovado.nome}
+          </Subtitulo>
+          <CodigoDoConvite
+            codigo={aprovado.codigo}
+            expiraEm={aprovado.expira_em}
+            aoCopiar={(ok) => {
+              setErro('');
+              setFeito(ok);
+            }}
+            aoFalhar={setErro}
+            dica={`Envie o código ou o link só para ${aprovado.nome}. Para cancelar antes do uso, o Master usa a tela Convites.`}
+          />
+        </section>
+      ) : null}
       {pedidos === null ? (
         erro ? null : (
           <p role="status">Carregando…</p>

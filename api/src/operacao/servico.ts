@@ -5,10 +5,10 @@ import { gerarCodigoDeConvite, hashDoCodigo } from '../auth/convite-individual.j
 import type { EnviarEmail } from '../auth/email.js';
 import {
   comDesfazer,
+  type Decisao,
   decidirPedido,
   listarPedidos,
   type PedidoPendente,
-  type ResultadoDecisao,
 } from '../auth/pedido-convite.js';
 import { hashSenha, validarSenha, verificarSenha, verificarSenhaFalsa } from '../auth/senha.js';
 import { base32Codificar, gerarSegredoTotp, uriOtpauth, verificarTotp } from '../auth/totp.js';
@@ -50,15 +50,16 @@ export type PessoaArvore = {
 };
 // L22c: só id, tipo e datas (o código só aparece uma vez, na criação)
 export type ConvitePendente = { id: string; tipo: string; criado_em: Date; expira_em: Date };
-// L22f: Admins que o Master pode indicar para atender o suporte dos espaços individuais, e a fila de pedidos
+// L22k: Admins que o Master pode indicar, com as funções vigentes de cada um
 export type CandidatoAtendente = {
   instituicao_id: string;
   instituicao_nome: string;
   usuario_id: string;
   nome: string;
   email: string;
-  indicado: boolean;
+  funcoes: string[];
 };
+export type FuncaoAdmin = 'suporte_individual' | 'pedido_convite';
 // Só estes campos saem da fila (Q1 = A): nada do espaço além do pedido e de quem pediu
 export type PedidoSuporteIndividual = {
   pedido_id: string;
@@ -633,7 +634,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
     sessao: SessaoOperacao,
     acao: 'aprovar' | 'recusar',
     pedidoId: string,
-  ): Promise<ResultadoDecisao> {
+  ): Promise<Decisao> {
     return comDesfazer(() =>
       comoOperacao(dep.banco, async (tx) => {
         const r = await decidirPedido(
@@ -643,7 +644,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
           pedidoId,
           { enviarEmail: dep.enviarEmail, linkBase: dep.linkBase },
         );
-        if (r === 'ok')
+        if (r.resultado === 'ok')
           await auditar(
             tx,
             `master:${sessao.usuario}`,
@@ -655,41 +656,45 @@ export function criarOperacao(dep: DependenciasOperacao) {
     );
   }
 
-  // L22f: suporte do espaço individual. O Master indica e retira Admins atendentes e também atende a fila.
+  // L22k: o Master indica e retira um Admin POR FUNÇÃO (suporte dos espaços, pedidos de convite). Nada se apaga.
   async function listarAtendentes(): Promise<CandidatoAtendente[]> {
     return comoOperacao(
       dep.banco,
-      (tx) => tx.$queryRaw<CandidatoAtendente[]>`SELECT * FROM suporte_atendentes_candidatos()`,
+      (tx) => tx.$queryRaw<CandidatoAtendente[]>`SELECT * FROM admin_funcoes_candidatos()`,
     );
   }
   async function indicarAtendente(
     sessao: SessaoOperacao,
     instituicaoId: string,
     usuarioId: string,
+    funcao: FuncaoAdmin,
   ): Promise<'ok' | 'nao_admin' | 'ja_indicado'> {
     return comoOperacao(dep.banco, async (tx) => {
       const por = `master:${sessao.usuario}`;
       const [r] = await tx.$queryRaw<{ r: string }[]>`
-        SELECT suporte_atendente_indicar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${por}) AS r`;
+        SELECT admin_funcao_indicar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${funcao}, ${por}) AS r`;
       if (r?.r === 'ok')
-        await auditar(tx, por, 'suporte_atendente.indicado', `usuario:${usuarioId}`, {
+        await auditar(tx, por, 'admin_funcao.indicada', `usuario:${usuarioId}`, {
           instituicao: instituicaoId,
+          funcao,
         });
-      return (r?.r ?? 'nao_admin') as 'ok' | 'nao_admin' | 'ja_indicado';
+      return r?.r === 'ok' || r?.r === 'ja_indicado' ? r.r : 'nao_admin';
     });
   }
   async function retirarAtendente(
     sessao: SessaoOperacao,
     instituicaoId: string,
     usuarioId: string,
+    funcao: FuncaoAdmin,
   ): Promise<'ok' | 'nao_indicado'> {
     return comoOperacao(dep.banco, async (tx) => {
       const por = `master:${sessao.usuario}`;
       const [r] = await tx.$queryRaw<{ r: string }[]>`
-        SELECT suporte_atendente_retirar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${por}) AS r`;
+        SELECT admin_funcao_retirar(${instituicaoId}::uuid, ${usuarioId}::uuid, ${funcao}, ${por}) AS r`;
       if (r?.r !== 'ok') return 'nao_indicado';
-      await auditar(tx, por, 'suporte_atendente.retirado', `usuario:${usuarioId}`, {
+      await auditar(tx, por, 'admin_funcao.retirada', `usuario:${usuarioId}`, {
         instituicao: instituicaoId,
+        funcao,
       });
       return 'ok';
     });
@@ -712,6 +717,13 @@ export function criarOperacao(dep: DependenciasOperacao) {
   async function suporteIndividualContar(): Promise<number> {
     return comoOperacao(dep.banco, async (tx) => {
       const [r] = await tx.$queryRaw<{ n: number }[]>`SELECT suporte_ind_contar() AS n`;
+      return Number(r?.n ?? 0);
+    });
+  }
+  // L22j (item 2): só o número de pedidos de convite esperando, para o sino (sem nome nem e-mail)
+  async function pedidosConviteContar(): Promise<number> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const [r] = await tx.$queryRaw<{ n: number }[]>`SELECT pedido_convite_contar() AS n`;
       return Number(r?.n ?? 0);
     });
   }
@@ -761,6 +773,7 @@ export function criarOperacao(dep: DependenciasOperacao) {
     resumoDosConvites,
     listarConvitesPendentes,
     pedidosConviteFila,
+    pedidosConviteContar,
     pedidoConviteDecidir,
     revogarConvite,
     lerLimiteAlunos,

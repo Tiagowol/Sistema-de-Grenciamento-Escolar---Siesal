@@ -432,15 +432,21 @@ describe('auditoria da escola (L22e)', () => {
 
 // L22f: o suporte do espaço individual é atendido pelo Master ou por um Admin indicado pelo Master
 describe('suporte do espaço individual (L22f)', () => {
-  it('só o Master e o Admin indicado atendem; só o Master indica', () => {
+  it('só o Master e o Admin indicado atendem', () => {
     expect(MATRIZ.versao).toBeGreaterThanOrEqual(24);
-    for (const perfil of PERFIS) {
+    for (const perfil of PERFIS)
       expect(permitido(perfil, 'suporte_individual', 'atender'), perfil).toBe(
         perfil === 'master' ? 'plataforma' : perfil === 'admin' ? 'indicado' : null,
       );
-      expect(permitido(perfil, 'suporte_individual', 'indicar_atendente'), perfil).toBe(
+  });
+  // L22k: a indicação é por função e só o Master a gerencia; o liga/desliga antigo saiu da matriz
+  it('só o Master indica e retira Admins por função', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(26);
+    for (const perfil of PERFIS) {
+      expect(permitido(perfil, 'indicacoes_admin', 'gerenciar'), perfil).toBe(
         perfil === 'master' ? 'plataforma' : null,
       );
+      expect(permitido(perfil, 'suporte_individual', 'indicar_atendente'), perfil).toBeNull();
     }
   });
   it('pedidos de convite: só o Master e o Admin indicado decidem', () => {

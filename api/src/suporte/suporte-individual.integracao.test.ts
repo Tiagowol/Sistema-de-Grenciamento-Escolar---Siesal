@@ -126,20 +126,25 @@ afterAll(async () => {
   await amb?.encerrar();
 });
 
+// L22k: a indicação é por função; aqui só a do suporte dos espaços
 const indicar = (instituicao: string, apelido: string, cookie = master) =>
-  chamar('POST', '/operacao/suporte-atendentes/indicar', cookie, {
+  chamar('POST', '/operacao/admins-indicados/indicar', cookie, {
     instituicao_id: instituicao,
     usuario_id: ids[apelido],
+    funcao: 'suporte_individual',
   });
 const retirar = (instituicao: string, apelido: string) =>
-  chamar('POST', '/operacao/suporte-atendentes/retirar', master, {
+  chamar('POST', '/operacao/admins-indicados/retirar', master, {
     instituicao_id: instituicao,
     usuario_id: ids[apelido],
+    funcao: 'suporte_individual',
   });
+const funcoesDe = async (cookie: string) =>
+  (await chamar('GET', '/auth/eu', cookie)).json().funcoes_indicadas as string[];
 
 describe('L22f item 1: indicar e retirar o Admin atendente', () => {
   it('sem sessão do Master, 401; sessão da escola não vale no console', async () => {
-    expect((await chamar('GET', '/operacao/suporte-atendentes')).statusCode).toBe(401);
+    expect((await chamar('GET', '/operacao/admins-indicados')).statusCode).toBe(401);
     expect((await indicar(amb.instA, 'adminA', cookies.adminA)).statusCode).toBe(401);
   });
 
@@ -152,25 +157,24 @@ describe('L22f item 1: indicar e retirar o Admin atendente', () => {
       [amb.instA],
     );
     expect(aud.rowCount).toBe(1); // só o Admin que tentou deixa rastro
-    const eu = await chamar('GET', '/auth/eu', cookies.adminA);
-    expect(eu.json().atendente_suporte).toBe(false);
+    expect(await funcoesDe(cookies.adminA)).toEqual([]);
   });
 
   it('o Master lista os Admins ativos de escolas ativas e indica um; a trilha registra', async () => {
-    const lista = await chamar('GET', '/operacao/suporte-atendentes', master);
+    const lista = await chamar('GET', '/operacao/admins-indicados', master);
     expect(lista.statusCode).toBe(200);
-    const admins = lista.json().admins as { usuario_id: string; indicado: boolean }[];
+    const admins = lista.json().admins as { usuario_id: string; funcoes: string[] }[];
     expect(admins.map((a) => a.usuario_id).sort()).toEqual(
       [ids.adminA, ids.adminA2, ids.adminB].sort(),
     );
-    expect(admins.every((a) => !a.indicado)).toBe(true);
+    expect(admins.every((a) => a.funcoes.length === 0)).toBe(true);
     // só estes campos saem
     expect(Object.keys(lista.json().admins[0]).sort()).toEqual(
-      ['email', 'indicado', 'instituicao_id', 'instituicao_nome', 'nome', 'usuario_id'].sort(),
+      ['email', 'funcoes', 'instituicao_id', 'instituicao_nome', 'nome', 'usuario_id'].sort(),
     );
     expect((await indicar(amb.instA, 'adminA')).statusCode).toBe(204);
     const trilha = await amb.admin.query(
-      "SELECT 1 FROM operator_auditoria WHERE acao = 'suporte_atendente.indicado' AND alvo = $1",
+      "SELECT 1 FROM operator_auditoria WHERE acao = 'admin_funcao.indicada' AND alvo = $1 AND detalhe->>'funcao' = 'suporte_individual'",
       [`usuario:${ids.adminA}`],
     );
     expect(trilha.rowCount).toBe(1);
@@ -179,16 +183,23 @@ describe('L22f item 1: indicar e retirar o Admin atendente', () => {
   it('indicar de novo dá 409; quem não é Admin ativo (professor) dá 404; dado inválido dá 400', async () => {
     expect((await indicar(amb.instA, 'adminA')).statusCode).toBe(409);
     expect((await indicar(amb.instA, 'profA')).statusCode).toBe(404);
-    const ruim = await chamar('POST', '/operacao/suporte-atendentes/indicar', master, {
+    const ruim = await chamar('POST', '/operacao/admins-indicados/indicar', master, {
       instituicao_id: 'x',
     });
     expect(ruim.statusCode).toBe(400);
+    // função fora da lista fechada: 400
+    const funcaoRuim = await chamar('POST', '/operacao/admins-indicados/indicar', master, {
+      instituicao_id: amb.instA,
+      usuario_id: ids.adminA2,
+      funcao: 'notas',
+    });
+    expect(funcaoRuim.statusCode).toBe(400);
   });
 
   it('o Admin indicado passa a ver o menu (/auth/eu); o não indicado não', async () => {
-    expect((await chamar('GET', '/auth/eu', cookies.adminA)).json().atendente_suporte).toBe(true);
-    expect((await chamar('GET', '/auth/eu', cookies.adminA2)).json().atendente_suporte).toBe(false);
-    expect((await chamar('GET', '/auth/eu', cookies.adminB)).json().atendente_suporte).toBe(false);
+    expect(await funcoesDe(cookies.adminA)).toEqual(['suporte_individual']);
+    expect(await funcoesDe(cookies.adminA2)).toEqual([]);
+    expect(await funcoesDe(cookies.adminB)).toEqual([]);
   });
 });
 
@@ -374,9 +385,9 @@ describe('L22f: o acesso do Admin indicado se corta na hora', () => {
     expect((await chamar('GET', '/suporte-individual', cookies.adminA)).statusCode).toBe(200);
     expect((await retirar(amb.instA, 'adminA')).statusCode).toBe(204);
     expect((await chamar('GET', '/suporte-individual', cookies.adminA)).statusCode).toBe(403);
-    expect((await chamar('GET', '/auth/eu', cookies.adminA)).json().atendente_suporte).toBe(false);
+    expect(await funcoesDe(cookies.adminA)).toEqual([]);
     const l = await amb.admin.query(
-      'SELECT retirado_em, retirado_por FROM atendente_suporte WHERE usuario_id = $1',
+      'SELECT retirado_em, retirado_por FROM admin_indicacao_funcao WHERE usuario_id = $1',
       [ids.adminA],
     );
     expect(l.rowCount).toBe(1);
@@ -411,23 +422,25 @@ describe('L22f: o acesso do Admin indicado se corta na hora', () => {
     ]);
     expect(f.rows[0].ok).toBe(false);
     // e o Master não vê esse Admin entre os candidatos
-    const lista = await chamar('GET', '/operacao/suporte-atendentes', master);
+    const lista = await chamar('GET', '/operacao/admins-indicados', master);
     expect(
       (lista.json().admins as { usuario_id: string }[]).some((x) => x.usuario_id === ids.adminB),
     ).toBe(false);
   });
 
   it('o aplicativo não lê a tabela de atendentes nem os pedidos de outro espaço direto', async () => {
-    // siesal_app não tem permissão de tabela em atendente_suporte: qualquer leitura direta falha
-    const negado = await amb.bancoApp
-      .$transaction(async (tx) => {
-        await tx.$executeRaw`SELECT set_config('app.instituicao_id', ${amb.instA}, true)`;
-        return tx.$queryRaw`SELECT count(*)::int AS n FROM atendente_suporte`;
-      })
-      .then(
-        () => false,
-        () => true,
-      );
-    expect(negado).toBe(true);
+    // siesal_app não tem permissão de tabela em atendente_suporte nem em admin_indicacao_funcao: leitura direta falha
+    for (const tabela of ['atendente_suporte', 'admin_indicacao_funcao']) {
+      const negado = await amb.bancoApp
+        .$transaction(async (tx) => {
+          await tx.$executeRaw`SELECT set_config('app.instituicao_id', ${amb.instA}, true)`;
+          return tx.$queryRawUnsafe(`SELECT count(*)::int AS n FROM ${tabela}`);
+        })
+        .then(
+          () => false,
+          () => true,
+        );
+      expect(negado, tabela).toBe(true);
+    }
   });
 });

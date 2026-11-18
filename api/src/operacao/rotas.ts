@@ -35,7 +35,12 @@ const corpoSituacao = z.strictObject({
   situacao: z.enum(SITUACOES),
   confirmar_nome: z.string().max(120).optional(),
 });
-const corpoAtendente = z.strictObject({ instituicao_id: z.uuid(), usuario_id: z.uuid() });
+// L22k: a indicação é por função (lista fechada)
+const corpoAtendente = z.strictObject({
+  instituicao_id: z.uuid(),
+  usuario_id: z.uuid(),
+  funcao: z.enum(['suporte_individual', 'pedido_convite']),
+});
 const corpoAtender = z.strictObject({ espaco_id: z.uuid() });
 const corpoLimite = z.strictObject({ limite: z.number().int().min(1).max(20) });
 const corpoModulo = z.strictObject({ modulo: z.enum(MODULOS), ligado: z.boolean() });
@@ -223,31 +228,31 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     return resposta.code(204).send();
   });
 
-  // L22f: suporte do espaço individual. Indicar e retirar Admin atendente; fila e atendimento pelo Master.
-  app.get('/operacao/suporte-atendentes', async (requisicao, resposta) => {
+  // L22k: Admins indicados por função (suporte dos espaços, pedidos de convite). Fila e atendimento pelo Master seguem abaixo.
+  app.get('/operacao/admins-indicados', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);
     if (!sessao) return resposta;
     return { admins: await ops.listarAtendentes() };
   });
   for (const acao of ['indicar', 'retirar'] as const) {
-    app.post(`/operacao/suporte-atendentes/${acao}`, async (requisicao, resposta) => {
+    app.post(`/operacao/admins-indicados/${acao}`, async (requisicao, resposta) => {
       const sessao = await exigir(requisicao, resposta);
       if (!sessao) return resposta;
       const corpo = corpoAtendente.safeParse(requisicao.body);
       if (!corpo.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
-      const { instituicao_id, usuario_id } = corpo.data;
+      const { instituicao_id, usuario_id, funcao } = corpo.data;
       if (acao === 'indicar') {
-        const r = await ops.indicarAtendente(sessao, instituicao_id, usuario_id);
+        const r = await ops.indicarAtendente(sessao, instituicao_id, usuario_id, funcao);
         if (r === 'nao_admin')
           return resposta
             .code(404)
             .send({ erro: 'Esta pessoa não é Admin ativo de uma escola ativa.' });
         if (r === 'ja_indicado')
-          return resposta.code(409).send({ erro: 'Este Admin já está indicado.' });
+          return resposta.code(409).send({ erro: 'Este Admin já tem esta função.' });
       } else {
-        const r = await ops.retirarAtendente(sessao, instituicao_id, usuario_id);
+        const r = await ops.retirarAtendente(sessao, instituicao_id, usuario_id, funcao);
         if (r === 'nao_indicado')
-          return resposta.code(409).send({ erro: 'Este Admin não está indicado.' });
+          return resposta.code(409).send({ erro: 'Este Admin não tem esta função.' });
       }
       return resposta.code(204).send();
     });
@@ -280,6 +285,11 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     if (!sessao) return resposta;
     return { pedidos: await ops.pedidosConviteFila(sessao) };
   });
+  app.get('/operacao/pedidos-convite/contagem', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { abertos: await ops.pedidosConviteContar() };
+  });
   for (const acao of ['aprovar', 'recusar'] as const) {
     app.post(`/operacao/pedidos-convite/:id/${acao}`, async (requisicao, resposta) => {
       const sessao = await exigir(requisicao, resposta);
@@ -287,9 +297,10 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
       const parametros = parametroId.safeParse(requisicao.params);
       if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
       const r = await ops.pedidoConviteDecidir(sessao, acao, parametros.data.id);
-      const resposta2 = erroDaDecisao(r);
+      const resposta2 = erroDaDecisao(r.resultado);
       if (resposta2) return resposta.code(resposta2.status).send({ erro: resposta2.erro });
-      return resposta.code(204).send();
+      // L22j: aprovar devolve o código para a tela (nunca vai para a auditoria)
+      return r.convite ? r.convite : resposta.code(204).send();
     });
   }
 

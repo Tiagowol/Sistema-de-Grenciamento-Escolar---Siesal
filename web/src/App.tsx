@@ -339,7 +339,7 @@ export function App() {
         ) : eu.nivel === 'completo' &&
           pagina === 'suporteindividual' &&
           eu.usuario.perfil === 'admin' &&
-          eu.atendente_suporte ? (
+          eu.funcoes_indicadas?.includes('suporte_individual') ? (
           <>
             <Titulo
               olho="Administração"
@@ -355,7 +355,7 @@ export function App() {
         ) : eu.nivel === 'completo' &&
           pagina === 'pedidosconvite' &&
           eu.usuario.perfil === 'admin' &&
-          eu.atendente_suporte ? (
+          eu.funcoes_indicadas?.includes('pedido_convite') ? (
           <>
             <Titulo
               olho="Administração"

@@ -10,8 +10,8 @@ export type Eu = {
   modulos?: EstadoModulos;
   // 20c-1: aluno sem instituição usa um espaço individual (sem turmas, notas oficiais nem avisos da escola)
   espaco?: 'escola' | 'individual';
-  // L22f: o Admin indicado pelo Master atende o suporte dos espaços individuais
-  atendente_suporte?: boolean;
+  // L22k: funções que o Master deu a este Admin (cada uma abre o seu menu e o seu aviso no sino)
+  funcoes_indicadas?: FuncaoIndicada[];
 };
 // 20c-2: cadastro com data de nascimento e CPF (opcional); menor de 18 anos informa o responsável
 export type NovoCadastro = {
@@ -406,8 +406,11 @@ export type ContaDados = {
 };
 // L22f: aviso para o Admin indicado (só a quantidade)
 export type ItemSuporteIndividual = ItemBase & { tipo: 'suporte_individual'; abertos: number };
+// L22j: pedidos de convite em item próprio (rótulo e contagem separados do suporte)
+export type ItemPedidoConvite = ItemBase & { tipo: 'pedido_convite'; abertos: number };
 export type ItemCaixa =
   | ItemSuporteIndividual
+  | ItemPedidoConvite
   | ItemSuporteAberto
   | ItemPedidoAberto
   | ItemResposta
@@ -727,7 +730,7 @@ export const api = {
   // L22i (item 3): pedidos de convite, para o Admin indicado
   pedidosConvite: () => chamar<{ pedidos: PedidoConvite[] }>('GET', '/pedidos-convite'),
   decidirPedidoConvite: (id: string, acao: 'aprovar' | 'recusar') =>
-    chamar<void>('POST', `/pedidos-convite/${id}/${acao}`),
+    chamar<ConviteDoPedido | undefined>('POST', `/pedidos-convite/${id}/${acao}`),
   atenderSuporteIndividual: (id: string, espaco_id: string) =>
     chamar<void>('POST', `/suporte-individual/${id}/atender`, { espaco_id }),
   criarUsuario: (d: { perfil: Perfil; nome: string; email: string }) =>
@@ -997,13 +1000,17 @@ export type PedidoConvite = {
   motivo: string;
   criado_em: string;
 };
+// L22j: aprovar devolve o código do convite para a tela (recusar não devolve nada)
+export type ConviteDoPedido = { codigo: string; expira_em: string };
+// L22k: indicação por função (lista fechada, igual à do banco)
+export type FuncaoIndicada = 'suporte_individual' | 'pedido_convite';
 export type CandidatoAtendente = {
   instituicao_id: string;
   instituicao_nome: string;
   usuario_id: string;
   nome: string;
   email: string;
-  indicado: boolean;
+  funcoes: FuncaoIndicada[];
 };
 // L22c: convite esperando uso (nunca o código)
 export type ConvitePendente = {
@@ -1042,16 +1049,25 @@ export const apiOperacao = {
   convitesPendentes: () =>
     chamar<{ convites: ConvitePendente[] }>('GET', '/operacao/convites-pendentes'),
   revogarConvite: (id: string) => chamar<void>('POST', `/operacao/convites/${id}/revogar`),
-  atendentes: () => chamar<{ admins: CandidatoAtendente[] }>('GET', '/operacao/suporte-atendentes'),
-  indicarAtendente: (instituicao_id: string, usuario_id: string) =>
-    chamar<void>('POST', '/operacao/suporte-atendentes/indicar', { instituicao_id, usuario_id }),
-  retirarAtendente: (instituicao_id: string, usuario_id: string) =>
-    chamar<void>('POST', '/operacao/suporte-atendentes/retirar', { instituicao_id, usuario_id }),
+  atendentes: () => chamar<{ admins: CandidatoAtendente[] }>('GET', '/operacao/admins-indicados'),
+  mudarFuncaoAdmin: (
+    acao: 'indicar' | 'retirar',
+    instituicao_id: string,
+    usuario_id: string,
+    funcao: FuncaoIndicada,
+  ) =>
+    chamar<void>('POST', `/operacao/admins-indicados/${acao}`, {
+      instituicao_id,
+      usuario_id,
+      funcao,
+    }),
   suporteFila: () =>
     chamar<{ pedidos: PedidoSuporteEspaco[] }>('GET', '/operacao/suporte-individual'),
   pedidosConvite: () => chamar<{ pedidos: PedidoConvite[] }>('GET', '/operacao/pedidos-convite'),
+  pedidosConviteContagem: () =>
+    chamar<{ abertos: number }>('GET', '/operacao/pedidos-convite/contagem'),
   decidirPedidoConvite: (id: string, acao: 'aprovar' | 'recusar') =>
-    chamar<void>('POST', `/operacao/pedidos-convite/${id}/${acao}`),
+    chamar<ConviteDoPedido | undefined>('POST', `/operacao/pedidos-convite/${id}/${acao}`),
   suporteContagem: () =>
     chamar<{ abertos: number }>('GET', '/operacao/suporte-individual/contagem'),
   atenderSuporte: (id: string, espaco_id: string) =>

@@ -11,7 +11,7 @@ import {
   withTenant,
 } from '../banco/withTenant.js';
 import { itensDeSuporte } from '../conta/rotas.js';
-import { itensDeSuporteIndividual } from '../suporte/rotas.js';
+import { itensDePedidoConvite, itensDeSuporteIndividual } from '../suporte/rotas.js';
 
 // Sino de mensagens (L16): caixa por perfil, "visto" e avisos curtos só de leitura.
 // A caixa só reaproveita pedido_revisao (L15). Mostra estado, nota atual e data; nunca o motivo da revisão nem
@@ -40,7 +40,8 @@ export type ItemCaixa = {
     | 'ajuda_aberta'
     | 'ajuda_minha'
     | 'suporte_aberto'
-    | 'suporte_individual';
+    | 'suporte_individual'
+    | 'pedido_convite';
   id: string;
   visto: boolean;
   dia: string; // AAAA-MM-DD; a tela mostra dia/mês
@@ -192,6 +193,8 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
     for (const l of await itensDeSuporte(tx, sessao)) itens.push(l as ItemCaixa);
     // Pedidos de suporte dos espaços individuais (L22f): só o Admin indicado vê, e só a quantidade
     for (const l of await itensDeSuporteIndividual(tx, sessao)) itens.push(l as ItemCaixa);
+    // L22j: pedidos de convite em item próprio, nunca somados ao suporte
+    for (const l of await itensDePedidoConvite(tx, sessao)) itens.push(l as ItemCaixa);
     // Não vistos primeiro; dentro de cada grupo, o mais recente primeiro
     return itens.sort(
       (x, y) => Number(x.visto) - Number(y.visto) || (x.dia < y.dia ? 1 : x.dia > y.dia ? -1 : 0),
@@ -214,6 +217,7 @@ export function registrarAvisos(app: FastifyInstance, opcoes: Opcoes): void {
           i.tipo !== 'aviso' &&
           i.tipo !== 'suporte_aberto' &&
           i.tipo !== 'suporte_individual' &&
+          i.tipo !== 'pedido_convite' &&
           !ajuda(i),
       )
       .map((i) => i.id);

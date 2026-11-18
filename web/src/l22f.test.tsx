@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CandidatoAtendente, PedidoSuporteEspaco, Perfil } from './api';
+import type { CandidatoAtendente, FuncaoIndicada, PedidoSuporteEspaco, Perfil } from './api';
 import { Shell } from './componentes/Shell';
 import {
   AtendentesSuporte,
@@ -106,73 +106,119 @@ describe('fila de pedidos (L22f)', () => {
   });
 });
 
-const admin = (indicado: boolean, nome = 'Admin Um'): CandidatoAtendente => ({
+const admin = (funcoes: FuncaoIndicada[], nome = 'Admin Um'): CandidatoAtendente => ({
   instituicao_id: 'i1',
   instituicao_nome: 'Escola Fictícia',
   usuario_id: nome,
   nome,
   email: 'admin@exemplo.invalid',
-  indicado,
+  funcoes,
 });
 
-describe('atendentes do suporte, no console do Master (L22f)', () => {
+// Cartão de um Admin (o nome do grupo vem da legenda; aqui se acha pelo nome no cartão)
+const cartaoDe = (nome: string) => screen.getByText(nome).closest('li') as HTMLElement;
+const achar = async (nome: string) => (await screen.findByText(nome)).closest('li') as HTMLElement;
+
+// L22k: a tela do Master passou a ser "Admins indicados", com uma chave por função
+describe('Admins indicados por função, no console do Master (L22k)', () => {
   function simular(lista: CandidatoAtendente[]) {
     const chamadas: { url: string; metodo: string; corpo?: unknown }[] = [];
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        chamadas.push({
-          url,
-          metodo: init?.method ?? 'GET',
-          corpo: init?.body ? JSON.parse(String(init.body)) : undefined,
-        });
-        if (url.endsWith('/suporte-atendentes') && (init?.method ?? 'GET') === 'GET')
+        const corpo = init?.body ? JSON.parse(String(init.body)) : undefined;
+        chamadas.push({ url, metodo: init?.method ?? 'GET', corpo });
+        if (url.endsWith('/admins-indicados') && (init?.method ?? 'GET') === 'GET')
           return new Response(JSON.stringify({ admins: lista }), { status: 200 });
-        if (url.endsWith('/indicar')) lista = lista.map((a) => ({ ...a, indicado: true }));
+        const f = (corpo as { funcao: FuncaoIndicada }).funcao;
+        if (url.endsWith('/indicar'))
+          lista = lista.map((a) => ({ ...a, funcoes: [...a.funcoes, f] }));
+        if (url.endsWith('/retirar'))
+          lista = lista.map((a) => ({ ...a, funcoes: a.funcoes.filter((x) => x !== f) }));
         return new Response(null, { status: 204 });
       }),
     );
     return chamadas;
   }
 
-  it('lista os Admins, mostra quantos estão indicados e passa no axe', async () => {
-    simular([admin(true, 'Admin Um'), admin(false, 'Admin Dois')]);
+  it('lista os Admins com o que cada um faz em palavras e uma chave por função; passa no axe', async () => {
+    simular([
+      admin(['pedido_convite', 'suporte_individual'], 'Admin Um'),
+      admin(['pedido_convite'], 'Admin Dois'),
+      admin([], 'Admin Tres'),
+    ]);
     const { container } = render(<AtendentesSuporte aoSair={() => undefined} />);
-    expect(await screen.findByText('Admin Um')).toBeTruthy();
-    expect(screen.getByText('Indicado como atendente')).toBeTruthy();
-    expect(screen.getByText('Não indicado')).toBeTruthy();
-    expect(screen.getByText(/1/, { selector: 'strong' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Admins indicados' })).toBeTruthy();
+    expect(screen.getByText('Faz as duas: pedidos de suporte e pedidos de convite.')).toBeTruthy();
+    expect(screen.getByText('Só pedidos de convite.')).toBeTruthy();
+    expect(screen.getByText('Nenhuma função.')).toBeTruthy();
+    const dois = cartaoDe('Admin Dois');
+    const convite = within(dois).getByRole('switch', { name: 'Pedidos de convite' });
+    const suporte = within(dois).getByRole('switch', { name: 'Pedidos de suporte dos espaços' });
+    expect((convite as HTMLInputElement).checked).toBe(true);
+    expect((suporte as HTMLInputElement).checked).toBe(false);
     expect(container.querySelector('table')).toBeNull();
     expect((await axe.run(container, semContraste)).violations).toEqual([]);
   });
 
-  it('indicar pede confirmação em texto e só então envia', async () => {
-    const chamadas = simular([admin(false, 'Admin Dois')]);
+  it('ligar uma função pede confirmação em texto e só então envia a função escolhida', async () => {
+    const chamadas = simular([admin([], 'Admin Dois')]);
     render(<AtendentesSuporte aoSair={() => undefined} />);
     const u = userEvent.setup();
-    await u.click(await screen.findByRole('button', { name: /Indicar Admin Dois/ }));
-    expect(screen.getByText(/passa a ler nome, e-mail e texto/)).toBeTruthy();
+    const grupo = await achar('Admin Dois');
+    await u.click(within(grupo).getByRole('switch', { name: 'Pedidos de convite' }));
+    expect(screen.getByText(/passa a ler nome, e-mail e motivo/)).toBeTruthy();
     expect(chamadas.some((c) => c.url.endsWith('/indicar'))).toBe(false);
     await u.click(screen.getByRole('button', { name: 'Sim, indicar' }));
     await waitFor(() => expect(chamadas.some((c) => c.url.endsWith('/indicar'))).toBe(true));
-    const envio = chamadas.find((c) => c.url.endsWith('/indicar'));
-    expect(envio?.corpo).toEqual({ instituicao_id: 'i1', usuario_id: 'Admin Dois' });
-    expect(await screen.findByText(/agora atende o suporte/)).toBeTruthy();
+    expect(chamadas.find((c) => c.url.endsWith('/indicar'))?.corpo).toEqual({
+      instituicao_id: 'i1',
+      usuario_id: 'Admin Dois',
+      funcao: 'pedido_convite',
+    });
+    expect(await screen.findByText('Admin Dois agora cuida de: Pedidos de convite.')).toBeTruthy();
+    expect(screen.getByText('Só pedidos de convite.')).toBeTruthy();
+  });
+
+  it('desligar uma função pede confirmação; "Não" cancela sem enviar', async () => {
+    const chamadas = simular([admin(['pedido_convite', 'suporte_individual'], 'Admin Um')]);
+    render(<AtendentesSuporte aoSair={() => undefined} />);
+    const u = userEvent.setup();
+    const grupo = await achar('Admin Um');
+    await u.click(within(grupo).getByRole('switch', { name: 'Pedidos de suporte dos espaços' }));
+    expect(screen.getByText(/cortado na hora/)).toBeTruthy();
+    await u.click(screen.getByRole('button', { name: 'Não' }));
+    expect(chamadas.some((c) => c.url.endsWith('/retirar'))).toBe(false);
+    await u.click(within(grupo).getByRole('switch', { name: 'Pedidos de suporte dos espaços' }));
+    await u.click(screen.getByRole('button', { name: 'Sim, retirar' }));
+    await waitFor(() =>
+      expect(chamadas.find((c) => c.url.endsWith('/retirar'))?.corpo).toEqual({
+        instituicao_id: 'i1',
+        usuario_id: 'Admin Um',
+        funcao: 'suporte_individual',
+      }),
+    );
+    expect(await screen.findByText('Só pedidos de convite.')).toBeTruthy();
   });
 });
 
-describe('menu do Admin (L22f)', () => {
-  it.each([
-    ['admin', true, true],
-    ['admin', false, false],
-    ['admin', undefined, false],
-    ['professor', true, false],
-    ['pedagogico', true, false],
-    ['aluno', true, false],
-    ['responsavel', true, false],
-  ] as [Perfil, boolean | undefined, boolean][])(
-    'perfil %s, indicado=%s: "Suporte dos espaços" aparece = %s',
-    (perfil, indicado, aparece) => {
+type Caso = [Perfil, FuncaoIndicada[] | undefined, boolean, boolean];
+const CASOS: Caso[] = [
+  ['admin', ['suporte_individual', 'pedido_convite'], true, true],
+  ['admin', ['suporte_individual'], true, false],
+  ['admin', ['pedido_convite'], false, true],
+  ['admin', [], false, false],
+  ['admin', undefined, false, false],
+  ['professor', ['suporte_individual', 'pedido_convite'], false, false],
+  ['pedagogico', ['suporte_individual', 'pedido_convite'], false, false],
+  ['aluno', ['suporte_individual', 'pedido_convite'], false, false],
+  ['responsavel', ['suporte_individual', 'pedido_convite'], false, false],
+];
+
+describe('menu do Admin por função (L22f e L22k)', () => {
+  it.each(CASOS)(
+    'perfil %s, funções %s: suporte aparece = %s, convite aparece = %s',
+    (perfil, funcoes, suporte, convite) => {
       vi.stubGlobal(
         'fetch',
         vi.fn(
@@ -186,7 +232,7 @@ describe('menu do Admin (L22f)', () => {
             usuario: { id: 'u', nome: 'Pessoa Fictícia', perfil },
             modulos: { mensagens: true, calendario: true, apoio_aluno: true },
             espaco: 'escola',
-            atendente_suporte: indicado,
+            funcoes_indicadas: funcoes,
           }}
           pagina="inicio"
           aoIr={() => undefined}
@@ -196,9 +242,10 @@ describe('menu do Admin (L22f)', () => {
         </Shell>,
       );
       const menu = screen.getByRole('navigation', { name: 'Telas do sistema' });
-      expect(within(menu).queryByRole('button', { name: 'Suporte dos espaços' }) !== null).toBe(
-        aparece,
-      );
+      const temSuporte = within(menu).queryByRole('button', { name: 'Suporte dos espaços' });
+      const temConvite = within(menu).queryByRole('button', { name: 'Pedidos de convite' });
+      expect(temSuporte !== null).toBe(suporte);
+      expect(temConvite !== null).toBe(convite);
     },
   );
 });

@@ -170,7 +170,8 @@ function ItemDaCaixa({
       <li className="sino-item">
         <h3>Pedidos de suporte dos espaços</h3>
         <p>
-          Há {item.abertos} {item.abertos === 1 ? 'pedido esperando' : 'pedidos esperando'} de
+          Há {item.abertos}{' '}
+          {item.abertos === 1 ? 'pedido de suporte esperando' : 'pedidos de suporte esperando'} de
           espaços individuais.
         </p>
         <button
@@ -178,7 +179,27 @@ function ItemDaCaixa({
           className="btn btn-outline btn-sm"
           onClick={() => ir('suporteindividual')}
         >
-          Abrir a fila
+          Abrir os pedidos de suporte
+        </button>
+      </li>
+    );
+  }
+  if (item.tipo === 'pedido_convite') {
+    // L22j: pedidos de convite em item próprio, nunca misturados com o suporte
+    return (
+      <li className="sino-item">
+        <h3>Pedidos de convite</h3>
+        <p>
+          Há {item.abertos}{' '}
+          {item.abertos === 1 ? 'pedido de convite esperando' : 'pedidos de convite esperando'} de
+          quem ainda não tem código.
+        </p>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() => ir('pedidosconvite')}
+        >
+          Abrir os pedidos de convite
         </button>
       </li>
     );
@@ -431,12 +452,13 @@ export function SinoPlataforma({ aoIr }: { aoIr: (p: Pagina) => void }) {
 
   const carregar = useCallback(async () => {
     try {
-      const [painel, convites, trilha, suporte] = await Promise.all([
+      const [painel, convites, trilha, suporte, pedidosConvite] = await Promise.all([
         apiOperacao.painel(),
         apiOperacao.resumoConvites(),
         apiOperacao.trilha(),
         // Se só esta contagem falhar, os outros avisos continuam aparecendo
         apiOperacao.suporteContagem().catch(() => ({ abertos: 0 })),
+        apiOperacao.pedidosConviteContagem().catch(() => ({ abertos: 0 })),
       ]);
       const lista: { chave: string; texto: string; ir: Pagina }[] = [];
       if (!trilha.integra)
@@ -450,6 +472,13 @@ export function SinoPlataforma({ aoIr }: { aoIr: (p: Pagina) => void }) {
           chave: 'suporte-espacos',
           texto: `Há ${suporte.abertos} ${suporte.abertos === 1 ? 'pedido de suporte esperando' : 'pedidos de suporte esperando'} de espaços individuais.`,
           ir: 'm_suporte_individual',
+        });
+      // L22j: pedidos de convite em aviso próprio, separado do suporte
+      if (pedidosConvite.abertos > 0)
+        lista.push({
+          chave: 'pedidos-convite',
+          texto: `Há ${pedidosConvite.abertos} ${pedidosConvite.abertos === 1 ? 'pedido de convite esperando' : 'pedidos de convite esperando'} de quem ainda não tem código.`,
+          ir: 'm_pedidos_convite',
         });
       const esperando = convites.instituicao?.pendentes ?? 0;
       if (esperando > 0)
