@@ -28,6 +28,7 @@ import { MeuDia } from './paginas/MeuDia';
 import { Notas } from './paginas/Notas';
 import { NotasOficiais } from './paginas/NotasOficiais';
 import { NotasProfessor } from './paginas/NotasProfessor';
+import { PedidosConvite } from './paginas/PedidosConvite';
 import { Personalizar } from './paginas/Personalizar';
 import { QuemPodeVer } from './paginas/QuemPodeVer';
 import { RegrasNotas } from './paginas/RegrasNotas';
@@ -349,6 +350,22 @@ export function App() {
               nivel="h2"
               carregar={() => api.suporteIndividual().then((r) => r.pedidos)}
               atender={(p) => api.atenderSuporteIndividual(p.pedido_id, p.espaco_id)}
+            />
+          </>
+        ) : eu.nivel === 'completo' &&
+          pagina === 'pedidosconvite' &&
+          eu.usuario.perfil === 'admin' &&
+          eu.atendente_suporte ? (
+          <>
+            <Titulo
+              olho="Administração"
+              titulo="Pedidos de convite"
+              sub="Pedidos de quem não tem código de convite. Você aprova ou recusa."
+            />
+            <PedidosConvite
+              nivel="h2"
+              carregar={() => api.pedidosConvite().then((r) => r.pedidos)}
+              decidir={(p, acao) => api.decidirPedidoConvite(p.pedido_id, acao)}
             />
           </>
         ) : pagina === 'turmas' && eu.usuario.perfil === 'admin' ? (

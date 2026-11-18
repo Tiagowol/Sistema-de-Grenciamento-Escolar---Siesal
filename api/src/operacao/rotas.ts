@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import type { EnviarEmail } from '../auth/email.js';
+import { erroDaDecisao } from '../auth/pedido-convite.js';
 import { type ConfigCookie, cookieDeSaida, lerCookie, serializarCookie } from '../auth/sessao.js';
 import type { PrismaClient } from '../gerado/prisma/client.js';
 import { MODULOS } from '../modulos.js';
@@ -43,6 +45,8 @@ export type OpcoesOperacao = {
   chaveTotp: Buffer;
   agora?: () => Date;
   cookieLocal: boolean;
+  enviarEmail?: EnviarEmail;
+  linkBase?: string;
   limitar: (requisicao: FastifyRequest, resposta: FastifyReply) => boolean;
 };
 
@@ -52,6 +56,8 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     banco: opcoes.banco,
     chaveTotp: opcoes.chaveTotp,
     agora: opcoes.agora,
+    enviarEmail: opcoes.enviarEmail,
+    linkBase: opcoes.linkBase,
   });
   const cookie = opcoes.cookieLocal ? COOKIE_OPERACAO_LOCAL : COOKIE_OPERACAO;
 
@@ -267,6 +273,25 @@ export function registrarOperacao(app: FastifyInstance, opcoes: OpcoesOperacao):
     if (r === 'nao_encontrado') return resposta.code(404).send({ erro: 'Pedido não encontrado.' });
     return resposta.code(204).send();
   });
+
+  // L22i (item 3): fila de pedidos de convite; aprovar envia o convite por e-mail, recusar avisa sem dizer o motivo
+  app.get('/operacao/pedidos-convite', async (requisicao, resposta) => {
+    const sessao = await exigir(requisicao, resposta);
+    if (!sessao) return resposta;
+    return { pedidos: await ops.pedidosConviteFila(sessao) };
+  });
+  for (const acao of ['aprovar', 'recusar'] as const) {
+    app.post(`/operacao/pedidos-convite/:id/${acao}`, async (requisicao, resposta) => {
+      const sessao = await exigir(requisicao, resposta);
+      if (!sessao) return resposta;
+      const parametros = parametroId.safeParse(requisicao.params);
+      if (!parametros.success) return resposta.code(400).send({ erro: 'Dados inválidos.' });
+      const r = await ops.pedidoConviteDecidir(sessao, acao, parametros.data.id);
+      const resposta2 = erroDaDecisao(r);
+      if (resposta2) return resposta.code(resposta2.status).send({ erro: resposta2.erro });
+      return resposta.code(204).send();
+    });
+  }
 
   app.get('/operacao/auditoria', async (requisicao, resposta) => {
     const sessao = await exigir(requisicao, resposta);

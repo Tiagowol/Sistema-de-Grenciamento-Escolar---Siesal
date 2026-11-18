@@ -551,6 +551,29 @@ describe('Master: convites e limite de alunos (L22c)', () => {
     expect(await screen.findByText('Convite revogado. Ele não vale mais.')).toBeTruthy();
   });
 
+  it('L22i: Master cria convite de aluno; mostra o código uma vez, a validade e passa no axe', async () => {
+    const chamadas = simular({
+      ...base,
+      'POST /operacao/convites-individuais': {
+        status: 201,
+        corpo: { codigo: 'ABCD-EFGH-JKLM-NPQR', expira_em: '2026-11-25T12:00:00.000Z' },
+      },
+    });
+    const { container } = render(<Operacao />);
+    await screen.findByText('Escola A (fictícia)');
+    const u = userEvent.setup();
+    await irPara(u, 'Convite de aluno');
+    await screen.findByRole('heading', { name: 'Convite de aluno' });
+    expect(
+      chamadas.some((c) => c.metodo === 'POST' && c.url === '/operacao/convites-individuais'),
+    ).toBe(false);
+    await u.click(screen.getByRole('button', { name: 'Criar convite' }));
+    expect(await screen.findByText('ABCD-EFGH-JKLM-NPQR')).toBeTruthy();
+    expect(screen.getByText('25/11/2026')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Copiar o código' })).toBeTruthy();
+    expect((await axe.run(container, semContraste)).violations).toEqual([]);
+  });
+
   it('limite de alunos: mostra o atual, recusa fora de 1 a 20 e salva', async () => {
     const chamadas = simular({
       ...base,

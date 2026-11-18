@@ -596,6 +596,9 @@ export const api = {
   ) => chamar<Eu>('POST', '/auth/login', d),
   criarContaIndividual: (d: NovoCadastro) =>
     chamar<Eu | { criada: true } | CadastroAguardando>('POST', '/auth/criar-conta-individual', d),
+  // L22i: pedido de convite de quem não tem código (não cria conta)
+  solicitarConvite: (d: { nome: string; email: string; motivo: string }) =>
+    chamar<{ recebido: true; mensagem: string }>('POST', '/auth/solicitar-convite', d),
   // 20c-2: o responsável abre o link do e-mail, lê o termo e confirma
   consultarResponsavel: (token: string) =>
     chamar<PedidoDoResponsavel>('POST', '/auth/responsavel/consultar', { token }),
@@ -721,6 +724,10 @@ export const api = {
     ),
   // L22f: fila do Admin indicado (403 se a indicação não valer)
   suporteIndividual: () => chamar<{ pedidos: PedidoSuporteEspaco[] }>('GET', '/suporte-individual'),
+  // L22i (item 3): pedidos de convite, para o Admin indicado
+  pedidosConvite: () => chamar<{ pedidos: PedidoConvite[] }>('GET', '/pedidos-convite'),
+  decidirPedidoConvite: (id: string, acao: 'aprovar' | 'recusar') =>
+    chamar<void>('POST', `/pedidos-convite/${id}/${acao}`),
   atenderSuporteIndividual: (id: string, espaco_id: string) =>
     chamar<void>('POST', `/suporte-individual/${id}/atender`, { espaco_id }),
   criarUsuario: (d: { perfil: Perfil; nome: string; email: string }) =>
@@ -983,6 +990,13 @@ export type PedidoSuporteEspaco = {
   email: string;
   criado_em: string;
 };
+export type PedidoConvite = {
+  pedido_id: string;
+  nome: string;
+  email: string;
+  motivo: string;
+  criado_em: string;
+};
 export type CandidatoAtendente = {
   instituicao_id: string;
   instituicao_nome: string;
@@ -1035,6 +1049,9 @@ export const apiOperacao = {
     chamar<void>('POST', '/operacao/suporte-atendentes/retirar', { instituicao_id, usuario_id }),
   suporteFila: () =>
     chamar<{ pedidos: PedidoSuporteEspaco[] }>('GET', '/operacao/suporte-individual'),
+  pedidosConvite: () => chamar<{ pedidos: PedidoConvite[] }>('GET', '/operacao/pedidos-convite'),
+  decidirPedidoConvite: (id: string, acao: 'aprovar' | 'recusar') =>
+    chamar<void>('POST', `/operacao/pedidos-convite/${id}/${acao}`),
   suporteContagem: () =>
     chamar<{ abertos: number }>('GET', '/operacao/suporte-individual/contagem'),
   atenderSuporte: (id: string, espaco_id: string) =>

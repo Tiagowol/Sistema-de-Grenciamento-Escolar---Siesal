@@ -443,4 +443,11 @@ describe('suporte do espaço individual (L22f)', () => {
       );
     }
   });
+  it('pedidos de convite: só o Master e o Admin indicado decidem', () => {
+    expect(MATRIZ.versao).toBeGreaterThanOrEqual(25);
+    for (const perfil of PERFIS)
+      expect(permitido(perfil, 'pedidos_convite', 'decidir'), perfil).toBe(
+        perfil === 'master' ? 'plataforma' : perfil === 'admin' ? 'indicado' : null,
+      );
+  });
 });

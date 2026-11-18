@@ -39,6 +39,9 @@ export type Pagina =
   | 'm_instituicoes'
   | 'm_auditoria'
   | 'm_convites'
+  | 'm_convite_aluno'
+  | 'm_pedidos_convite'
+  | 'pedidosconvite'
   | 'm_limite'
   | 'm_atendentes'
   | 'm_suporte_individual'
@@ -259,6 +262,15 @@ const ITENS: Item[] = [
     so: ['admin'],
     soAtendente: true,
     palavras: ['pedido', 'aluno sem escola', 'representante', 'atender', 'espaco individual'],
+  },
+  // L22i: junto com o suporte, só para o Admin indicado
+  {
+    id: 'pedidosconvite',
+    rotulo: 'Pedidos de convite',
+    icone: 'envelope',
+    so: ['admin'],
+    soAtendente: true,
+    palavras: ['convite', 'aprovar', 'recusar', 'aluno sem escola', 'codigo', 'pedido'],
   },
   {
     id: 'turmas',

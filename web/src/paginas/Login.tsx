@@ -1,10 +1,10 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { api, type CadastroAguardando, ErroApi, type Eu } from '../api';
+import { AVISO_CODIGO_INVALIDO, codigoTemCaractereInvalido } from '../codigoConvite';
 import { Aviso } from '../componentes/Aviso';
 import { Campo } from '../componentes/Campo';
 import { TempoVisual } from '../componentes/TempoVisual';
-import { AVISO_CODIGO_INVALIDO, codigoTemCaractereInvalido } from '../codigoConvite';
 import { paraTexto } from '../datas';
 import { lerCodigoDoLink } from '../linkCadastro';
 import { AceitarAcompanhamento } from './AceitarAcompanhamento';
@@ -12,6 +12,7 @@ import { AcessoPessoa } from './AcessoPessoa';
 import { CadastroInstituicao } from './CadastroInstituicao';
 import { ConfirmarEmail } from './ConfirmarEmail';
 import { ConfirmarResponsavel } from './ConfirmarResponsavel';
+import { SolicitarConvite } from './SolicitarConvite';
 
 type Props = { instituicaoPadrao: string | null; aoEntrar: (eu: Eu) => void };
 
@@ -51,6 +52,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
   const [enviando, setEnviando] = useState(false);
   // Criar conta com o convite do Master (só no modo "Sem instituição")
   const [criando, setCriando] = useState(dosLink !== null);
+  // L22i: quem não tem código pede um convite
+  const [solicitando, setSolicitando] = useState(false);
   const [convite, setConvite] = useState(dosLink ?? '');
   const [nome, setNome] = useState('');
   // 20c-2: data de nascimento, CPF (opcional) e, para menor de 18 anos, o responsável
@@ -189,6 +192,8 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
       </main>
     );
 
+  if (solicitando) return <SolicitarConvite aoVoltar={() => setSolicitando(false)} />;
+
   return (
     <main
       className="content"
@@ -243,6 +248,17 @@ export function Login({ instituicaoPadrao, aoEntrar }: Props) {
                 Use o convite que o Master do SIESAL deu a você. Cada convite vale para uma conta e
                 por 7 dias.
               </p>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ minHeight: 44 }}
+                onClick={() => {
+                  setErro('');
+                  setSolicitando(true);
+                }}
+              >
+                Não tenho código: solicitar convite
+              </button>
               <Campo rotulo="Código do convite" dica="Exemplo: ABCD-EFGH-JKLM-NPQR">
                 {({ id, descricao }) => (
                   <input

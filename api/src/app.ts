@@ -24,6 +24,7 @@ import { criarInstituicaoPorConvite } from './auth/convite-individual.js';
 import { derivarChavesCpf, mascararCpf } from './auth/cpf.js';
 import type { EnviarEmail } from './auth/email.js';
 import { LimitadorJanela } from './auth/limitador.js';
+import { solicitarConvite } from './auth/pedido-convite.js';
 import { registrarRotasPessoa } from './auth/pessoa-rotas.js';
 import { PERFIS_CADASTRAVEIS } from './auth/politica.js';
 import { verificarSenhaFalsa } from './auth/senha.js';
@@ -110,6 +111,17 @@ const corpoNovaConta = z.strictObject({
       email: emailValido,
     })
     .optional(),
+});
+// L22i: pedido de convite de quem não tem código (nome, e-mail e motivo; sem links)
+const corpoPedidoConvite = z.strictObject({
+  nome: nomeDePessoa,
+  email: emailValido,
+  motivo: z
+    .string()
+    .trim()
+    .min(5)
+    .max(300)
+    .refine((t) => !/(https?:|www[.]|:\/\/)/i.test(t)),
 });
 const corpoToken = z.strictObject({ token: z.string().min(20).max(100) });
 const corpoConfirmar = z.strictObject({
@@ -278,6 +290,22 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     enviarEmail: opcoes.enviarEmail,
     linkBase: opcoes.linkBase,
     agora: relogio,
+  });
+
+  // L22i: pedir convite sem ter código. Responde sempre igual (não revela se o e-mail já tem conta ou pedido)
+  app.post('/auth/solicitar-convite', async (requisicao, resposta) => {
+    if (!limitar(requisicao, resposta)) return resposta;
+    const corpo = corpoPedidoConvite.safeParse(requisicao.body);
+    if (!corpo.success)
+      return resposta.code(400).send({
+        erro: 'Confira o nome, o e-mail e o motivo (de 5 a 300 letras, sem links).',
+      });
+    const novo = await solicitarConvite(banco, corpo.data);
+    if (!novo) app.log.info('pedido de convite repetido ou de e-mail que já tem espaço');
+    return resposta.code(202).send({
+      recebido: true,
+      mensagem: 'Pedido recebido. Se for aprovado, o convite chega no e-mail informado.',
+    });
   });
 
   app.post('/auth/criar-conta-individual', async (requisicao, resposta) => {
@@ -456,7 +484,12 @@ export function criarApp(opcoes: OpcoesApp = {}) {
   registrarRepresentado(app, { banco: opcoes.banco, exigirSessao });
   registrarEscola(app, { banco: opcoes.banco, exigirSessao });
   registrarAuditoriaEscola(app, { banco: opcoes.banco, exigirSessao });
-  registrarSuporteIndividual(app, { banco: opcoes.banco, exigirSessao });
+  registrarSuporteIndividual(app, {
+    banco: opcoes.banco,
+    exigirSessao,
+    enviarEmail: opcoes.enviarEmail,
+    linkBase: opcoes.linkBase,
+  });
 
   // L18: Masters em /operacao, com cookie, limite por IP e papel de banco próprios (nada de dado escolar)
   const limitadorOperacao = new LimitadorJanela(opcoes.limiteTentativasPorMinuto ?? 10, 60_000);
@@ -465,6 +498,8 @@ export function criarApp(opcoes: OpcoesApp = {}) {
     chaveTotp: derivarChave(opcoes.authSecret),
     agora: opcoes.agora,
     cookieLocal: Boolean(opcoes.cookieLocal),
+    enviarEmail: opcoes.enviarEmail,
+    linkBase: opcoes.linkBase,
     limitar: (requisicao, resposta) => {
       if (limitadorOperacao.permitir(requisicao.ip, relogio().getTime())) return true;
       void resposta

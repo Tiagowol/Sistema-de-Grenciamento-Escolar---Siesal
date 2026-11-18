@@ -2,6 +2,13 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { registrarAuditoria } from '../auditoria/auditoria.js';
 import type { SessaoAtiva } from '../auth/autenticacao.js';
+import type { EnviarEmail } from '../auth/email.js';
+import {
+  comDesfazer,
+  decidirPedido,
+  erroDaDecisao,
+  listarPedidos,
+} from '../auth/pedido-convite.js';
 import { podeSerAtendenteDeSuporte } from '../auth/politica.js';
 import {
   type ClienteTransacao,
@@ -14,7 +21,12 @@ import {
 // devolvem os campos da fila: assunto, texto, nome e e-mail de quem pediu, e o dia. Nunca outro dado do espaço.
 type Banco = Parameters<typeof WithTenant>[0];
 type Exigir = (req: FastifyRequest, res: FastifyReply) => Promise<SessaoAtiva | null>;
-type Opcoes = { banco: Banco; exigirSessao: Exigir };
+type Opcoes = {
+  banco: Banco;
+  exigirSessao: Exigir;
+  enviarEmail?: EnviarEmail;
+  linkBase?: string;
+};
 
 type Pedido = {
   pedido_id: string;
@@ -123,4 +135,52 @@ export function registrarSuporteIndividual(app: FastifyInstance, opcoes: Opcoes)
     if (r !== 'ok') return res.code(404).send({ erro: 'Pedido não encontrado.' });
     return res.code(204).send();
   });
+  // L22i (item 3): pedidos de convite de quem não tem código. O Admin indicado vê nome, e-mail e motivo e decide.
+  app.get('/pedidos-convite', async (req, res) => {
+    const sessao = await opcoes.exigirSessao(req, res);
+    if (!sessao) return res;
+    const r = await withTenant(opcoes.banco, tenant(sessao), async (tx) => {
+      if (!(await ehAtendenteAtivo(tx, sessao))) return null;
+      const fila = await listarPedidos(tx, {
+        tipo: 'admin',
+        inst: sessao.instituicaoId,
+        usuario: sessao.usuarioId,
+      });
+      await auditar(tx, sessao, 'pedido_convite.fila_aberta', 'pedido_convite');
+      return fila;
+    });
+    if (r === null) return res.code(403).send({ erro: 'Sem permissão.' });
+    return { pedidos: r };
+  });
+  for (const acao of ['aprovar', 'recusar'] as const) {
+    app.post(`/pedidos-convite/:id/${acao}`, async (req, res) => {
+      const sessao = await opcoes.exigirSessao(req, res);
+      if (!sessao) return res;
+      const params = z.strictObject({ id: z.uuid() }).safeParse(req.params);
+      if (!params.success) return res.code(400).send({ erro: 'Dados inválidos.' });
+      const r = await comDesfazer(() =>
+        withTenant(opcoes.banco, tenant(sessao), async (tx) => {
+          if (!(await ehAtendenteAtivo(tx, sessao))) return 'proibido' as const;
+          const x = await decidirPedido(
+            tx,
+            { tipo: 'admin', inst: sessao.instituicaoId, usuario: sessao.usuarioId },
+            acao,
+            params.data.id,
+            { enviarEmail: opcoes.enviarEmail, linkBase: opcoes.linkBase },
+          );
+          if (x === 'ok')
+            await auditar(
+              tx,
+              sessao,
+              acao === 'aprovar' ? 'pedido_convite.aprovado' : 'pedido_convite.recusado',
+              `pedido_convite:${params.data.id}`,
+            );
+          return x;
+        }),
+      );
+      const erro = erroDaDecisao(r);
+      if (erro) return res.code(erro.status).send({ erro: erro.erro });
+      return res.code(204).send();
+    });
+  }
 }

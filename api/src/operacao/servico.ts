@@ -2,6 +2,14 @@ import { createHash, randomBytes } from 'node:crypto';
 import { mascarar } from '../auditoria/auditoria.js';
 import { cifrar, decifrar } from '../auth/cifra.js';
 import { gerarCodigoDeConvite, hashDoCodigo } from '../auth/convite-individual.js';
+import type { EnviarEmail } from '../auth/email.js';
+import {
+  comDesfazer,
+  decidirPedido,
+  listarPedidos,
+  type PedidoPendente,
+  type ResultadoDecisao,
+} from '../auth/pedido-convite.js';
 import { hashSenha, validarSenha, verificarSenha, verificarSenhaFalsa } from '../auth/senha.js';
 import { base32Codificar, gerarSegredoTotp, uriOtpauth, verificarTotp } from '../auth/totp.js';
 import type { ClienteTransacao } from '../banco/withTenant.js';
@@ -104,6 +112,8 @@ export type DependenciasOperacao = {
   banco: PrismaClient;
   chaveTotp: Buffer;
   agora?: () => Date;
+  enviarEmail?: EnviarEmail; // L22i: e-mail da decisão sobre pedido de convite
+  linkBase?: string;
 };
 
 export function criarOperacao(dep: DependenciasOperacao) {
@@ -611,6 +621,40 @@ export function criarOperacao(dep: DependenciasOperacao) {
     });
   }
 
+  // L22i (item 3): fila de pedidos de convite. Aprovar envia o convite por e-mail; recusar avisa sem dizer o motivo.
+  async function pedidosConviteFila(sessao: SessaoOperacao): Promise<PedidoPendente[]> {
+    return comoOperacao(dep.banco, async (tx) => {
+      const fila = await listarPedidos(tx, { tipo: 'master', usuario: sessao.usuario });
+      await auditar(tx, `master:${sessao.usuario}`, 'pedido_convite.fila_aberta', 'pedido_convite');
+      return fila;
+    });
+  }
+  async function pedidoConviteDecidir(
+    sessao: SessaoOperacao,
+    acao: 'aprovar' | 'recusar',
+    pedidoId: string,
+  ): Promise<ResultadoDecisao> {
+    return comDesfazer(() =>
+      comoOperacao(dep.banco, async (tx) => {
+        const r = await decidirPedido(
+          tx,
+          { tipo: 'master', usuario: sessao.usuario },
+          acao,
+          pedidoId,
+          { enviarEmail: dep.enviarEmail, linkBase: dep.linkBase },
+        );
+        if (r === 'ok')
+          await auditar(
+            tx,
+            `master:${sessao.usuario}`,
+            acao === 'aprovar' ? 'pedido_convite.aprovado' : 'pedido_convite.recusado',
+            `pedido_convite:${pedidoId}`,
+          );
+        return r;
+      }),
+    );
+  }
+
   // L22f: suporte do espaço individual. O Master indica e retira Admins atendentes e também atende a fila.
   async function listarAtendentes(): Promise<CandidatoAtendente[]> {
     return comoOperacao(
@@ -716,6 +760,8 @@ export function criarOperacao(dep: DependenciasOperacao) {
     gerarConviteIndividual,
     resumoDosConvites,
     listarConvitesPendentes,
+    pedidosConviteFila,
+    pedidoConviteDecidir,
     revogarConvite,
     lerLimiteAlunos,
     mudarLimiteAlunos,

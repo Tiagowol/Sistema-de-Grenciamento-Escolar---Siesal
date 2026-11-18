@@ -31,6 +31,7 @@ import {
 } from '../preferencias';
 import { Acessibilidade } from './Acessibilidade';
 import { Ajuda } from './Ajuda';
+import { PedidosConvite } from './PedidosConvite';
 import { AtendentesSuporte, SuporteEspacos } from './SuporteEspacos';
 
 // L18: entrada separada dos Masters (/gestao; antes /operacao). Sem menu da escola e sem nenhum dado escolar.
@@ -797,6 +798,111 @@ function Auditoria({ aoSair }: { aoSair: () => void }) {
   );
 }
 
+// L22i (item 1): o Master cria o convite individual de um aluno sem instituição. O código aparece uma vez,
+// pronto para copiar; vale 7 dias (mostrado com a data e com 7 blocos, sem depender de número).
+function ConviteAluno({ aoSair }: { aoSair: () => void }) {
+  const [convite, setConvite] = useState<{ codigo: string; expira_em: string } | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [feito, setFeito] = useState('');
+
+  async function gerar() {
+    setErro('');
+    setFeito('');
+    setGerando(true);
+    try {
+      setConvite(await apiOperacao.gerarConvite());
+      setFeito('Convite criado. Copie o código agora: ele não aparece de novo.');
+    } catch (x) {
+      if (x instanceof ErroApi && x.status === 401) return aoSair();
+      setErro(mensagem(x, 'Não foi possível criar o convite. Tente de novo.'));
+    } finally {
+      setGerando(false);
+    }
+  }
+  function copiar(texto: string, ok: string) {
+    setErro('');
+    void navigator.clipboard
+      ?.writeText(texto)
+      .then(() => setFeito(ok))
+      .catch(() => setErro('Não foi possível copiar. Selecione o texto e copie.'));
+  }
+
+  return (
+    <section className="card" aria-labelledby="ops-convite-aluno-titulo">
+      <div className="card-head">
+        <h1 id="ops-convite-aluno-titulo" style={{ fontSize: 22 }}>
+          Convite de aluno
+        </h1>
+      </div>
+      <p>
+        Cria um convite para um aluno que ainda não tem instituição. Com o código, a pessoa cria o
+        próprio espaço individual. O convite serve para uma conta só e vale por 7 dias.
+      </p>
+      {erro ? <Aviso tipo="warn">{erro}</Aviso> : null}
+      {feito ? <Aviso>{feito}</Aviso> : null}
+      <button
+        type="button"
+        className="btn btn-primary"
+        disabled={gerando}
+        onClick={() => void gerar()}
+      >
+        {convite ? 'Criar outro convite' : 'Criar convite'}
+      </button>
+      {convite ? (
+        <div className="mt" role="status">
+          <p className="small muted">Código do convite</p>
+          <p>
+            <strong
+              style={{ fontSize: 24, letterSpacing: 1, wordBreak: 'break-all', userSelect: 'all' }}
+            >
+              {convite.codigo}
+            </strong>
+          </p>
+          <p>
+            Vale por 7 dias, até <strong>{dataCurta(convite.expira_em)}</strong>.
+          </p>
+          <div aria-hidden="true" style={{ display: 'flex', gap: 4, maxWidth: 280 }}>
+            {['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7'].map((dia) => (
+              <span
+                key={dia}
+                style={{
+                  flex: 1,
+                  height: 12,
+                  borderRadius: 3,
+                  background: 'var(--accent, #2563eb)',
+                }}
+              />
+            ))}
+          </div>
+          <p className="small muted">Os 7 blocos são os 7 dias de validade.</p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ minHeight: 44 }}
+              onClick={() => copiar(convite.codigo, 'Código copiado.')}
+            >
+              Copiar o código
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline"
+              style={{ minHeight: 44 }}
+              onClick={() => copiar(linkDeCadastro('aluno', convite.codigo), 'Link copiado.')}
+            >
+              Copiar o link
+            </button>
+          </div>
+          <p className="small muted mt-sm">
+            Envie o código ou o link só para o aluno. Para cancelar antes do uso, vá em Convites.
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 // Convites esperando uso: nunca o código, só tipo e datas; revogar pede confirmação e fica na auditoria
 function Convites({ aoSair }: { aoSair: () => void }) {
   const [lista, setLista] = useState<ConvitePendente[] | null>(null);
@@ -1008,6 +1114,24 @@ export const ITENS_MASTER: Item[] = [
     palavras: ['escola', 'criar', 'modulos', 'convite', 'situacao', 'espacos individuais'],
   },
   {
+    id: 'm_convite_aluno',
+    rotulo: 'Convite de aluno',
+    icone: 'plus',
+    palavras: [
+      'criar convite',
+      'gerar codigo',
+      'aluno sem instituicao',
+      'copiar',
+      'espaco individual',
+    ],
+  },
+  {
+    id: 'm_pedidos_convite',
+    rotulo: 'Pedidos de convite',
+    icone: 'pedidos',
+    palavras: ['aprovar', 'recusar', 'solicitacao', 'sem codigo', 'aluno', 'fila'],
+  },
+  {
     id: 'm_convites',
     rotulo: 'Convites',
     icone: 'envelope',
@@ -1150,6 +1274,15 @@ function Gestao({ eu, aoSair }: { eu: EuOperacao; aoSair: () => void }) {
         <Arvore area={area} />
       ) : pagina === 'm_auditoria' ? (
         <Auditoria aoSair={aoSair} />
+      ) : pagina === 'm_convite_aluno' ? (
+        <ConviteAluno aoSair={aoSair} />
+      ) : pagina === 'm_pedidos_convite' ? (
+        <PedidosConvite
+          nivel="h1"
+          aoSair={aoSair}
+          carregar={() => apiOperacao.pedidosConvite().then((r) => r.pedidos)}
+          decidir={(p, acao) => apiOperacao.decidirPedidoConvite(p.pedido_id, acao)}
+        />
       ) : pagina === 'm_convites' ? (
         <Convites aoSair={aoSair} />
       ) : pagina === 'm_limite' ? (
