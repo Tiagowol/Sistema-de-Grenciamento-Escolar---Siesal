@@ -324,3 +324,17 @@ Toda falha corrigida entra aqui, no procedimento. Falha de segurança, dados, es
 - Causa: o teste depende da data real, não de uma data fixa. Falhou igual sem as mudanças do L22f.
 - Correção: nenhuma feita (fora do escopo do lote). Proposta: fixar a data do teste. Hoje a suíte de telas fica em 1478 de 1479 por isso.
 - Como voltar atrás: não se aplica.
+
+## F-060 — 18/11/2026 — Cadastro "sem instituição" recusado pelo link externo (causa de 18/11 achada; a de 17/11 não conferida)
+- O que falhou: em 18/11 o cadastro pelo link externo mostrou "Não foi possível criar a conta. Confira os dados ou peça outro convite." com o código `sncd-dvfg-jyuu-idvn`.
+- Causa (conferida no contêiner e no banco, sem mostrar valores): **não é `CPF_CHAVE`**. `CPF_CHAVE` está definida no contêiner `api` (e os pedidos chegam à API e voltam 400, não 503). O código digitado **não existe** na tabela de convites (0 linhas pelo hash). Ele também tem a letra "I", que o gerador nunca usa (alfabeto sem 0, 1, I, O): é código digitado errado ou inventado. A API responde igual para convite inexistente, vencido ou usado (de propósito; ver `cadastro_aluno_criar`, migração 0022).
+- Correção: nenhuma no código. Falta repetir o cadastro com um convite válido (maior e menor de idade) para confirmar; isso exige um código novo gerado pelo Master. Nada foi alterado no banco.
+- Sobre 17/11 (Wagner, Tiago, Natanael): a hipótese `CPF_CHAVE` ausente não foi confirmada nem descartada para aquele dia; hoje a chave existe.
+- Como voltar atrás: não se aplica.
+- Proposta (lote de defeito, a aprovar): a tela avisar quando o código tem letra ou número que o gerador não usa (0, 1, I, O) e a API registrar no log do servidor o motivo interno (sem dado pessoal), porque hoje o `catch` em `cadastro-responsavel.ts` esconde a causa.
+
+## 18/11/2026 — Login "Credenciais inválidas ou conta temporariamente bloqueada." (não é a F-060)
+- O que falhou: login "Vinculado a uma instituição" com `abecedariovalente@gmail.com`.
+- Causa: não é bloqueio. Esse e-mail não existe em nenhuma instituição (0 usuários). Existe só como conta de pessoa criada em 17/11 (papel "professor"), com e-mail **nunca confirmado**; sem confirmação, o login da pessoa também recusa. A mensagem é a mesma para todos os casos, de propósito (ADR-008).
+- Correção: nenhuma. Para usar a conta: confirmar o e-mail pelo link (caixa de teste http://localhost:18025) e entrar pela opção de conta pessoal, não por "Vinculado a uma instituição".
+- Como voltar atrás: não se aplica.
